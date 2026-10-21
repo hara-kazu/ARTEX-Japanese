@@ -21,6 +21,39 @@ export function localizeApiError(message: string): string {
   return translate(message, 0);
 }
 
+/** Localize diagnostic fields in successful/partial API responses, without touching user content. */
+export function localizeApiResponse<T>(value: T): T {
+  if (!value || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    const localized = value.map(localizeApiResponse);
+    return (localized.some((entry, index) => entry !== value[index]) ? localized : value) as T;
+  }
+  const original = value as Record<string, unknown>;
+  let result = original;
+  const update = (key: string, next: unknown) => {
+    if (next === original[key]) return;
+    if (result === original) result = { ...original };
+    result[key] = next;
+  };
+  for (const key of ["error", "last_error"]) {
+    if (typeof original[key] === "string") update(key, localizeApiError(original[key]));
+  }
+  for (const key of ["errors", "warnings", "scope_errors"]) {
+    const entries = original[key];
+    if (!Array.isArray(entries)) continue;
+    const localized = entries.map((entry) => (typeof entry === "string" ? localizeApiError(entry) : entry));
+    if (localized.some((entry, index) => entry !== entries[index])) update(key, localized);
+  }
+  // API list/batch records can carry diagnostics alongside successful entries.
+  for (const key of ["items", "deliveries"]) {
+    const entries = original[key];
+    if (!Array.isArray(entries)) continue;
+    const localized = entries.map(localizeApiResponse);
+    if (localized.some((entry, index) => entry !== entries[index])) update(key, localized);
+  }
+  return result as T;
+}
+
 function translate(message: string, depth: number): string {
   if (depth > 4) return message;
   const exact = exactMessages.get(message);

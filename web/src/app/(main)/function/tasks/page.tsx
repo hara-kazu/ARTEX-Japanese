@@ -179,10 +179,10 @@ function fmtDuration(sec: number): string {
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  if (d > 0) return `${d}日 ${h}時間`;
+  if (h > 0) return `${h}時間 ${m}分`;
+  if (m > 0) return `${m}分 ${s}秒`;
+  return `${s}秒`;
 }
 
 // taskDuration is the task's run duration in seconds: created → now while running,
@@ -555,7 +555,7 @@ export default function TasksPage() {
           action === "pause" ? `タスク #${id} を一時停止しました` : `タスク #${id} を再開しました${result.queued ? "。キューに追加しました" : ""}`,
         );
       } catch (e) {
-        toast.error(`${action === "pause" ? "一時停止" : "続行"}失敗：${(e as Error).message}`);
+        toast.error(`${action === "pause" ? "一時停止" : "再開"}に失敗しました：${(e as Error).message}`);
       } finally {
         // 无论成败都刷新:失败多半是状态已变化,重新拉取才能让按钮回到正确形态。
         lastRef.current = "";
@@ -589,7 +589,7 @@ export default function TasksPage() {
         lastRef.current = "";
         load();
       } catch (error) {
-        toast.error(`${pinned ? "ピン留めを解除" : "ピン留め"}失敗：${(error as Error).message}`);
+        toast.error(`${pinned ? "ピン留めの解除" : "ピン留め"}に失敗しました：${(error as Error).message}`);
         throw error;
       }
     },
@@ -734,7 +734,7 @@ export default function TasksPage() {
         lastRef.current = "";
         load();
       } catch (error) {
-        toast.error(`${action === "pause" ? "一括で一時停止" : "一括で再開"}失敗：${(error as Error).message}`);
+        toast.error(`タスクの一括${action === "pause" ? "一時停止" : "再開"}に失敗しました：${(error as Error).message}`);
       } finally {
         setBatchControlling(null);
       }
@@ -1046,8 +1046,8 @@ function SortableTaskHead({
   let ariaSort: React.AriaAttributes["aria-sort"] = "none";
   if (active) ariaSort = direction === "asc" ? "ascending" : "descending";
 
-  let actionLabel = `条件：${label}降順で並べ替え`;
-  if (active) actionLabel = `${label}現在${direction === "asc" ? "昇順" : "降順"}。クリックで並び順を切り替え`;
+  let actionLabel = `${label}の降順で並べ替え`;
+  if (active) actionLabel = `${label}は現在${direction === "asc" ? "昇順" : "降順"}。クリックで並び順を切り替え`;
 
   return (
     <TableHead className={className} aria-sort={ariaSort}>
@@ -1490,7 +1490,7 @@ function ArchiveConfirmDialog({
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{count === 1 ? "タスクをアーカイブ" : `アーカイブ ${count} 件のタスク`}</AlertDialogTitle>
+          <AlertDialogTitle>{count === 1 ? "タスクをアーカイブ" : `${count}件のタスクをアーカイブ`}</AlertDialogTitle>
           <AlertDialogDescription className="[overflow-wrap:anywhere]">
             アーカイブするとタスクのスケジューリングを停止し、グラフ、LLM 履歴、ファイル、専有する資産とトラフィックを圧縮してローカルのコールドストレージに保存します。完了後、「アーカイブ済み」から復元できます。
           </AlertDialogDescription>
@@ -1617,7 +1617,7 @@ function ArchiveDeleteDialog({
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>完全に削除 {archives.length} 件のタスクアーカイブを削除しますか？</AlertDialogTitle>
+          <AlertDialogTitle>{archives.length}件のタスクアーカイブを完全に削除しますか？</AlertDialogTitle>
           <AlertDialogDescription className="[overflow-wrap:anywhere]">
             約 {formatArchiveBytes(bytes)} のアーカイブと {rows.toLocaleString("ja-JP")} 件の関連データのスナップショットを完全に削除します。この操作は元に戻せません。
           </AlertDialogDescription>
@@ -2175,7 +2175,7 @@ function DeleteTaskDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>タスクを削除しますか #{task.id}？</AlertDialogTitle>
+          <AlertDialogTitle>タスク #{task.id} を削除しますか？</AlertDialogTitle>
           <AlertDialogDescription className="break-words">
             {task.description ? (
               <>
@@ -2828,7 +2828,7 @@ function CategoryManagementSheet({
       }
       onChanged();
     } catch (error) {
-      toast.error(`${selectedView === "new" ? "作成" : "更新"}カテゴリの処理に失敗しました：${(error as Error).message}`);
+      toast.error(`カテゴリの${selectedView === "new" ? "作成" : "更新"}に失敗しました：${(error as Error).message}`);
     } finally {
       setSaving(false);
     }
@@ -3036,7 +3036,7 @@ function CategoryManagementSheet({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>カテゴリを削除「{selectedCategory?.name || "名前のないカテゴリ"}」？</AlertDialogTitle>
+            <AlertDialogTitle>カテゴリ「{selectedCategory?.name || "名前のないカテゴリ"}」を削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
               カテゴリを削除すると、その中の {selectedCategory?.task_count ?? 0} 件のタスクは「未分類」に移動します。タスクのデータは削除されません。
             </AlertDialogDescription>

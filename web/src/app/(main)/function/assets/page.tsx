@@ -550,7 +550,7 @@ export default function AssetsPage() {
         <TabsContent value="app" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
-            cols={["", "アプリ名", "Bundle ID", "カテゴリ", "ICP 登録", ""]}
+            cols={["", "アプリ名", "バンドル ID", "カテゴリ", "ICP 登録", ""]}
             loaded={loaded}
             total={total}
             page={page}
@@ -999,8 +999,8 @@ function CompanyDialog({ onSaved }: { onSaved: () => void }) {
       const res = await api.createCompany(name.trim(), parsedScope.rules);
       const added = res.scope_added ?? 0;
       const invalid = res.scope_invalid ?? 0;
-      if (invalid > 0) toast.warning(`企業を作成しました。追加した範囲： ${added} 件、${invalid} 行が無効`);
-      else toast.success(`企業を作成しました。追加した範囲： ${added} 件の範囲`);
+      if (invalid > 0) toast.warning(`企業を作成し、${added}件の範囲を追加しました。${invalid}行は無効です`);
+      else toast.success(`企業を作成し、${added}件の範囲を追加しました`);
       setOpen(false);
       onSaved();
     } catch (e) {

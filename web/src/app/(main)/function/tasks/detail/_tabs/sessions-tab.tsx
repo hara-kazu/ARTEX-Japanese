@@ -51,6 +51,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSideQuestions } from "@/hooks/use-side-questions";
 import { api, sseUrl } from "@/lib/api";
+import { localizeApiError } from "@/lib/api-errors";
 import { shouldSubmitOnKey, useChatSendMode } from "@/lib/chat-send-mode";
 import { MOCK } from "@/lib/mock/enabled";
 import { isBtwCommand } from "@/lib/side-questions";
@@ -202,7 +203,7 @@ const TokenMetrics = React.forwardRef<
     labels?: "short" | "long";
   }
 >(({ input, cache, output, labels = "short", className, ...props }, ref) => {
-  const names = labels === "short" ? ["入力", "キャッシュ", "出力"] : ["input", "cache", "output"];
+  const names = labels === "short" ? ["入力", "キャッシュ", "出力"] : ["入力トークン", "キャッシュ読み取り", "出力トークン"];
   const values = [input, cache, output];
   return (
     <span
@@ -226,17 +227,17 @@ TokenMetrics.displayName = "TokenMetrics";
 // fmtDuration renders an elapsed milliseconds span compactly (90s → 1m30s).
 function fmtDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
+  if (s < 60) return `${s}秒`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m${String(s % 60).padStart(2, "0")}s`;
+  if (m < 60) return `${m}分${String(s % 60).padStart(2, "0")}秒`;
   const h = Math.floor(m / 60);
-  return `${h}h${String(m % 60).padStart(2, "0")}m`;
+  return `${h}時間${String(m % 60).padStart(2, "0")}分`;
 }
 
 const roleMeta = {
   mainagent: { label: "メインエージェント", icon: UserIcon },
   planner: { label: "計画エージェント Planner", icon: BrainIcon },
-  worker: { label: "Workers", icon: RadioIcon },
+  worker: { label: "実行エージェント", icon: RadioIcon },
   system: { label: "システム監査", icon: HistoryIcon },
 } as const;
 
@@ -986,11 +987,11 @@ export function SessionsTab({ taskId }: { taskId: string }) {
             llmToastSeqRef.current.add(a.seq);
             const transition = a.metadata?.llm_transition;
             if (transition?.mode === "exhausted" || a.is_error) {
-              toast.error(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
+              toast.error(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
             } else if (transition?.mode === "automatic") {
-              toast.success(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
+              toast.success(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
             } else {
-              toast.info(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
+              toast.info(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
             }
             void api
               .taskLLMResolution(taskId)
@@ -1538,7 +1539,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
         patchIntentState(intentId, result.state);
         setWorkerMessage("");
         setWorkerMessageRequestId("");
-        toast.success(`Worker にメッセージを送信しました #${intentId}。実行を再開しました`);
+        toast.success(`Worker #${intentId} にメッセージを送信し、実行を再開しました`);
       })
       .catch((error) => {
         toast.error(`送信に失敗しました：${(error as Error).message || "しばらくしてから再試行してください"}`);
@@ -2113,7 +2114,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
         >
           <AlertDialogContent className="max-w-[min(32rem,calc(100vw-2rem))]">
             <AlertDialogHeader>
-              <AlertDialogTitle>Worker を削除 #{cancelIntent?.intent_id}？</AlertDialogTitle>
+              <AlertDialogTitle>Worker #{cancelIntent?.intent_id} を削除しますか？</AlertDialogTitle>
               <AlertDialogDescription className="break-words whitespace-normal">
                 {deleteMode === "hard" ? (
                   <>

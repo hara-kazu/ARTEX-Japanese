@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
+import { localizeApiError } from "@/lib/api-errors";
 import type { LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -58,17 +59,17 @@ const MAX_TOKENS_FIELD_HINTS: Record<string, string> = {
 };
 const EFFORT_LEVELS: { value: string; label: string }[] = [
   { value: NONE, label: "送信しない（デフォルト）" },
-  { value: "low", label: "low" },
-  { value: "medium", label: "medium" },
-  { value: "high", label: "high" },
-  { value: "xhigh", label: "xhigh" },
-  { value: "max", label: "max" },
+  { value: "low", label: "低（low）" },
+  { value: "medium", label: "中（medium）" },
+  { value: "high", label: "高（high）" },
+  { value: "xhigh", label: "非常に高い（xhigh）" },
+  { value: "max", label: "最大（max）" },
 ];
 
 function cooldownText(secs: number) {
   if (secs <= 0) return "";
-  if (secs < 60) return `${secs}s`;
-  return `${Math.ceil(secs / 60)}min`;
+  if (secs < 60) return `${secs}秒`;
+  return `${Math.ceil(secs / 60)}分`;
 }
 
 // 一个配置在卡片上显示的「是否正常」。没填 Key 的配置根本发不出请求，比熔断更该先说；
@@ -371,7 +372,7 @@ function ProfileSheet({
         setModelsOpen(true);
         toast.success(`読み込みました： ${r.models.length} 個のモデル`);
       } else {
-        toast.error(`モデルの読み込みに失敗しました：${r.error ?? "モデルを取得できませんでした"}`);
+        toast.error(`モデルの読み込みに失敗しました：${localizeApiError(r.error ?? "モデルを取得できませんでした")}`);
       }
     } catch (e) {
       toast.error(`モデルの読み込みエラー：${(e as Error).message}`);
@@ -400,10 +401,10 @@ function ProfileSheet({
       );
       // 回复内容一并展示：看得见模型确实说了话，才算和会话里跑通是一回事。
       if (r.ok)
-        toast.success(`接続成功 · ${r.latency_ms ?? "?"}ms · ${r.model ?? model}`, {
+        toast.success(`接続成功 · ${r.latency_ms ?? "?"}ミリ秒 · ${r.model ?? model}`, {
           description: r.reply ? `応答：${r.reply}` : undefined,
         });
-      else toast.error(`接続に失敗しました：${r.error ?? "不明"}`);
+      else toast.error(`接続に失敗しました：${localizeApiError(r.error ?? "不明")}`);
     } catch (e) {
       toast.error(`テストエラー：${(e as Error).message}`);
     } finally {
@@ -914,11 +915,11 @@ export default function LLMPage() {
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-6 text-muted-foreground text-xs">
                       {p.api_key_hint && <span>{p.api_key_hint}</span>}
                       <span>
-                        {p.rate_per_second}/s · {p.rate_per_minute}/min
+                        {p.rate_per_second}回/秒 · {p.rate_per_minute}回/分
                       </span>
                       {p.proxy && <span className="truncate">プロキシ {p.proxy}</span>}
                       {p.reasoning_effort && (
-                        <span>思考 {p.reasoning_effort === "off" ? "無効" : p.reasoning_effort}</span>
+                        <span>思考 {p.reasoning_effort === "off" ? "無効" : (EFFORT_LEVELS.find((level) => level.value === p.reasoning_effort)?.label ?? p.reasoning_effort)}</span>
                       )}
                       {/* 轮询相关的两个字段只在轮询开着时才有意义，关着时不占版面 */}
                       {poolOn &&

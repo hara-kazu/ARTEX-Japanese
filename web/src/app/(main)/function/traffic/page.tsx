@@ -453,7 +453,7 @@ export default function TrafficPage() {
           </PopoverContent>
         </Popover>
         <div className="relative w-48">
-          <Input placeholder="host…" value={host} onChange={(e) => setHost(e.target.value)} className="h-8" />
+          <Input placeholder="ホスト…" value={host} onChange={(e) => setHost(e.target.value)} className="h-8" />
         </div>
         <Button
           variant="destructive"
@@ -655,7 +655,7 @@ export default function TrafficPage() {
                     onSort={toggleSort}
                     className="w-20"
                   />
-                  <TableHead className="w-36">content-type</TableHead>
+                  <TableHead className="w-36">コンテンツ種別</TableHead>
                   <SortableHead
                     field="resp_len"
                     label="レスポンスの長さ"
@@ -804,8 +804,7 @@ export default function TrafficPage() {
               )}
               {deleteMode === "filter" && (
                 <>
-                  host に次の文字列を含む記録を完全に削除します： <span className="font-mono font-semibold">{hostQ}</span>{" "}
-                  に一致するすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）。この操作は取り消せません。
+                  ホストに <span className="font-mono font-semibold">{hostQ}</span> を含むすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）を完全に削除します。この操作は取り消せません。
                 </>
               )}
             </AlertDialogDescription>
@@ -820,7 +819,7 @@ export default function TrafficPage() {
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? `${deleteVerb}中…` : `確認${deleteVerb}`}
+              {deleting ? `${deleteVerb}中…` : `${deleteVerb}する`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

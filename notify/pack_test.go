@@ -28,7 +28,7 @@ func TestMarkdownBodyPacksWholeItemsWithinByteLimit(t *testing.T) {
 	}
 	// 头部必须如实说明本条只包含多少条、其余有多少条——否则读者会把头部
 	// 那个数字当成全部。
-	if !strings.Contains(body, "其余") || !strings.Contains(body, "下一条消息继续") {
+	if !strings.Contains(body, "残り") || !strings.Contains(body, "次の通知に続きます") {
 		t.Fatalf("头部应说明还有多少条未包含在本条里:\n%s", body[:minInt(400, len(body))])
 	}
 	// 只应包含前 kept 条。
@@ -48,7 +48,7 @@ func TestMarkdownBodyKeepsEverythingWhenUnderLimit(t *testing.T) {
 	if kept != len(m.Items) {
 		t.Fatalf("不限制长度时应全部保留，得到 kept=%d", kept)
 	}
-	if strings.Contains(body, "其余") {
+	if strings.Contains(body, "残り") {
 		t.Fatalf("没有截断时不该出现截断提示:\n%s", body)
 	}
 }
@@ -84,7 +84,7 @@ func TestTelegramPackingUsesRuneBudget(t *testing.T) {
 	if kept <= 0 || kept >= len(m.Items) {
 		t.Fatalf("应只装下一部分，得到 %d", kept)
 	}
-	if !strings.Contains(text, "下一条继续") {
+	if !strings.Contains(text, "次の通知に続きます") {
 		t.Fatalf("应说明还有余量未包含:\n%.300s", text)
 	}
 }

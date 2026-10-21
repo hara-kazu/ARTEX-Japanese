@@ -2,6 +2,7 @@
 // 未命中的一律返回安全默认（[] / {} / {ok:true}），保证任何页面都不崩。
 // 只在 NEXT_PUBLIC_MOCK=1 时经由 api.ts 的 http() 短路进入这里。
 
+import { approvalDecisionSource } from "../approval-source";
 import {
   classifyCompanyScopeLine,
   companyScopeRuleError,
@@ -1971,7 +1972,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
           worker: "retester",
           ts: now,
           kind: "user",
-          summary: `次の脆弱性を再テストしてください #${finding.id}`,
+          summary: `次の脆弱性 #${finding.id} を再テストしてください`,
           detail: retest.notes,
         },
         {
@@ -2432,8 +2433,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     if (status && !["pending", "allowed", "denied", "timeout"].includes(status)) throw new Error("無効な承認状態");
     if (decisionSource && !["model", "rule", "unknown"].includes(decisionSource)) throw new Error("無効な判定元");
     const filtered = mockInterceptHistory.filter((row) => {
-      const source =
-        row.decision_source || (row.rule_id ? "rule" : row.reason?.startsWith("[モデル]") ? "model" : "unknown");
+      const source = approvalDecisionSource(row);
       return (
         (seg[1] !== "task" || row.task_id === decodeURIComponent(seg[2])) &&
         (!status || row.status === status) &&

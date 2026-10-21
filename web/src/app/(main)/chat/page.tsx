@@ -78,11 +78,11 @@ function fmtTokens(n: number): string {
 // fmtDuration renders an elapsed milliseconds span compactly (90s → 1m30s).
 function fmtDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
+  if (s < 60) return `${s}秒`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m${String(s % 60).padStart(2, "0")}s`;
+  if (m < 60) return `${m}分${String(s % 60).padStart(2, "0")}秒`;
   const h = Math.floor(m / 60);
-  return `${h}h${String(m % 60).padStart(2, "0")}m`;
+  return `${h}時間${String(m % 60).padStart(2, "0")}分`;
 }
 
 // HISTORY_PAGE is how many steps one history page loads: the latest page on open,
@@ -450,7 +450,7 @@ function DraftChat({
         <div className="bg-primary/10 flex size-12 items-center justify-center rounded-full">
           <Bot className="text-primary size-6" />
         </div>
-        <div className="text-sm font-medium">「{agent?.name ?? "Agent"}」とチャットを開始</div>
+        <div className="text-sm font-medium">「{agent?.name ?? "エージェント"}」とチャットを開始</div>
         {agent?.description && <p className="text-muted-foreground max-w-md text-xs">{agent.description}</p>}
       </div>
 
@@ -784,7 +784,7 @@ function ChatView({
           )}
           {tokenTotal.any && (
             <span title="入力 / キャッシュ読み取り / 出力トークン" className="min-w-0 truncate tabular-nums">
-              入力 {fmtTokens(tokenTotal.i)} · cache {fmtTokens(tokenTotal.cr)} · output {fmtTokens(tokenTotal.o)}
+              入力 {fmtTokens(tokenTotal.i)} · キャッシュ {fmtTokens(tokenTotal.cr)} · 出力 {fmtTokens(tokenTotal.o)}
             </span>
           )}
         </div>
@@ -991,7 +991,7 @@ const ConversationItem = React.memo(function ConversationItem({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>チャットを削除「{conv.title || "新しいチャット"}」？</AlertDialogTitle>
+            <AlertDialogTitle>「{conv.title || "新しいチャット"}」を削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1022,7 +1022,7 @@ function AgentGroupHeader({
       type="button"
       onClick={() => onToggle(group.key)}
       aria-expanded={!collapsed}
-      title={collapsed ? `展開「${group.name}」` : `折りたたむ「${group.name}」`}
+      title={collapsed ? `「${group.name}」を展開` : `「${group.name}」を折りたたむ`}
       className={cn(
         "sticky top-0 z-10 flex min-w-0 items-center gap-1.5 rounded-md bg-card px-1.5 py-1 text-left font-medium text-[11px] transition-colors hover:bg-accent/50",
         collapsed && hasActive ? "text-foreground" : "text-muted-foreground",
@@ -1319,7 +1319,7 @@ export default function ChatPage() {
         await api.pinConversation(conversation.id, !pinned);
         void reloadConvs();
       } catch (e) {
-        toast.error(`${pinned ? "ピン留めを解除" : "ピン留め"}失敗：${(e as Error).message}`);
+        toast.error(`${pinned ? "ピン留めの解除" : "ピン留め"}に失敗しました：${(e as Error).message}`);
       }
     },
     [reloadConvs],

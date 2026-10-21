@@ -3,7 +3,7 @@ rem 控制台切 UTF-8，否则本文件里的中文在 GBK 终端下是乱码�
 chcp 65001 >nul 2>&1
 rem ARTEX 守护启动脚本（Windows）
 rem
-rem 用法：
+rem 使用方法：
 rem   start.bat                  前台运行（Ctrl-C 停止）
 rem   start.bat -addr :9000      额外参数原样透传给 artex
 rem
@@ -21,7 +21,7 @@ cd /d "%~dp0"
 
 set "BIN=artex.exe"
 if not exist "%BIN%" (
-	echo [artex] 找不到可执行文件 %BIN% 1>&2
+	echo [artex] 実行ファイルが見つかりません： %BIN% 1>&2
 	exit /b 1
 )
 
@@ -34,18 +34,18 @@ set /a delay=1
 set "code=!ERRORLEVEL!"
 
 if "!code!"=="0" (
-	echo [artex] 正常退出
+	echo [artex] 正常に終了しました
 	exit /b 0
 )
 
 if "!code!"=="%RESTART_CODE%" (
 	rem 更新/回滚已就绪：重跑后 artex 会在启动时完成换装。
-	echo [artex] 请求重启（应用新版本）…
+	echo [artex] 再起動します（新しいバージョンを適用）…
 	set /a delay=1
 	goto loop
 )
 
-echo [artex] 异常退出 ^(code=!code!^)，!delay!s 后重启 1>&2
+echo [artex] 異常終了 ^(code=!code!^) 。!delay!秒後に再起動 1>&2
 rem timeout 在被重定向的控制台里会失败，用 ping 兜底（延时 N 秒需要 N+1 次）。
 set /a pings=!delay!+1
 ping -n !pings! 127.0.0.1 >nul 2>&1

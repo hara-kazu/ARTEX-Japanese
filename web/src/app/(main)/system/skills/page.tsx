@@ -545,7 +545,7 @@ export default function SkillsPage() {
     setDetailMcps(next);
     try {
       await api.updateSkillMeta(skillName, { mcps: next });
-      toast.success(`${mcpOn ? "関連付け" : "関連付けを解除"}「${mcpName}」`);
+      toast.success(mcpOn ? `「${mcpName}」を関連付けました` : `「${mcpName}」の関連付けを解除しました`);
       load();
     } catch (e) {
       // roll back on error
@@ -558,7 +558,7 @@ export default function SkillsPage() {
     const on = (visibility[skillName] ?? []).includes(agentId);
     try {
       await api.toggleSkillVisibility(agentId, skillName, !on);
-      toast.success(`${on ? "キャンセル" : "公開先："}「${agentName}」に公開`);
+      toast.success(on ? `「${agentName}」への公開を解除しました` : `「${agentName}」に公開しました`);
       const ids = await api.skillVisibility(skillName);
       setVisibility((v) => ({ ...v, [skillName]: ids }));
     } catch (e) {
@@ -567,8 +567,8 @@ export default function SkillsPage() {
   }
 
   async function createNewSkill() {
-    if (!newName.trim()) { toast.error("name を入力してください"); return; }
-    if (!newDesc.trim()) { toast.error("description は必須です"); return; }
+    if (!newName.trim()) { toast.error("名前を入力してください"); return; }
+    if (!newDesc.trim()) { toast.error("説明を入力してください"); return; }
     setCreatingSkill(true);
     try {
       const name = newName.trim();
@@ -854,7 +854,7 @@ export default function SkillsPage() {
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedSkill.license && (
-                    <Badge variant="outline" className="text-xs font-normal">License: {selectedSkill.license}</Badge>
+                    <Badge variant="outline" className="text-xs font-normal">ライセンス：{selectedSkill.license}</Badge>
                   )}
                   {selectedSkill.compatibility && (
                     <Badge variant="secondary" className="text-xs font-normal">{selectedSkill.compatibility}</Badge>
@@ -990,9 +990,9 @@ export default function SkillsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingDelete?.kind === "skill" && `スキルを削除「${pendingDelete.skill}」？`}
-              {pendingDelete?.kind === "dir" && `フォルダーを削除「${pendingDelete.path}」？`}
-              {pendingDelete?.kind === "file" && `ファイルを削除「${pendingDelete.path}」？`}
+              {pendingDelete?.kind === "skill" && `スキル「${pendingDelete.skill}」を削除しますか？`}
+              {pendingDelete?.kind === "dir" && `フォルダー「${pendingDelete.path}」を削除しますか？`}
+              {pendingDelete?.kind === "file" && `ファイル「${pendingDelete.path}」を削除しますか？`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDelete?.kind === "skill"
@@ -1056,11 +1056,11 @@ export default function SkillsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label className="text-muted-foreground text-xs">license</Label>
+                  <Label className="text-muted-foreground text-xs">ライセンス（license）</Label>
                   <Input placeholder="MIT / Proprietary" value={newLicense} onChange={(e) => setNewLicense(e.target.value)} />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-muted-foreground text-xs">compatibility</Label>
+                  <Label className="text-muted-foreground text-xs">動作要件（compatibility）</Label>
                   <Input placeholder="sqlmap、python3 が必要" value={newCompat} onChange={(e) => setNewCompat(e.target.value)} />
                 </div>
               </div>

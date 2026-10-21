@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { approvalDecisionSource as source, stripModelReasonPrefix } from "@/lib/approval-source";
 import type {
   InterceptApprovalFilter,
   InterceptApprovalRow,
@@ -45,12 +46,6 @@ function fmtTime(value?: string) {
     minute: "2-digit",
     second: "2-digit",
   });
-}
-
-function source(row: InterceptApprovalRow) {
-  if (row.decision_source) return row.decision_source;
-  if (row.rule_id) return "rule";
-  return row.reason?.startsWith("[モデル]") ? "model" : "unknown";
 }
 
 function originLabel(row: InterceptApprovalRow) {
@@ -75,7 +70,7 @@ function ApprovalOrigin({ row, detail = false }: { row: InterceptApprovalRow; de
     <a
       href={href}
       className="text-primary underline-offset-4 hover:underline"
-      aria-label={`承認の発生元を特定 #${row.id} の発生元：${label}`}
+      aria-label={`承認 #${row.id} の発生元を表示：${label}`}
       aria-busy={locating}
       onClick={async (e) => {
         e.stopPropagation();
@@ -109,7 +104,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MatchCell({ row, showReason = true }: { row: InterceptApprovalRow; showReason?: boolean }) {
-  const reason = row.reason?.replace(/^\[模型\]\s*/, "");
+  const reason = stripModelReasonPrefix(row.reason);
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {source(row) === "model" ? (
@@ -143,7 +138,7 @@ function CodeBlock({ label, text, truncated = false }: { label: string; text: st
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium text-muted-foreground text-xs">{label}</h3>
         {text ? (
-          <Button variant="ghost" size="icon-xs" aria-label={`コピー${label}`} onClick={() => void copy()}>
+          <Button variant="ghost" size="icon-xs" aria-label={`${label}をコピー`} onClick={() => void copy()}>
             <CopyIcon />
           </Button>
         ) : null}
@@ -341,7 +336,7 @@ export function ApprovalDetail({
       <div className="grid min-w-0 gap-5 rounded-xl border bg-muted/20 p-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-3">
           <CodeBlock
-            label={`${current.agent_name || current.conv_agent_key || "Agent"} · ツールのリクエスト`}
+            label={`${current.agent_name || current.conv_agent_key || "エージェント"} · ツールのリクエスト`}
             text={JSON.stringify(row.tool_input ?? {}, null, 2)}
           />
           {command ? (
@@ -370,7 +365,7 @@ export function ApprovalDetail({
             <MatchCell row={current} showReason={false} />
           </div>
           <p className="whitespace-pre-wrap break-words text-sm leading-7 [overflow-wrap:anywhere]">
-            {current.reason?.replace(/^\[模型\]\s*/, "") || "承認理由の記録なし"}
+            {stripModelReasonPrefix(current.reason) || "承認理由の記録なし"}
           </p>
           {audit?.decision_reason ? <p className="text-sm">{audit.decision_reason}</p> : null}
           {audit?.effective_action ? <p className="text-sm">最終的な動作：{actionLabels[audit.effective_action]}</p> : null}
@@ -484,7 +479,7 @@ export function ApprovalDetail({
               ) : null}
               <CodeBlock
                 label={`${initialLabel}：${actionLabels[audit.initial_action] ?? audit.initial_action}`}
-                text={audit.initial_reason.replace(/^\[模型\]\s*/, "")}
+                text={stripModelReasonPrefix(audit.initial_reason) ?? ""}
               />
               <CodeBlock
                 label="実行の出力"
@@ -589,7 +584,7 @@ function ApprovalTable({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`${open ? "折りたたむ" : "展開"}承認 #${row.id}`}
+                    aria-label={`承認 #${row.id} を${open ? "折りたたむ" : "展開"}`}
                     aria-expanded={open}
                     aria-controls={open ? panelID : undefined}
                     onClick={(e) => {

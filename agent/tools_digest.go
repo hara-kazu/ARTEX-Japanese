@@ -119,11 +119,11 @@ func (t *ToolSet) resolveDigest(id int64) (*db.Node, *db.ExplorationStore, int64
 // node's full detail.
 func (t *ToolSet) expandDigest() actool.CoreTool {
 	return t.writeExpTool("expand_digest",
-		"展开一个 cold digest：返回它折叠的成员紧凑列表（id/summary/state/confidence），与概览 recent_facts/recent_done_intents 同形状。要某条完整细节/证据用 node_detail(member_id)。",
+		"cold digest を1件展開し、折りたたまれたメンバーを簡潔な一覧（id / summary / state / confidence）で返します。概要の recent_facts / recent_done_intents と同じ形式です。個別の完全な詳細 / 証拠は node_detail(member_id) で取得してください。",
 		map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"id": map[string]any{"type": "integer", "description": "digest 节点 id（来自概览 cold_digests）"},
+				"id": map[string]any{"type": "integer", "description": "digest ノードの id（概要の cold_digests から取得）"},
 			},
 			"required": []any{"id"},
 		},

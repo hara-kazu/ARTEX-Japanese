@@ -2,259 +2,318 @@
 
 # ARTEX-Japanese
 
-AI 自主渗透测试系统（Go 后端 + Next.js 前端）
+AI による自律型ペネトレーションテストシステムの日本語版（Go バックエンド + Next.js フロントエンド）
 
+このリポジトリは ARTEX の日本語化版です。画面のメニュー、説明、ダイアログ、エラー表示、日時表示を日本語にしています。
 
-🌐 **在线 Demo**： [https://artex-demo.vercel.app/](https://artex-demo.vercel.app/)
+🌐 **元プロジェクトのオンラインデモ**：[ARTEX Demo](https://artex-demo.vercel.app/)
 
 </div>
 
+> オンラインデモと公開 Docker イメージ `autumn27/artex` は、このリポジトリの日本語版とは別の配布物です。日本語版を利用する場合は、以下の手順でこのリポジトリのソースをビルドしてください。保存済みのユーザーデータ、任意に編集したプロンプト、取得した通信内容は自動翻訳しません。
+
 ---
 
-## 截图预览
+## スクリーンショット
 
-> 完整交互见[在线 Demo](https://artex-demo.vercel.app/)。
+画面写真は日本語版のモックデモを使用しています。日本語化の対象と互換性・検証の内容は [日本語化の確認結果](LOCALIZATION.md) を参照してください。
 
-| 仪表盘（总览 / Token 消耗 / 活动流） | 任务列表 |
+| ダッシュボード（概要 / トークン消費量 / アクティビティ） | タスク一覧 |
 | :---: | :---: |
-| ![仪表盘](screenshots/dashboard.png) | ![任务](screenshots/tasks.png) |
+| ![ダッシュボード](screenshots/dashboard.png) | ![タスク一覧](screenshots/tasks.png) |
 
-| 任务 · 执行过程（会话 / 工具调用） | 探索链路 |
+| タスクの実行過程（セッション / ツール呼び出し） | 探索経路 |
 | :---: | :---: |
-| ![执行过程](screenshots/sessions.png) | ![探索链路](screenshots/graph.png) |
+| ![実行過程](screenshots/sessions.png) | ![探索経路](screenshots/graph.png) |
 
-| 发现 | 资产 |
+| 検出結果 | 資産 |
 | :---: | :---: |
-| ![发现](screenshots/findings.png) | ![资产](screenshots/assets.png) |
+| ![検出結果](screenshots/findings.png) | ![資産](screenshots/assets.png) |
 
-| 资产覆盖图（力导向布局 · 已测高亮 · 节点折叠展开） |
+| 資産カバレッジ図（力学モデルによる配置・テスト済み資産の強調表示・ノードの折りたたみ） |
 | :---: |
-| ![资产覆盖图](screenshots/assets_test.png) |
+| ![資産カバレッジ図](screenshots/assets_test.png) |
 
-| 流量录制 | 人在环路对话 |
+| トラフィックの記録 | 人が介入できるチャット |
 | :---: | :---: |
-| ![流量](screenshots/traffic.png) | ![对话](screenshots/chat.png) |
+| ![トラフィック](screenshots/traffic.png) | ![チャット](screenshots/chat.png) |
 
-| Agent 管理 | LLM 配置 |
+| エージェント管理 | LLM 設定 |
 | :---: | :---: |
-| ![Agent](screenshots/agents.png) | ![LLM](screenshots/llm.png) |
+| ![エージェント](screenshots/agents.png) | ![LLM 設定](screenshots/llm.png) |
 
-| 拦截审批 | 后端日志 |
+| ブロックの承認 | バックエンドのログ |
 | :---: | :---: |
-| ![拦截](screenshots/intercept.png) | ![日志](screenshots/logs.png) |
+| ![承認](screenshots/intercept.png) | ![ログ](screenshots/logs.png) |
 
+## 承認記録の詳細
+
+全体の「承認記録」、タスク内の「ブロックの承認」、チャット内の承認カードは、いずれも展開して詳細を確認できます。
+表示構成は [AegisHook の承認詳細コンポーネント](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue)を参考にし、ARTEX のコンポーネントとテーマに合わせています。
+
+## 資産の同期（ScopeSentry）
+
+[ScopeSentry](https://github.com/Autumn-27/ScopeSentry) から資産を直接同期でき、同じ情報を再収集する必要がありません。
+
+- 「**資産の同期**」画面に ScopeSentry のアドレスと API キーを入力し、データソースに接続します。
+- **プロジェクト**または**タスク**単位で、同期する対象と資産の種類（サブドメイン / サービス / アプリ）を選択します。サブドメインには関連する IP、サービスには HTTP やポートの情報も含まれます。
+- インポートした資産を企業の資産範囲に統合し、エージェントが探索に使用する資産グラフに追加します。
 
 ---
 
-## 审批记录详情
+## インストール
 
-全局「审批记录」、任务内「拦截审批」及对话中的审批卡片均支持展开查看详情。展示结构参考
-[AegisHook 的审批详情组件](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue)，沿用 ARTEX 的组件和主题：
+データベースは **PostgreSQL** を使用します。探索には **LLM** の設定が必要です（`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`、または画面の LLM 設定）。ソースのビルドには `go.mod` が指定する **Go 1.26.3 以降**と、フロントエンドをビルドできる **Node.js / npm** が必要です。CI では Node.js 22 を使用しています。
 
-
-## 资产同步（ScopeSentry）
-
-支持从 [ScopeSentry](https://github.com/Autumn-27/ScopeSentry) 直接同步资产数据，免去重复收集：
-
-- 在「**资产同步**」页填 ScopeSentry 的地址与 API Key，接入数据源；
-- 按**项目**或**任务**维度选择要同步的目标与资产类型（域名 / 子域 / IP / 端口 / 站点 / 端点…）；
-- 一键导入并按公司资产范围归并，直接进入 ARTEX 的资产图供 agent 探索使用。
-
----
-
-## 安装
-
-> 依赖数据库 **PostgreSQL**；探索需配置 **LLM**（`ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`，也可在 UI 里配）。
-
-### 方式一：一键安装脚本（推荐）
+### 方法1：インストールスクリプト
 
 ```bash
-git clone https://github.com/Hinln/ARTEX.git
-cd ARTEX
+git clone https://github.com/hara-kazu/ARTEX-Japanese.git
+cd ARTEX-Japanese
 ./install.sh
 ```
 
-脚本会：检测 / 自动安装 Docker → 让你选 **① 全部 Docker** 或 **② 本地编译运行**：
+スクリプトで次の方法を選択します。
 
-- **① 全部 Docker**：填一个 Postgres 密码（可回车随机）→ 自动写 `.env` → `docker compose up -d`。
-- **② 本地运行**：选数据库（连已有 / 用 Docker 起一个）→ 生成 `config.json` → `go` 编译内嵌单二进制 → 启动。
+- **Docker で導入**：PostgreSQL のパスワードを入力し（Enter で自動生成）、`.env` を作成して `docker compose up -d` を実行します。ただし、標準の Compose は元プロジェクトの公開イメージを使用します。日本語版のイメージを使う場合は、後述のローカルビルドが必要です。
+- **ローカルでビルドして実行**：既存の PostgreSQL に接続するか、Docker でデータベースを起動します。`config.json` を作成し、日本語化したフロントエンドを含む実行ファイルをビルドします。**このリポジトリの日本語版には、こちらを選択してください。**
 
-装好后打开 **http://localhost:8787**（首次进入 `/setup` 设置管理员密码）。
+完了後は [http://localhost:8787](http://localhost:8787) を開きます。初回は `/setup` で管理者パスワードを設定します。
 
-### 方式二：Docker Compose（手动）
+ローカル導入の最後は、スクリプトが実行ファイルを直接起動します。画面からの更新と自動再起動を使う場合は、初回の実行を Ctrl-C で終了し、以降は `./start.sh` で起動してください。
 
-```bash
-git clone https://github.com/Hinln/ARTEX.git
-cd ARTEX
-cp .env.example .env          # 填 POSTGRES_PASSWORD、可选 ANTHROPIC_API_KEY
-docker compose up -d          # 拉取 autumn27/artex 镜像 + postgres
-# → http://localhost:8787
-```
+### 方法2：ソースから単一実行ファイルをビルド
 
-镜像已含常用工具（ripgrep/curl/vim/npm/nmap…）；`./skills` 与 `./data` 以绑定挂载持久化。
-
-远程 MCP 可在系统设置中选择 `http`（Streamable HTTP）或 `sse`（旧版 SSE）。
-旧版 SSE 服务通常使用 `GET /sse` 建立事件流，再通过服务返回的
-`/message?sessionId=...` 接收 JSON-RPC 请求；配置时将 URL 填为 `/sse`，请求头按
-`Authorization=Bearer <token>` 填写。
-
-### 方式三：下载预编译二进制（Releases）
-
-到 [Releases](https://github.com/Hinln/ARTEX/releases) 下载对应平台的 zip，解压后得到 `artex` + `start.sh`（Windows 为 `start.bat`）+ `skills/` + `config.example.json`：
+通常利用向けのビルドでは、`NEXT_PUBLIC_MOCK` を未設定または `0` にしてください。`1` の場合はバックエンドへ接続しないデモになります。
 
 ```bash
-cp config.example.json config.json   # 填好 database 连接
-./start.sh                           # → http://localhost:8787
-```
+git clone https://github.com/hara-kazu/ARTEX-Japanese.git
+cd ARTEX-Japanese
 
-> 请用 `start.sh` / `start.bat` 启动，而不是直接跑 `./artex`。它是个守护脚本：程序退出后按退出码决定是否重新拉起，**页面上的[一键更新](#方式一页面一键更新推荐)靠它完成换装**。直接运行 `./artex` 时更新完就不会被拉起了。
-> 后台常驻：`nohup ./start.sh >artex.log 2>&1 &`。
-
-### 方式四：从源码编译单二进制
-
-```bash
-# 1) 前端静态导出
+# 1. フロントエンドを静的ファイルとして出力
 cd web && npm ci && npm run build:static && cd ..
-# 2) 拷进内嵌目录
-cp -r web/out server/webui/dist
-# 3) 编译（-tags embedui 才内嵌前端）
+
+# 2. 埋め込み用ディレクトリにコピー
+mkdir -p server/webui/dist
+cp -r web/out/. server/webui/dist/
+
+# 3. フロントエンドを埋め込んでビルド
 CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
+
+# 4. データベースを設定して起動
+cp config.example.json config.json
+# config.json の database を接続先に合わせて編集
 ./start.sh
 ```
 
-### 方式五：构建跨平台 Release 压缩包
+Windows では Go の出力ファイルを `artex.exe` とし、`start.bat` で起動します。PowerShell で静的ビルドを行う場合は、環境変数を次のように設定できます。
 
-`build.sh` 会先构建并嵌入前端，再使用 Go linker 去除调试信息，并将发布文件压缩为 zip。Release 模式默认生成 Linux amd64/arm64、macOS amd64/arm64 和 Windows amd64 的 zip 包：
+```powershell
+Set-Location web
+npm ci
+$env:NEXT_EXPORT = "1"
+npm run build
+Remove-Item Env:NEXT_EXPORT
+Set-Location ..
+New-Item -ItemType Directory -Force server/webui/dist | Out-Null
+Copy-Item web/out/* server/webui/dist/ -Recurse -Force
+$env:CGO_ENABLED = "0"
+go build -tags embedui -o artex.exe ./cmd/artex
+Copy-Item config.example.json config.json
+# config.json の database を編集してから起動
+.\start.bat
+```
+
+`start.sh` / `start.bat` は、終了コードに応じて再起動する監視スクリプトです。画面からの更新・ロールバックもこの仕組みを利用します。実行ファイルを直接起動した場合、更新後の自動再起動は行われません。
+
+バックグラウンドで常駐させる場合：
+
+```bash
+nohup ./start.sh >artex.log 2>&1 &
+```
+
+### 方法3：Docker Compose
+
+標準の `docker-compose.yml` は `autumn27/artex` を使用します。このイメージを取得するだけでは、本リポジトリの日本語化は反映されません。
+
+元プロジェクトの公開イメージで起動する場合：
+
+```bash
+cp .env.example .env
+# POSTGRES_PASSWORD と、必要に応じて ANTHROPIC_API_KEY などを設定
+docker compose up -d
+```
+
+日本語版のイメージをローカルで作成する場合は、先にフロントエンドを埋め込んだ Linux バイナリを用意します。以下は amd64 の例です。arm64 では `GOARCH`、出力先、`TARGETARCH` を `arm64` に、`--platform` を `linux/arm64` に変更してください。ホストと異なる CPU 向けのビルドには、Docker の対応するエミュレーション環境が必要です。
+
+```bash
+# 方法2の手順で server/webui/dist を用意した後に実行
+mkdir -p dist/amd64
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags embedui -o dist/amd64/artex ./cmd/artex
+docker build --platform linux/amd64 --build-arg TARGETARCH=amd64 -t artex-japanese:local .
+cp .env.example .env
+# .env の POSTGRES_PASSWORD を設定
+```
+
+`docker-compose.override.yml` を作成して、アプリのイメージを指定します。
+
+```yaml
+services:
+  artex:
+    image: artex-japanese:local
+    pull_policy: never
+```
+
+```bash
+docker compose up -d
+# http://localhost:8787
+```
+
+イメージには ripgrep / curl / vim / npm / nmap などのツールが含まれます。`./skills` と `./data` はバインドマウントで保持します。ローカルイメージの更新時は再ビルドしてコンテナーを再作成してください。公開イメージ用の `docker compose pull` では日本語版を更新できません。
+
+### 方法4：ビルド済みの実行ファイル（Releases）
+
+[このリポジトリの Releases](https://github.com/hara-kazu/ARTEX-Japanese/releases) に対象プラットフォームの配布パッケージがある場合に利用できます。ソースだけが公開されている状態では、この方法は使用できません。
+
+zip を展開すると、`artex`（Windows は `artex.exe`）、`start.sh` / `start.bat`、`skills/`、`config.example.json` が得られます。
+
+```bash
+cp config.example.json config.json
+# database の接続情報を編集
+./start.sh
+```
+
+### 方法5：複数プラットフォーム向けの Release パッケージ
+
+`build.sh` はフロントエンドをビルドして埋め込み、Go linker でデバッグ情報を除去して zip にまとめます。標準の Release 対象は Linux amd64 / arm64、macOS amd64 / arm64、Windows amd64 です。スクリプトは Bash、rsync、zip などを使用します。
 
 ```bash
 ./build.sh --release
-# 产物：dist/artex-0.3.3-*.zip
+# 出力先：dist/artex-<バージョン>-<os>-<arch>.zip
 ```
 
-UPX 自解压二进制可能与部分 Linux 内核、虚拟化环境或安全策略不兼容，因此默认不启用。可用 `ARTEX_TARGETS` 自定义目标；确认目标运行环境兼容时，可显式传入 `--upx` 进一步缩小二进制：
+UPX の自己展開形式は、一部の Linux カーネル、仮想環境、セキュリティ設定と互換性がないため、標準では無効です。対象を `ARTEX_TARGETS` で指定でき、実行環境での互換性を確認した場合は `--upx` を使用できます。
 
 ```bash
 ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 ./build.sh --target linux/amd64 --upx
 ```
 
+### リモート MCP の接続
+
+MCP 設定では `http`（Streamable HTTP）または `sse`（旧形式の SSE）を選択できます。
+旧形式では通常 `GET /sse` でイベントストリームを開き、サーバーが返す `/message?sessionId=...` で JSON-RPC リクエストを受け付けます。URL に `/sse` を指定し、必要なヘッダーを `Authorization=Bearer <token>` の形式で入力してください。
+
 ---
 
-## 更新升级
+## 更新
 
-> 升级只换程序、不动数据：Postgres 数据卷 `pgdata`、`./data`（jwt.key / SQLite 等）、`./skills` 都会保留。**数据库迁移无需手动执行**——`artex` 每次启动会幂等重跑 `schema.sql`（含 `ADD COLUMN` / `CREATE INDEX IF NOT EXISTS`），即“重启即迁移”。升级前仍建议先备份 `./data` 与数据库。
+更新ではプログラムを置き換え、PostgreSQL の `pgdata`、`./data`、`./skills`、設定ファイルを保持します。データベースのスキーマは起動時に `schema.sql` を冪等に適用します（`ADD COLUMN` / `CREATE INDEX IF NOT EXISTS` を含む）。手動でのマイグレーション実行は不要です。更新前にデータベースと `./data` をバックアップしてください。
 
-### 本仓库的私有 Release 更新源
+### 日本語版の Release 更新元
 
-页面一键更新固定从 [Hinln/ARTEX Releases](https://github.com/Hinln/ARTEX/releases) 检查和下载版本。克隆或通过 Git 更新源码也使用 `Hinln/ARTEX`；原项目的 Go module 路径保持不变。
+画面からの更新は [hara-kazu/ARTEX-Japanese の Releases](https://github.com/hara-kazu/ARTEX-Japanese/releases) を参照します。ソースの clone / pull もこのリポジトリを使用してください。Go module のパスは互換性のため元の `github.com/Autumn-27/artex` を保持しています。
 
-这是私有仓库。请为运行 ARTEX 的后端进程设置 `ARTEX_UPDATE_GITHUB_TOKEN`，令牌只需本仓库的 **Contents: read** 权限。令牌由后端用于查询 Release 和下载附件，不发送给浏览器，也不要提交到 Git。
+非公開リポジトリを使用する場合は、バックエンドの環境変数 `ARTEX_UPDATE_GITHUB_TOKEN` に対象リポジトリの **Contents: read** 権限を持つトークンを設定します。公開リポジトリへのアクセスでは必須ではありません。トークンはバックエンドが Release の照会とダウンロードに使用し、ブラウザーには送りません。Git にコミットしないでください。
 
 ```bash
-# 先在当前 shell 或服务环境中安全设置 ARTEX_UPDATE_GITHUB_TOKEN
+# 必要な場合は、事前にプロセスの環境へ ARTEX_UPDATE_GITHUB_TOKEN を設定
 ./start.sh
 ```
 
-本地直接启动时，`start.sh` 不会自动读取 `.env`；必须将变量导出到进程环境。Docker Compose 部署则可在未纳入 Git 的 `.env` 中填写该变量，并重建 artex 容器；镜像需要包含本分支的更新代码，旧版镜像不会因此切换升级源。
+`start.sh` は `.env` を自動読み込みしません。ローカル実行では変数をプロセスの環境に設定してください。Docker Compose では Git 管理外の `.env` に設定してアプリのコンテナーを再作成します。古いイメージに環境変数を加えるだけでは、更新元の実装は切り替わりません。
 
-需要先在本仓库发布非 draft、非 prerelease 的正式 Release，并附上 `artex-<版本>-<os>-<arch>.zip` 和 `SHA256SUMS`，页面才能提供可安装更新。仓库里只有源码时还不能在线升级。现有 Release 工作流会在推送 `v*` tag 时为当前仓库生成这些附件。
+インストール可能な更新を提供するには、draft / prerelease 以外の正式な Release と、`artex-<バージョン>-<os>-<arch>.zip`、`SHA256SUMS` が必要です。ソースだけではオンライン更新できません。既存の Release ワークフローは `v*` タグの push で実行され、現在のリポジトリに添付ファイルを生成します。
 
-### 方式一：页面一键更新（推荐）
+### 方法1：画面から更新
 
-在 **系统配置** 页（侧边栏「系统配置」→ `/system/settings`）的**版本与更新**卡片里，可以直接检查并安装新版本，无需登录服务器。
+「**システム設定**」（`/system/settings`）の「**バージョンと更新**」で新しいバージョンを確認・インストールできます。
 
-点「更新」后：下载当前平台的发布包 → 比对 Release 的 `SHA256SUMS` → 用 `-h` 冒烟测试新二进制 → 暂存为 `artex.new` → 程序退出，由 `start.sh` / `start.bat` 重新拉起并完成换装。页面会自动等到新版本上线后刷新。
+更新の流れは、対象プラットフォームの配布ファイルをダウンロード → `SHA256SUMS` と照合 → 新しい実行ファイルを `-h` で動作確認 → `artex.new` として一時保存 → 終了後に監視スクリプトが再起動して適用、となります。画面は新しいサービスの起動後に自動更新されます。
 
-- **失败不会留下坏程序**：校验或冒烟不通过就丢弃暂存件、继续跑当前版本；换装后的新版若连续 3 次启动失败，会自动回滚到 `artex.old`（失败的那个留作 `artex.failed` 供排查）。
-- **随时可回退**：上一版本保留为 `artex.old`，卡片上有「回滚到上一版本」。注意数据库结构不会回退。
-- **更新会中断正在运行的任务**——更新即重启，请在空闲时进行。
-- **开发构建不给更新**：版本号是 `dev` 或 `git describe` 带后缀时禁用，避免正式版覆盖掉本地调试的二进制。
-- **Docker 下只换程序、不换镜像**：镜像里的 playwright / nmap 等工具链不会跟着升级，且 `docker compose up -d` 重建容器后会退回镜像自带的版本。要连镜像一起升级仍请用 `docker compose pull artex && docker compose up -d artex`。
-- 访问 GitHub 需要代理时，在同一页面配置**全局代理**即可，更新链路会走它。更新只从 GitHub 域名下载并强制 HTTPS。
+- 検証や動作確認に失敗した場合は、一時ファイルを破棄して現在のバージョンを使用します。適用後に3回連続で起動に失敗すると `artex.old` に戻し、失敗した版を `artex.failed` として保持します。
+- 前のバージョンは `artex.old` に保持され、「前のバージョンに戻す」から復元できます。データベースのスキーマは戻りません。
+- 更新は再起動を伴い、実行中のタスクを中断します。
+- `dev` や `git describe` の接尾辞付きバージョンでは、開発用の実行ファイルを上書きしないよう画面からの更新を無効にします。
+- Docker 内の更新はプログラム本体のみです。playwright / nmap などのツールは更新せず、コンテナー再作成時にはイメージに含まれる版に戻ります。日本語版のローカルイメージは再ビルドして更新してください。
+- GitHub への接続にプロキシが必要な場合は、同じ画面の「全体のプロキシ」を設定します。ダウンロード先は GitHub 関連ドメインに限定し、HTTPS を必須にしています。
 
-### 方式二：一键更新脚本
+### 方法2：更新スクリプト
 
 ```bash
-cd ARTEX
+cd ARTEX-Japanese
 ./update.sh
 ```
 
-脚本先可选 `git pull` 拉取最新代码，再让你选 **① Docker 更新** 或 **② 本地编译更新**（与 `install.sh` 对应）：
+必要に応じて `git pull --ff-only` でソースを取得し、Docker 更新またはローカルでの再ビルドを選択します。
 
-- **① Docker**：可指定目标镜像 tag（回车沿用 `.env` 的 `ARTEX_TAG`，缺省 `latest`）→ `docker compose pull` → `docker compose up -d`（换新镜像重启即自动迁移）。
-- **② 本地**：重建前端静态产物 → 重新编译 `./artex`（完成后重启进程生效）。
+- **Docker**：公開イメージを使用する構成では、タグを選び `docker compose pull` / `docker compose up -d` を実行します。日本語版のローカルイメージを使う場合は、先に上記の方法でイメージを再ビルドしてください。
+- **ローカル**：フロントエンドと実行ファイルを再ビルドします。完了後に起動中のプロセスを再起動してください。
 
-### 方式三：Docker Compose（手动）
+### 方法3：実行ファイルを手動更新
 
-```bash
-cd ARTEX
-git pull                       # 更新 compose / 脚本（可选）
-# 指定版本：在 .env 设 ARTEX_TAG=v0.2.0；不设则用 latest
-docker compose pull artex
-docker compose up -d artex     # 换新镜像重启 → 自动迁移 schema
-docker image prune -f          # 清理旧镜像（可选）
-```
-
-### 方式四：预编译二进制（Releases）
-
-到 [Releases](https://github.com/Hinln/ARTEX/releases) 下载新版本 zip，停掉旧进程后覆盖 `artex` 与 `skills/`（保留你的 `config.json` 与 `data/`），重启即可：
+[Releases](https://github.com/hara-kazu/ARTEX-Japanese/releases) から新しい zip を取得し、既存のプロセスを停止して `artex` と `skills/` を置き換えます。`config.json` と `data/` は保持してください。
 
 ```bash
-cp -r <解压目录>/skills ./ && cp <解压目录>/artex ./
+cp -r <展開先>/skills ./
+cp <展開先>/artex ./
 ./start.sh
 ```
 
-### 方式五：从源码编译
+### 方法4：ソースから更新
 
 ```bash
-git pull
+git pull --ff-only
 cd web && npm ci && npm run build:static && cd ..
-cp -r web/out server/webui/dist
+mkdir -p server/webui/dist
+cp -r web/out/. server/webui/dist/
 CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
-# 重启 ./start.sh
+# 起動中のプロセスを停止して ./start.sh を再実行
 ```
 
 ---
 
-## 配置
+## 設定
 
-**数据库**（`config.json`，或用环境变量 `ARTEX_PG_DSN` 覆盖）：
+**データベース**：`config.json`、または環境変数 `ARTEX_PG_DSN` で指定します。環境変数が優先されます。
 
 ```json
 {
   "database": {
-    "host": "127.0.0.1", "port": 5432,
-    "user": "artex", "password": "yourpass",
-    "dbname": "artex", "sslmode": "disable"
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "artex",
+    "password": "yourpass",
+    "dbname": "artex",
+    "sslmode": "disable"
   }
 }
 ```
 
-**LLM**：`export ANTHROPIC_API_KEY=sk-...`（或 `OPENAI_API_KEY`），也可在 UI 的「LLM 配置」页填写。
-可选：`ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY`。
+**LLM**：`ANTHROPIC_API_KEY` または `OPENAI_API_KEY` を環境変数に設定するか、画面の「LLM」で設定します。必要に応じて `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY` も使用できます。
 
-**并发**：每个任务的 work agent 数在「系统设置」里配置（默认 3）。
+**同時実行数**：各タスクの Worker エージェント数は「システム設定」で設定します（デフォルト3）。
 
-**常用参数**：`./start.sh -addr :8787 -proxy :8788`（`-addr` 前端+API，`-proxy` 流量录制代理）。启动脚本会把参数原样透传给 `artex`。
+**起動パラメーター**：`./start.sh -addr :8787 -proxy 127.0.0.1:8788`。`-addr` はフロントエンドと API、`-proxy` は通信記録プロキシの待ち受け先です。監視スクリプトは引数をそのまま実行ファイルに渡します。
 
-### 反向代理部署（HTTPS / 只开放 443）
+### リバースプロキシでの公開（HTTPS / ポート443のみ）
 
-前端和 API/SSE 都由同一个后端端口（默认 `:8787`）提供，实时活动流默认走**同源**地址，因此**无需配置 `NEXT_PUBLIC_SSE_BASE`**，公网只开放 443、把 8787 留在内网即可。
+フロントエンド、API、SSE は同じバックエンドのポート（デフォルト `:8787`）から配信します。リアルタイムのアクティビティも同一オリジンを使用するため、通常は `NEXT_PUBLIC_SSE_BASE` の設定は不要です。外部には443のみを公開し、8787は内部に配置できます。
 
-SSE 是长连接 + 持续推送，反代**必须关闭缓冲**，否则浏览器能连上却收不到事件（表现为活动流一直转圈）。Nginx 示例：
+SSE は長時間接続してイベントを送信します。リバースプロキシのバッファーを無効にしないと、接続できてもイベントが届きません。Nginx の例：
 
 ```nginx
 server {
     listen 443 ssl;
     server_name your.domain.com;
-    # ssl_certificate / ssl_certificate_key ...
+    # ssl_certificate / ssl_certificate_key を設定
 
     location / {
         proxy_pass http://127.0.0.1:8787;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # SSE 关键项：关缓冲、长超时、HTTP/1.1
+        # SSE 用：バッファー無効、長いタイムアウト、HTTP/1.1
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 3600s;
@@ -264,70 +323,74 @@ server {
 }
 ```
 
-> 仅当 SSE 需要走与页面不同的来源（如独立子域）时，才在**构建期**设置 `NEXT_PUBLIC_SSE_BASE`（该变量在 `next build` 时固化进静态包，容器运行时再设无效）。
+SSE を別オリジン（独立したサブドメインなど）へ接続する場合に限り、**ビルド時**に `NEXT_PUBLIC_SSE_BASE` を設定します。この値は `next build` で静的ファイルに組み込まれるため、ビルド済みコンテナーの実行時に設定しても反映されません。
 
 ---
 
+## 開発
 
+### 脆弱性の手動再テスト
 
-## 开发
+タスク詳細の「再テスト」で、このタスクの脆弱性をページ単位で選択し、過去の結論と証拠を確認したり、新しい再テストを開始できます。開始後も現在の画面を保持し、スピナーと「再テスト中」を表示します。
 
-### 手动漏洞复测
+検出結果一覧の各行の「再テスト」、または脆弱性の詳細にある「脆弱性の再テスト」から開始します。修正バージョン、テスト条件、制約は任意で入力できます。独立したエージェントのセッションを作成するため、元の探索タスクを再開する必要はありません。一覧表示、タスク別、資産別の各表示から利用できます。
 
-任务详情的「复测」页签可分页选择本任务的漏洞、查看历次结论和证据，并手动发起复测。启动后保留当前页签，显示转圈图标和「复测中」；确认修复后同步更新漏洞状态。
+結論は「再現可能」「修正済み」「確認不可」です。毎回の結論、証拠、セッションへのリンクを脆弱性の詳細に保持します。「再テスト中」から対応するセッションを開けます。
 
-在漏洞列表每行操作区点击「复测」，或在漏洞详情的「漏洞复测」区域点击「发起复测」，填写可选的修复版本、测试条件或限制，系统会创建独立的复测 Agent 会话，启动后保留当前页面。列表的平铺、按任务分组和资产视图均支持该入口；复测运行时显示转圈图标和「复测中」，需要查看时点击进入对应会话，结束后恢复「复测」。复测无需重新启动原扫描任务，结论分为「仍可复现」「已修复」「无法确认」，每次的结论、证据和会话链接保存在漏洞详情中。
+バックエンドの初回起動時には、編集可能な再テストエージェント（`retester`）を用意します。「エージェント」でプロンプト、LLM、実行予算、ツールを設定できます。関連付けた LLM を優先し、未指定なら全体の有効な設定を使用します。正常完了して修正を確認した場合にのみ、脆弱性の処理状態を自動的に「修正済み」へ変更します。実行中、失敗、停止、それ以外の結論では元の状態を保持します。元の証拠とレポートも保持します。処理状態は手動で変更することもできます。
 
-新版后端首次启动会预置可编辑的「漏洞复测」（`retester`）Agent，可在 Agent 管理中配置提示词、LLM、运行预算和工具。默认使用其绑定的 LLM，未绑定则使用全局激活配置。复测会话成功完成且结论为「已修复」时，系统自动将漏洞处置状态改为「已修复」；执行中、失败、停止或其他结论保留原状态。原始证据和报告始终保留。也可在状态下拉菜单中手动选择「已修复」。同一漏洞正在复测时复用已有会话，停止、失败或服务重启后可重新发起。
+同じ脆弱性の再テストが実行中の場合は、既存のセッションを使用します。停止、失敗、サービス再起動後は再度開始できます。現時点で再テストの履歴は脆弱性の詳細とセッションから確認するもので、レポートのエクスポート、タスクのアーカイブ、自動的な通信証拠の関連付けには含まれません。デモモードは明示的な模擬記録を生成するだけで、実際の対象にリクエストしません。
 
-本版历史记录通过漏洞详情和会话查看，暂未纳入漏洞报告导出或任务归档包，也未自动关联流量包。演示模式只生成明确标注的模拟记录，不请求真实目标。
-
-### 本地运行与测试
+### ローカル実行とテスト
 
 ```bash
-./dev.sh    # 后端(:8787) + 流量代理(:8788) + 前端 next dev(:5173) → http://localhost:5173
+./dev.sh
+# バックエンド :8787 / 通信記録プロキシ :8788 / Next.js :3000
 ```
 
-- 后端：`go run ./cmd/artex`（不带 `-tags embedui` 则不内嵌前端）
-- 前端：`cd web && npm run dev`（`/api` 反代到后端，带热更新）
-- 测试：`go test ./...`
-- Mock 预览（无后端）：`cd web && NEXT_PUBLIC_MOCK=1 npm run dev`
+- バックエンド：`go run ./cmd/artex`。`-tags embedui` を付けなければフロントエンドを埋め込みません。
+- フロントエンド：`cd web && npm run dev`。`/api` はバックエンドへプロキシし、ホットリロードを使用します。
+- Go テスト：`go test ./...`。PostgreSQL を必要とするテストは各パッケージの設定に従います。
+- フロントエンドの型チェック：`cd web && npx tsc --noEmit`。
+- フロントエンドの単体テスト：TypeScript の型除去に対応する Node.js 環境で `node --test web/src/lib/*.test.mjs`。
+- バックエンド不要のデモ：`cd web && NEXT_PUBLIC_MOCK=1 npm run dev`。PowerShell では先に `$env:NEXT_PUBLIC_MOCK = "1"` を設定します。
 
 ---
 
-## 系统技术架构
+## システム構成
 
-ARTEX 是一套 **LLM 多 agent 驱动的自主渗透系统**：Go 单体后端（内嵌 Next.js 前端）+ PostgreSQL，agent 能力由 [`norma`](https://github.com/Autumn-27/norma) SDK 提供（`agentcore` / `tool` / `permission` / `harness` / `memory` / `transcript`）。核心是**双图架构**，以及围绕它的两条自主性机制：**worker 间过程级信息交换**与 **planner 多轮共享 todolist 稳定攻击链路**。
+ARTEX は **LLM と複数のエージェントによる自律型ペネトレーションテストシステム**です。Next.js のフロントエンドを埋め込む Go バックエンドと PostgreSQL で構成し、エージェントには [`norma`](https://github.com/Autumn-27/norma) SDK（`agentcore` / `tool` / `permission` / `harness` / `memory` / `transcript`）を使用します。
 
-### 总体分层
+中核は、資産と探索を分ける**2つのグラフ**です。その上で、**Worker 間で実行過程の情報を共有する仕組み**と、**Planner が複数回の計画で共通の Todo を使う仕組み**を組み合わせます。
+
+### 全体のレイヤー
 
 ```mermaid
 flowchart TB
-  subgraph FE["前端 Next.js（go:embed 内嵌单二进制）"]
-    UI["仪表盘 · 任务 · 资产 · 覆盖图 · 流量 · 工作空间 · 系统配置"]
+  subgraph FE["フロントエンド Next.js（go:embed で埋め込み）"]
+    UI["ダッシュボード・タスク・資産・カバレッジ・通信・ワークスペース・設定"]
   end
   subgraph SRV["server（Go net/http）"]
-    API["REST /api/*　JWT 鉴权　SSE"]
-    ENG["engine 调度循环"]
-    MGR["Manager　任务/引擎/store 生命周期"]
+    API["REST /api/*・JWT 認証・SSE"]
+    ENG["engine スケジューリングループ"]
+    MGR["Manager タスク / エンジン / store のライフサイクル"]
   end
   subgraph AG["agent（norma SDK）"]
-    GO["goals　目标分解 + 提取范围"]
-    PL["planner　规划者（唯一意图生成者）"]
-    WK["worker　执行者 ×N"]
-    MA["mainagent　人在环路"]
+    GO["goals 目標の分解と範囲の抽出"]
+    PL["planner 計画（インテントを生成）"]
+    WK["worker 実行 ×N"]
+    MA["mainagent 人による介入"]
   end
   subgraph DB["PostgreSQL"]
-    AGRAPH["资产图　assets / companies / task_scope"]
-    EGRAPH["探索图　exploration_nodes / anchors / activity"]
+    AGRAPH["資産グラフ assets / companies / task_scope"]
+    EGRAPH["探索グラフ exploration_nodes / anchors / activity"]
   end
-  subgraph SUB["支撑子系统"]
-    PROXY["流量记录代理　MITM + CA 留痕"]
-    GUARD["guard / intercept　工具审批门"]
-    ENR["enrich　DNS / HTTP 异步补全"]
-    EXT["MCP · skills · memory · report"]
+  subgraph SUB["補助機能"]
+    PROXY["通信記録プロキシ MITM + CA"]
+    GUARD["guard / intercept ツール実行の承認"]
+    ENR["enrich DNS / HTTP の非同期補完"]
+    EXT["MCP・スキル・メモリー・レポート"]
   end
-
   UI -->|HTTP| API
   API --> MGR --> ENG
   ENG --> PL
@@ -338,7 +401,7 @@ flowchart TB
   WK --> DB
   MA --> DB
   GO --> DB
-  WK -->|"Bash / HTTP 全程留痕"| PROXY
+  WK -->|"Bash / HTTP の通信を記録"| PROXY
   WK --> GUARD
   WK --> ENR
   PL -.-> EXT
@@ -346,38 +409,39 @@ flowchart TB
   MA -.-> EXT
 ```
 
-| 层 | 职责 |
+| レイヤー | 役割 |
 | --- | --- |
-| **前端** | Next.js 静态导出，`go:embed` 内嵌进单二进制；可视化任务/资产/探索链路/覆盖图，人在环路对话 |
-| **server** | `net/http` 路由 + JWT 鉴权 + SSE；`Manager` 托管任务、引擎、DB store 的生命周期 |
-| **engine** | 每任务一个 `plannerLoop` + N 个 worker goroutine；意图领取、超时/暂停/drain |
-| **agent** | goals / planner / worker / mainagent，`ToolSet` 把双图暴露成 LLM 工具 |
-| **db** | 双图的 Postgres 落地（pgx）；schema 随 `go:embed` 每次启动幂等建表 |
-| **支撑** | 记录型 MITM 代理、审批门、异步补全、MCP/技能/记忆/报告 |
+| **フロントエンド** | Next.js の静的出力を `go:embed` で埋め込み。タスク、資産、探索経路、カバレッジの表示と、人が介入するチャット |
+| **server** | `net/http` のルーティング、JWT 認証、SSE。`Manager` がタスク、エンジン、DB store のライフサイクルを管理 |
+| **engine** | タスクごとに `plannerLoop` と N 個の Worker goroutine。インテントの割り当て、タイムアウト、一時停止、終了処理 |
+| **agent** | goals / planner / worker / mainagent。`ToolSet` を通じて2つのグラフを LLM のツールとして公開 |
+| **db** | pgx を使用して PostgreSQL に永続化。埋め込んだスキーマを起動時に冪等に適用 |
+| **補助機能** | 記録用 MITM プロキシ、承認、非同期補完、MCP、スキル、メモリー、レポート |
 
-### 双图架构：探索图 + 资产图
+### 資産グラフと探索グラフ
 
-系统把「**目标是什么**」和「**测到了什么程度**」拆成两张相互独立、又通过锚点相连的图：
+「対象は何か」と「どこまでテストしたか」を別のグラフで管理し、アンカーで関連付けます。
 
-- **资产图（Asset Graph，全局共享）**：跨任务同一份的资产真值库。节点为 `root_domain / subdomain / ip / service / app / endpoint`，归属公司；域名→子域→服务→端点的父子关系与去重 key 全部由程序计算，agent 只提交原始信息。
-- **探索图（Exploration Graph，每任务独立）**：一次任务的“思考与推进”过程。节点为 `goal（目标）/ intent（意图）/ fact（事实）/ finding（漏洞）/ hint（提示）`，靠 `spawns / derived_from / yields / proves` 等边连成**血缘链**，回答“哪个方向派生自哪些事实、产出了什么”。
-- **两图靠锚点相连**：`exploration_anchors(node_id, asset_id)` 把意图/事实/漏洞锚定到具体资产上——于是既能从“探索方向”看它打的是哪些资产，也能从“某个资产”反查它在本任务被哪些意图测过、得出过哪些事实。这也支撑了**资产测试覆盖度**与**资产覆盖图**（范围内资产 + 已测高亮）。
+- **資産グラフ（Asset Graph、全タスクで共有）**：`root_domain / subdomain / ip / service / app / endpoint` のノードと所属企業を管理します。親子関係や重複判定キーはプログラムで計算し、エージェントは元の情報を登録します。
+- **探索グラフ（Exploration Graph、タスクごとに独立）**：`goal（目標）/ intent（インテント）/ fact（事実）/ finding（脆弱性）/ hint（ヒント）` を、`spawns / derived_from / yields / proves` などで接続します。どの事実から探索方向が生まれ、何を得たかを追跡できます。
+- **アンカー**：`exploration_anchors(node_id, asset_id)` でインテント、事実、脆弱性を具体的な資産へ関連付けます。探索側から対象資産を確認でき、資産側からテストしたインテントや得られた事実を逆引きできます。この情報をカバレッジと資産カバレッジ図にも使用します。
 
 ```mermaid
 flowchart LR
-  subgraph EG["探索图（每任务独立 · 推进链）"]
+  subgraph EG["探索グラフ（タスクごと・進行の記録）"]
     direction TB
-    G["goal 目标"]
-    I1["intent 意图 A"]
-    F1["fact 事实"]
-    I2["intent 意图 B"]
-    FD["finding 漏洞"]
+    G["goal 目標"]
+    I1["intent インテント A"]
+    F1["fact 事実"]
+    I2["intent インテント B"]
+    FD["finding 脆弱性"]
     G -->|spawns| I1
     I1 -->|yields| F1
     F1 -->|derived_from| I2
-    I2 -->|proves| FD
+    I2 -->|yields| FD
+    FD -->|proves| G
   end
-  subgraph AG["资产图（全局共享 · 真值库）"]
+  subgraph AG["資産グラフ（全体で共有）"]
     direction TB
     RD["root_domain"]
     SD["subdomain"]
@@ -391,124 +455,122 @@ flowchart LR
   FD -. anchor .-> EP
 ```
 
-> 分工：**planner** 读探索图态势、判目标、只在有未覆盖的新方向时派**意图**进 frontier；**worker** 领**一条意图**、用真实工具执行、把新资产/事实/漏洞写回两图后即停。资产图是共享事实，探索图是每任务的推进链。
+Planner は探索グラフの状況と目標を確認し、未検証の新しい方向がある場合にインテントをキューへ追加します。Worker は1つのインテントを取得し、実際のツールで実行して、新しい資産・事実・脆弱性をグラフへ書き戻すと終了します。
 
-### 引擎与意图生命周期（一次探索的闭环）
+### エンジンとインテントのライフサイクル
 
-引擎是**事件驱动**的闭环：图一变就唤醒 planner，planner 派意图，worker 领意图执行并写回，写回又触发下一轮——直到目标被证明（`prove_goal`）。
+エンジンはイベント駆動です。グラフの変更で Planner を起動し、生成したインテントを Worker が実行します。書き戻しで次の計画を起動し、`prove_goal` で目標を証明するまで繰り返します。
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant EV as 图变更 debounce
+  participant EV as グラフ変更の集約
   participant P as planner
-  participant FR as frontier 意图队列
+  participant FR as frontier インテントキュー
   participant W as worker
-  participant PX as 记录代理
-  participant DB as 双图 + activity
-
-  EV-->>P: 唤醒
-  P->>DB: 读态势(graph_overview 预取 + coverage/scope)
-  P->>FR: 派 0..N 个意图(带 asset_ids)
-  Note over P,FR: 大多数唤醒派 0 个——无新方向即结束
-  W->>FR: claimNext 领一条意图
-  W->>DB: 取意图 asset_ids 的原始资产作为初始信息
-  W->>PX: 真实工具执行(Kali / Bash / HTTP)
-  PX-->>W: 响应(全程留痕 + CA 验证)
-  W->>DB: 写回 fact / asset / finding + 每步 activity
-  DB-->>EV: 图变更
-  EV-->>P: 再次唤醒(闭环)
+  participant PX as 通信記録プロキシ
+  participant DB as 2つのグラフ + activity
+  EV-->>P: 起動
+  P->>DB: graph_overview・coverage・scope を取得
+  P->>FR: 0～N 件のインテントを追加（asset_ids 付き）
+  Note over P,FR: 新しい方向がなければ0件で終了
+  W->>FR: claimNext で1件取得
+  W->>DB: asset_ids の元の資産情報を取得
+  W->>PX: 実際のツールを実行（Kali / Bash / HTTP）
+  PX-->>W: 応答（通信記録 + CA 検証）
+  W->>DB: fact / asset / finding と各ステップの activity を保存
+  DB-->>EV: グラフ変更
+  EV-->>P: 再起動
 ```
 
-### worker 间的过程级信息交换
+### Worker 間での実行過程の共有
 
-一次深入的探索里，很多有价值的观察（某个报错、某段响应、某个隐藏参数）出现在一个 worker 的**执行过程**中，却未必被写成正式 fact。为避免重复劳动、让链路上的 worker 能站在彼此的肩膀上，worker 具备**跨 work 检索过程**的能力：
+エラー、レスポンス、隠れたパラメーターなどの有用な観察が、正式な fact として保存される前に実行過程へ現れることがあります。重複した調査を避けるため、Worker は同じタスクの別の Worker の過程を検索できます。
 
-- `search_all_worker_traces(q)`：在**本任务其他 work 的执行过程**里按关键字检索（自动排除自己这条意图的步骤），命中项带 `intent_id`；
-- `list_worker_traces` / `get_worker_trace(intent_id, step_ids=[…])`：先看有哪些 work 跑过，再取某个 work 具体几步的完整内容做细节交换。
+- `search_all_worker_traces(q)`：他の Worker の実行過程をキーワード検索します。自分のインテントのステップは除外し、結果に `intent_id` を含めます。
+- `list_worker_traces` / `get_worker_trace(intent_id, step_ids=[…])`：実行済みの Worker を確認し、特定のステップの完全な内容を取得します。
 
-这样即便探索图上还没有对应的 fact，后续 worker 也能复用他人过程中的观察——**信息在 worker 之间以“执行过程”为粒度流动**，而边界不变（每个 worker 仍只做自己领到的那条意图）。
+これにより、グラフに fact がなくても別の Worker の観察を再利用できます。各 Worker が担当するインテントの範囲は変えず、実行過程を単位として情報を共有します。
 
 ```mermaid
 flowchart LR
-  WA["worker A（意图 #12）"] -->|"每步 activity"| ACT[("探索图 · activity 过程库")]
-  WB["worker B（意图 #34）"] -->|"每步 activity"| ACT
-  WC["worker C（意图 #56）"] ==>|"1) search_all_worker_traces(q)"| ACT
-  ACT ==>|"2) 命中 A/B 的步骤（排除自己）"| WC
-  WC ==>|"3) get_worker_trace(id, step_ids)"| ACT
-  ACT ==>|"4) 返回完整过程内容"| WC
+  WA["worker A（インテント #12）"] -->|"各ステップの activity"| ACT[("探索グラフ・activity")]
+  WB["worker B（インテント #34）"] -->|"各ステップの activity"| ACT
+  WC["worker C（インテント #56）"] ==>|"1. search_all_worker_traces(q)"| ACT
+  ACT ==>|"2. A / B の一致するステップ"| WC
+  WC ==>|"3. get_worker_trace(id, step_ids)"| ACT
+  ACT ==>|"4. 実行過程の完全な内容"| WC
 ```
 
-### planner 多轮共享 todolist → 稳定的攻击链路
+### Planner が複数回の計画で共有する Todo
 
-真实攻击链往往是**有前后依赖的多步序列**（如：发现注入点 → 拿到凭据 → 横向 → 提权），一次性把这些并行派下去只会乱套。planner 因此持有一份**按任务保留、跨唤醒共享的规划待办（todolist）**：
+検証の経路には、注入点の発見 → 認証情報の取得 → 水平移動 → 権限昇格、といった依存関係があります。これらを一度に並列実行せず、Planner がタスクごとに共有する計画用 Todo を使って順に進めます。
 
-- planner 是事件驱动的——图一变就被唤醒，但**每次唤醒是全新会话**；共享的 todolist 让它把一条串行利用链**记录一次**、然后在后续多轮里**按依赖逐步派意图**，而不是把整条链在一轮里全部前置展开；
-- 每轮只对「前置步骤已完成、其依赖的 fact 已存在」的下一步派意图，并随进展更新清单（把已被 fact 满足的步骤标完成）。
+- グラフが変わるたびに新しいセッションで起動しますが、Todo はタスク単位で保持します。経路を一度記録し、以降の計画で依存関係を満たしたステップから割り当てます。
+- 前提ステップが完了し、必要な fact が存在する次のインテントだけを追加します。進捗に応じて Todo を更新し、事実で確認できたステップを完了にします。
 
 ```mermaid
 flowchart TB
-  subgraph TODO["共享 todolist（按任务保留 · 跨唤醒常驻）"]
+  subgraph TODO["共有 Todo（タスク単位で保持）"]
     direction LR
-    T1["1 注入点　[已完成]"]
-    T2["2 取凭据　[进行中]"]
-    T3["3 横向　[待前置]"]
-    T4["4 提权　[待前置]"]
-    T1 -.前置满足.-> T2 -.-> T3 -.-> T4
+    T1["1 注入点 [完了]"]
+    T2["2 認証情報の取得 [実行中]"]
+    T3["3 水平移動 [前提待ち]"]
+    T4["4 権限昇格 [前提待ち]"]
+    T1 -.前提を満たす.-> T2 -.-> T3 -.-> T4
   end
-  R1["第 1 轮唤醒　派意图①"] --> T1
-  R2["第 2 轮（①产出 fact）　派意图②"] --> T2
-  R3["第 3 轮（②产出 fact）　派意图③"] --> T3
+  R1["第1回 インテント①を追加"] --> T1
+  R2["第2回 ①の fact を受け、②を追加"] --> T2
+  R3["第3回 ②の fact を受け、③を追加"] --> T3
 ```
 
-于是攻击链在“事件驱动 + 无状态会话”的环境下依然**稳定推进、不重复、不错序**——这是 ARTEX 能自主走完多步利用链的关键。
+イベント駆動でセッション自体が状態を持たない場合でも、複数ステップの経路を重複や順序の逆転を避けて進められます。
 
 ---
 
-## 交流群
+## 元プロジェクトのコミュニティ
 
-扫码关注微信公众号 **SecSentry**，在公众号后台私信即可入群交流。
+WeChat の公式アカウント **SecSentry** をフォローし、アカウント宛てにメッセージを送ると、元プロジェクトの交流グループへ参加できます。日本語版リポジトリの窓口とは異なります。
 
 <div align="center">
 
-<img src="screenshots/wx.png" alt="微信公众号 SecSentry" width="480" />
+<img src="screenshots/wx.png" alt="元プロジェクトの WeChat 公式アカウント SecSentry" width="480" />
 
 </div>
 
----
 ## 参考
 
-https://github.com/oritera/Cairn
+- [Cairn](https://github.com/oritera/Cairn)
+- [元プロジェクト ARTEX](https://github.com/Autumn-27/ARTEX)
 
+## ライセンスと免責事項
 
-## 许可与免责声明
+以下は元プロジェクトのライセンスおよび利用に関する記載を日本語にしたものです。ライセンスの正式な条文は [LICENSE](LICENSE) を参照してください。
 
-### 开源协议
+### オープンソースライセンス
 
-本项目采用 **GNU Affero General Public License v3.0（AGPL-3.0）** 授权，完整条款见仓库根目录的 [LICENSE](LICENSE) 文件。
+本プロジェクトは **GNU Affero General Public License v3.0（AGPL-3.0）** で提供します。利用、変更、配布が可能ですが、派生物も同じ AGPL-3.0 で公開する必要があります。変更したものをネットワーク経由で利用者に提供する場合も、対応する完全なソースコードをその利用者に公開する必要があります。
 
-这意味着任何人都可以自由使用、修改和分发本项目，但**衍生作品必须同样以 AGPL-3.0 开源**；特别地，**若你修改本项目并通过网络（如部署为在线服务）向用户提供，也必须向这些用户公开对应的完整源码**。
+> オープンソースライセンス自体は利用目的を制限しません。以下の利用制限と免責事項は、作者による追加の取り決めと声明です。
 
-> ⚠️ **重要提示**：开源协议本身不限制软件的使用用途。以下的「使用限制」与「免责声明」是作者对使用者的额外约定与郑重声明，请务必遵守。
+**ARTEX は個人学習、コード研究、ローカル環境での技術検証のためのものです。オンラインのシステムやウェブサイトに対する実際のテストには使用できません。**
 
-**ARTEX 仅供个人学习、代码研究与本地技术验证使用，不得用于对任何线上系统或网站发起实际测试。**
+### 許可される利用範囲
 
-### 允许使用范围
+- 本プロジェクトのソースの閲覧、学習、研究、およびローカルの隔離環境における技術原理の検証。
+- 個人学習、学術研究、コードレビューなど、攻撃を伴わない用途。
 
-- 仅可用于**阅读、学习与研究本项目源码**，以及在**本地隔离环境**中进行技术原理验证；
-- 适用于个人学习、学术研究、代码审阅等非攻击性用途。
+### 禁止事項
 
-### 禁止事项
+- ウェブサイト、オンラインサービス、ネットワーク接続システムへのスキャン、探索、悪用、攻撃（許可の有無や自身の資産であるかを問いません）。
+- 実際のペネトレーションテスト、攻防演習、本番環境での利用。
+- 不正侵入、データ窃取、恐喝、サービス妨害、その他の破壊的または犯罪的な活動。
+- 所在する国や地域の法律・法令に違反する行為。
 
-- **严禁使用本工具对任何网站、线上服务或联网系统发起扫描、探测、利用或攻击**（无论是否获得授权、是否为自有资产）；
-- 严禁将本工具用于任何实际的渗透测试、攻防对抗或生产环境；
-- 严禁将本工具用于非法入侵、数据窃取、勒索、拒绝服务或任何破坏性、犯罪性活动；
-- 严禁利用本工具从事违反所在国家/地区法律法规的行为。
+### 法令遵守の責任
 
-### 合规责任
+利用者は、所在する国や地域のサイバーセキュリティ、データ保護、コンピューター犯罪に関する法令を遵守する必要があります。中国本土では「サイバーセキュリティ法」「データセキュリティ法」「個人情報保護法」と関連する司法解釈を含みますが、これらに限りません。**利用によって生じる法的責任と結果は、利用者自身が負担します。**
 
-使用者须自行遵守所在国家/地区关于网络安全、数据保护与计算机犯罪的全部法律法规（在中国大陆包括但不限于《网络安全法》《数据安全法》《个人信息保护法》及相关司法解释）。**因使用本工具产生的一切法律责任与后果，均由使用者自行承担。**
+### 免責事項
 
-### 免责声明
-
-本项目按“现状（AS IS）”提供，不附带任何明示或默示的担保。作者及贡献者不对使用本工具（无论使用方式是否得当）所导致的任何直接或间接损失、数据丢失、系统损坏或法律纠纷承担责任。**下载、安装或使用本项目，即表示你已阅读、理解并同意上述全部条款。**
+本プロジェクトは「現状有姿（AS IS）」で提供し、明示・黙示を問わず保証を伴いません。作者と貢献者は、適切な利用であるかを問わず、利用によって生じる直接・間接の損失、データ消失、システム損傷、法的紛争に責任を負いません。**ダウンロード、インストール、利用を行うと、上記の内容を読み、理解し、同意したものとみなします。**

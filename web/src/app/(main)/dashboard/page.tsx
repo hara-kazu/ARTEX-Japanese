@@ -471,10 +471,26 @@ export default function DashboardPage() {
   const dailyTokenData = tokenVersion === "new" ? dailyTokenDataNew : dailyTokenDataOld;
 
   // activity kind label
+  function activityKindLabel(kind: Activity["kind"]): string {
+    return {
+      tool_use: "ツール実行",
+      tool_result: "ツール結果",
+      text: "説明",
+      thinking: "推論",
+      result: "要約",
+      user: "ユーザー",
+      intent: "探索目標",
+      round: "実行ラウンド",
+      usage: "使用量",
+      llm_switch: "LLM 切り替え",
+      llm_failover: "LLM 障害時切り替え",
+      intercept_request: "実行承認要求",
+    }[kind];
+  }
+
   function kindLabel(a: Activity): string {
-    if (a.kind === "tool_use") return a.tool ?? "tool_use";
-    if (a.kind === "tool_result") return "tool_result";
-    return a.kind;
+    if (a.kind === "tool_use") return a.tool ?? activityKindLabel(a.kind);
+    return activityKindLabel(a.kind);
   }
 
   function workerColor(w: string): string {
@@ -622,7 +638,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <span className="text-[10px] font-normal text-muted-foreground">
-              {tokenVersion === "new" ? "llm_usage" : "activity"}
+              {tokenVersion === "new" ? "呼び出し台帳" : "アクティビティ集計"}
             </span>
           </div>
           {/* Profile tabs */}
@@ -872,7 +888,7 @@ export default function DashboardPage() {
               if (count === 0) return null;
               return (
                 <span key={kind} className="rounded border bg-muted/20 px-1.5 py-0.5 text-[9px] text-muted-foreground">
-                  {kind} <strong className="text-foreground/70">{count}</strong>
+                  {activityKindLabel(kind)} <strong className="text-foreground/70">{count}</strong>
                 </span>
               );
             })}
@@ -898,7 +914,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <Badge variant="outline" className="px-1.5 py-0 text-[9px] text-muted-foreground">
-                      {a.kind}
+                      {activityKindLabel(a.kind)}
                     </Badge>
                     <div className="mt-0.5 text-[9px] tabular-nums text-muted-foreground">{fmtRel(a.ts)}</div>
                   </div>
@@ -1171,7 +1187,7 @@ export default function DashboardPage() {
           {/* pending approvals */}
           {pendingCount > 0 && (
             <div className="mt-3">
-              <div className="mb-1.5 text-[10px] font-medium text-amber-400">承認待ち（{pendingCount})</div>
+              <div className="mb-1.5 text-[10px] font-medium text-amber-400">承認待ち（{pendingCount}）</div>
               <div className="flex flex-col gap-1.5">
                 {pending.slice(0, 3).map((p) => (
                   <Link

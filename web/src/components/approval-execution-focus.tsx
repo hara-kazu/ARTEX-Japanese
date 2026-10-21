@@ -120,8 +120,8 @@ export function ApprovalExecutionFocus({
         {error
           ? `特定できません：${error}`
           : history.ready
-            ? `承認を展開しました #${state.id} に対応するツール呼び出し`
-            : `承認の位置を読み込んでいます #${state.id} のチャット内の位置…`}
+            ? `承認 #${state.id} に対応するツール呼び出しを展開しました`
+            : `承認 #${state.id} のチャット内の位置を読み込んでいます…`}
       </span>
       <div className="flex gap-2">
         {error ? (

@@ -37,6 +37,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
+import { localizeApiError } from "@/lib/api-errors";
 import type { LLMProfile, Task } from "@/lib/types";
 
 import { AssetsTab } from "./_tabs/assets-tab";
@@ -130,7 +131,7 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
         activeProfileID ? Number(activeProfileID) : undefined,
       );
       if (result.switch_event) {
-        toast.info(result.switch_event.summary, { id: `task-${task.id}-llm-${result.switch_event.seq}` });
+        toast.info(localizeApiError(result.switch_event.summary), { id: `task-${task.id}-llm-${result.switch_event.seq}` });
       } else {
         toast.success(
           result.reopened_intents > 0

@@ -59,8 +59,8 @@ function fmtTime(ts: string) {
 }
 
 function fmtLatency(ms: number) {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 1000) return `${ms}ミリ秒`;
+  return `${(ms / 1000).toFixed(1)}秒`;
 }
 
 function fmtTokens(n: number) {
@@ -382,7 +382,7 @@ export default function LLMRecordsPage() {
                 <TableRow>
                   <TableHead className="w-[130px]">日時</TableHead>
                   <TableHead className="w-[60px]">タスク</TableHead>
-                  <TableHead className="w-[90px]">Worker</TableHead>
+                  <TableHead className="w-[90px]">実行元</TableHead>
                   <TableHead className="w-[100px]">設定</TableHead>
                   <TableHead className="w-[140px]">モデル</TableHead>
                   <TableHead className="w-[70px]">遅延</TableHead>

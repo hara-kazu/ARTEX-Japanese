@@ -3117,7 +3117,7 @@ export const agents: Agent[] = [
   {
     id: "4",
     key: "worker",
-    name: "Work Agent",
+    name: "実行",
     role: "worker",
     builtin: true,
     enabled: true,

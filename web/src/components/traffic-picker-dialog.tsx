@@ -266,7 +266,7 @@ export function TrafficPickerDialog({
               キャンセル
             </Button>
             <Button disabled={busy || selected.size === 0} onClick={() => void save()}>
-              {busy ? "保存中…" : `関連付け ${selected.size} 件のトラフィック`}
+              {busy ? "保存中…" : `${selected.size} 件のトラフィックを関連付け`}
             </Button>
           </DialogFooter>
         </DialogContent>

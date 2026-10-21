@@ -101,7 +101,7 @@ export function TrafficEvidenceViewer({
                         .catch((e: Error) => toast.error(e.message))
                     }
                   >
-                    全体をダウンロード{side === "request" ? "リクエスト" : "レスポンス"}本文
+                    {side === "request" ? "リクエスト" : "レスポンス"}本文全体をダウンロード
                   </Button>
                 </div>
                 <HttpCodeBlock

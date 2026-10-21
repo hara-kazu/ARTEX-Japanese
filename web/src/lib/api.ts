@@ -3,8 +3,8 @@
 // a few fields the backend serializes differently (e.g. created_at as a unix int)
 // are passed through and formatted at the call site.
 
+import { localizeApiError, localizeApiResponse } from "@/lib/api-errors";
 import type { ChatMention } from "@/lib/chat-mentions";
-import { localizeApiError } from "@/lib/api-errors";
 import { MOCK } from "@/lib/mock/enabled";
 import { mockHandle } from "@/lib/mock/handler";
 import type {
@@ -113,7 +113,14 @@ function getToken(): string | null {
 }
 
 export async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  if (MOCK) return mockHandle<T>(init?.method ?? "GET", path, init?.body ?? null);
+  if (MOCK) {
+    try {
+      return localizeApiResponse(await mockHandle<T>(init?.method ?? "GET", path, init?.body ?? null));
+    } catch (error) {
+      if (error instanceof Error) error.message = localizeApiError(error.message);
+      throw error;
+    }
+  }
   const token = getToken();
   const r = await fetch(`/api${path}`, {
     ...init,
@@ -145,7 +152,7 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(localizeApiError(message));
   }
   if (r.status === 204) return undefined as T;
-  return r.json();
+  return localizeApiResponse(await r.json()) as T;
 }
 
 // sseUrl builds a URL for Server-Sent Events streams.
@@ -455,7 +462,7 @@ export const api = {
   workspaceDownload: async (path: string) => {
     let blob: Blob;
     if (MOCK) {
-      blob = new Blob([`（demo）${path} のダウンロード内容のサンプル。`], { type: "text/plain" });
+      blob = new Blob([`（デモ）${path} のダウンロード内容のサンプル。`], { type: "text/plain" });
     } else {
       const token = getToken();
       const r = await fetch(`/api/workspace/download?path=${encodeURIComponent(path)}`, {
@@ -826,8 +833,7 @@ export const api = {
   // 渠道是多实例资源（同一类型可配多个机器人、各有过滤规则），因此独立成组，
   // 不塞进扁平的 settings 键值里。
   notifyMeta: () => get<NotificationMeta>(`/notify/meta`),
-  notifyChannels: () =>
-    get<{ channels: NotificationChannel[] }>(`/notify/channels`).then((r) => arr(r.channels)),
+  notifyChannels: () => get<{ channels: NotificationChannel[] }>(`/notify/channels`).then((r) => arr(r.channels)),
   notifyCreateChannel: (payload: {
     name: string;
     kind: string;

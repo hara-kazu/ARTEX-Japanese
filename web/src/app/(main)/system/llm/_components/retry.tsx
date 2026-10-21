@@ -119,9 +119,9 @@ type LayerKey = keyof typeof RETRY_LAYERS;
 /** 毫秒的人话，只用于在输入框旁边回显，免得数零。 */
 function humanMs(ms: number) {
   if (!Number.isFinite(ms) || ms <= 0) return "";
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${Number((ms / 1000).toFixed(2))}s`;
-  return `${Number((ms / 60_000).toFixed(2))}min`;
+  if (ms < 1000) return `${ms}ミリ秒`;
+  if (ms < 60_000) return `${Number((ms / 1000).toFixed(2))}秒`;
+  return `${Number((ms / 60_000).toFixed(2))}分`;
 }
 
 /** 受控数字输入：空串 ↔ 0，中间态（"-"、"1e"）原样留在本地，不打扰父级。 */

@@ -320,7 +320,7 @@ function NavItemBadge({ badge }: { badge?: NavBadge }) {
         badge === "soon" && "border-muted-foreground text-muted-foreground",
       )}
     >
-      {badge}
+      {badge === "new" ? "新着" : "近日公開"}
     </SidebarMenuBadge>
   );
 }

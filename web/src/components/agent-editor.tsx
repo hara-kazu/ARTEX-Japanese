@@ -219,7 +219,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
     applyVis(
       on ? mcpVisible.filter((x) => x !== id) : [...mcpVisible, id],
       skillVisible,
-      `${on ? "キャンセルしました" : "有効"} MCP「${name}」に公開`,
+      `MCP「${name}」の公開を${on ? "解除しました" : "許可しました"}`,
     );
   }
   function toggleSkill(name: string) {
@@ -227,7 +227,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
     applyVis(
       mcpVisible,
       on ? skillVisible.filter((x) => x !== name) : [...skillVisible, name],
-      `${on ? "キャンセルしました" : "有効"} Skill「${name}」に公開`,
+      `スキル「${name}」の公開を${on ? "解除しました" : "許可しました"}`,
     );
   }
   async function toggleTool(t: Tool) {
@@ -242,7 +242,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         agents: nextAgents,
         enabled: t.enabled,
       });
-      toast.success(`${on ? "関連付けを解除しました" : "関連付けました"}ツール「${t.key}」`);
+      toast.success(`ツール「${t.key}」${on ? "の関連付けを解除しました" : "を関連付けました"}`);
       onSaved?.(); // refresh the list so the card's 工具 count stays in sync
     } catch (e) {
       toast.error("ツールの関連付けの保存に失敗しました：" + (e as Error).message);
@@ -370,7 +370,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                     <button type="button" onClick={() => setPrompt((p) => `${p}{{.${v.name}}}`)}
                       className="hover:bg-muted inline-flex items-center gap-1 rounded-md border bg-muted/40 px-2 py-1 font-mono text-xs">
                       {`{{.${v.name}}}`}
-                      <Badge variant="secondary" className="px-1 py-0 text-[10px]">{v.source}</Badge>
+                      <Badge variant="secondary" className="px-1 py-0 text-[10px]">{({ runtime: "実行時", exploration: "探索", distilled: "要約" } as Record<string, string>)[v.source] ?? v.source}</Badge>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -473,7 +473,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                   </Button>
                 )}
                 <Button size="sm" onClick={() => {
-                  if (viewVer) { setPrompt(viewVer.template_text); setViewVer(null); toast.success(`読み込みました：v${viewVer.version} をエディターに読み込みました。確認後「新しいバージョンとして保存」を押してください`); }
+                  if (viewVer) { setPrompt(viewVer.template_text); setViewVer(null); toast.success(`v${viewVer.version} をエディターに読み込みました。確認後「新しいバージョンとして保存」を押してください`); }
                 }}>
                   エディターに読み込む
                 </Button>
@@ -901,11 +901,11 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
 
   function condLabel(t: AgentTrigger): string {
     const parts: string[] = [];
-    if (t.interval_sec > 0) parts.push(`間隔： ${t.interval_sec}s`);
+    if (t.interval_sec > 0) parts.push(`間隔：${t.interval_sec} 秒`);
     if (t.on_finding) parts.push("検出結果の発生");
     if (t.on_goal_met) parts.push("目標の達成");
     if (t.on_task_timeout) parts.push("タスクのタイムアウト");
-    if (t.on_tool_call) parts.push(`ツール呼び出し（${t.tool_names.length})`);
+    if (t.on_tool_call) parts.push(`ツール呼び出し（${t.tool_names.length} 件）`);
     if (t.on_task_create) parts.push("タスクの作成");
     return parts.join(" · ") || "（条件なし）";
   }
@@ -996,7 +996,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
       <div className="grid gap-3 rounded-md border p-3">
         <Label className="text-muted-foreground text-xs">
           {editingId != null
-            ? `トリガーを編集 #${editingId}（編集後に「変更を保存」を押してください）`
+            ? `トリガー #${editingId} を編集（編集後に「変更を保存」を押してください）`
             : "トリガーを追加（条件ごとにユーザーメッセージを指定可能）"}
         </Label>
 

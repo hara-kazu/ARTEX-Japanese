@@ -445,10 +445,10 @@ func notifyTestMessage(baseURL string) notify.Message {
 	return notify.Message{
 		Items: []notify.Item{{
 			FindingID: 0,
-			Name:      "测试消息 · 渠道配置正常",
-			VulnClass: "连通性测试",
+			Name:      "テストメッセージ · チャンネル設定は正常です",
+			VulnClass: "接続テスト",
 			Severity:  "low",
-			Summary:   "这是 ARTEX 推送渠道的测试消息，收到即表示该渠道配置可用。",
+			Summary:   "ARTEX 通知チャンネルのテストメッセージです。受信できれば、このチャンネルの設定は利用可能です。",
 			Assets:    []string{"artex.example.com"},
 			DetailURL: baseURL,
 		}},

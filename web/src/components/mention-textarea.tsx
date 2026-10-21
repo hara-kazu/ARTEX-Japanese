@@ -236,7 +236,7 @@ export function MentionTextarea({ value, onValueChange, onKeyDown, className, in
             <span>
               {categories.length
                 ? "参照の種類を選択"
-                : `検索${mentionKinds.find((kind) => kind.kind === search.kind)?.label ?? "すべての記録"}`}
+                : `${mentionKinds.find((kind) => kind.kind === search.kind)?.label ?? "すべての記録"}を検索`}
             </span>
             <span>↑↓ 選択 · Enter 確定 · Esc 閉じる</span>
           </div>

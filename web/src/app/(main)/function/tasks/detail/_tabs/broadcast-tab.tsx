@@ -419,7 +419,7 @@ function BroadcastRow({
               </div>
             )}
             <div>
-              <div className="mb-1.5 text-xs font-medium text-muted-foreground">payload</div>
+              <div className="mb-1.5 text-xs font-medium text-muted-foreground">ペイロード</div>
               <pre className="max-h-64 overflow-auto rounded-md border bg-background p-3 font-mono text-xs whitespace-pre-wrap">
                 {prettyPayload(node.payload)}
               </pre>

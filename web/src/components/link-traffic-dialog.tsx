@@ -66,7 +66,7 @@ export function LinkTrafficDialog({
         selected.finding_id,
         trafficIds.map((traffic_id) => ({ traffic_id })),
       );
-      toast.success(`関連付けました： ${trafficIds.length} 件のトラフィック。脆弱性 #${selected.finding_id}`);
+      toast.success(`${trafficIds.length} 件のトラフィックを脆弱性 #${selected.finding_id} に関連付けました`);
       onBound();
       onClose();
     } catch (e) {

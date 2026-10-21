@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { api, sseUrl } from "@/lib/api";
+import { localizeApiError } from "@/lib/api-errors";
 import type { UpdateCheck, UpdateProgress } from "@/lib/types";
 
 /** 等待新版本上线的最长时间。一次升级要经过三次进程启动（暂存 → 换装 → 新版），
@@ -54,7 +55,7 @@ export function UpdateCard() {
       .then((r) => {
         setInfo(r);
         if (!quiet) {
-          if (r.error) toast.error("更新の確認に失敗しました：" + r.error);
+          if (r.error) toast.error("更新の確認に失敗しました：" + localizeApiError(r.error));
           else if (r.has_update) toast.success(`新しいバージョンが見つかりました： ${r.latest}`);
           else if (r.comparable) toast.success("最新バージョンです");
         }
@@ -112,7 +113,7 @@ export function UpdateCard() {
         if (p.phase === "failed") {
           es.close();
           setBusy(false);
-          toast.error("更新に失敗しました：" + (p.error || p.message));
+          toast.error("更新に失敗しました：" + localizeApiError(p.error || p.message));
           return;
         }
         if (p.phase === "staged") {
@@ -138,7 +139,7 @@ export function UpdateCard() {
         "更新するとプログラムを再起動し、実行中のタスクが中断されます。\n" +
         (info.mode === "docker"
           ? "\n注意：コンテナー内の更新はプログラム本体のみで、イメージ内の playwright / nmap などのツールは更新しません。\n" +
-            "新しいツールが必要な場合は docker compose pull を使用してください。"
+            "イメージごと更新する場合、日本語版のローカルイメージは再ビルドしてください。公開イメージは docker compose pull で更新します。"
           : ""),
     );
     if (!ok) return;
@@ -230,24 +231,24 @@ export function UpdateCard() {
         {info?.boot_notice && (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-            {info.boot_notice}
+            {localizeApiError(info.boot_notice)}
           </p>
         )}
 
         {info?.error && (
           <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-            GitHub に接続できません：{info.error}
+            GitHub に接続できません：{localizeApiError(info.error)}
             {"　"}上で全体のプロキシを設定してから再試行してください。
           </p>
         )}
 
-        {info && !info.comparable && info.reason && <p className="text-xs text-muted-foreground">{info.reason}</p>}
+        {info && !info.comparable && info.reason && <p className="text-xs text-muted-foreground">{localizeApiError(info.reason)}</p>}
 
         {info?.has_update && info.asset_available === false && (
           <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-            {info.latest} 次の環境向けの {info.os}/{info.arch} リリースパッケージがありません（不足： {info.asset}）。自動更新はできません。
+            {info.latest} には {info.os}/{info.arch} 向けのリリースパッケージがありません（不足：{info.asset}）。自動更新はできません。
           </p>
         )}
 
@@ -269,8 +270,8 @@ export function UpdateCard() {
           <p className="text-xs text-muted-foreground">
             Docker 内の更新は本体のみで、playwright / nmap などのツールは更新しません。また、
             <span className="font-mono"> docker compose up -d </span>
-            コンテナーを再作成するとイメージに含まれるバージョンに戻ります。イメージごと更新する場合は、次を実行してください：
-            <span className="font-mono"> docker compose pull artex &amp;&amp; docker compose up -d artex</span>。
+            でコンテナーを再作成すると、イメージに含まれるバージョンに戻ります。日本語版のローカルイメージは、README の手順で再ビルドしてからコンテナーを再作成してください。
+            公開イメージを使う場合は、<span className="font-mono">docker compose pull artex &amp;&amp; docker compose up -d artex</span> で更新します。
           </p>
         )}
 
@@ -278,7 +279,7 @@ export function UpdateCard() {
           <div className="space-y-1.5">
             <Progress value={pct} className={downloading ? undefined : "animate-pulse"} />
             <p className="text-xs text-muted-foreground">
-              {restarting ? "再起動して新しいバージョンを適用しています。お待ちください（ページは自動更新されます）…" : progress?.message}
+              {restarting ? "再起動して新しいバージョンを適用しています。お待ちください（ページは自動更新されます）…" : localizeApiError(progress?.message ?? "")}
             </p>
           </div>
         )}

@@ -739,7 +739,7 @@ export default function FindingsPage() {
       toast.success(
         result.queued
           ? `深掘りするインテント #${result.intent_id} をタスクキューに追加しました`
-          : `優先度の高い Worker インテントを作成しました #${result.intent_id}`,
+          : `優先度の高い Worker インテント #${result.intent_id} を作成しました`,
       );
       refreshAfterMutation(deepenFinding);
       setDeepenFinding(null);
@@ -878,7 +878,7 @@ export default function FindingsPage() {
                 ["low", "低"],
               ] as const
             ).map(([val, label]) => (
-              <ToggleGroupItem key={val} value={val} aria-label={`条件：${label}重大度で絞り込み`}>
+              <ToggleGroupItem key={val} value={val} aria-label={`重大度：${label}`}>
                 {label}
               </ToggleGroupItem>
             ))}

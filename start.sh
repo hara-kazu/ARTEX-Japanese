@@ -1,7 +1,7 @@
 #!/bin/sh
 # ARTEX 守护启动脚本（Linux / macOS / Docker ENTRYPOINT）
 #
-# 用法：
+# 使用方法：
 #   ./start.sh                       前台运行（Ctrl-C 停止）
 #   nohup ./start.sh >artex.log 2>&1 &   后台常驻
 #   ./start.sh -addr :9000           额外参数原样透传给 artex
@@ -21,7 +21,7 @@ set -u
 cd "$(dirname "$0")" || exit 1
 
 BIN=./artex
-[ -x "$BIN" ] || { echo "[artex] 找不到可执行文件 $BIN" >&2; exit 1; }
+[ -x "$BIN" ] || { echo "[artex] 実行ファイルが見つかりません： $BIN" >&2; exit 1; }
 
 RESTART_CODE=75
 MAX_DELAY=60
@@ -58,22 +58,22 @@ while :; do
 	child=0
 
 	if [ "$stopping" -eq 1 ]; then
-		echo "[artex] 已停止"
+		echo "[artex] 停止しました"
 		exit 0
 	fi
 
 	case "$code" in
 		0)
-			echo "[artex] 正常退出"
+			echo "[artex] 正常に終了しました"
 			exit 0
 			;;
 		"$RESTART_CODE")
 			# 更新/回滚已就绪：重跑后 artex 会在启动时完成换装（见 selfupdate.Bootstrap）。
-			echo "[artex] 请求重启（应用新版本）…"
+			echo "[artex] 再起動します（新しいバージョンを適用）…"
 			delay=1
 			;;
 		*)
-			echo "[artex] 异常退出 (code=$code)，${delay}s 后重启" >&2
+			echo "[artex] 異常終了 (code=$code)。${delay}秒後に再起動" >&2
 			sleep "$delay"
 			delay=$((delay * 2))
 			[ "$delay" -gt "$MAX_DELAY" ] && delay=$MAX_DELAY

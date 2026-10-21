@@ -105,7 +105,7 @@ function AgentGridCard({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>エージェントを削除「{agent.name}」？</AlertDialogTitle>
+              <AlertDialogTitle>エージェント「{agent.name}」を削除しますか？</AlertDialogTitle>
               <AlertDialogDescription>
                 プロンプト、変数、公開範囲、ツールの関連付けも削除します。この操作は取り消せません。
               </AlertDialogDescription>

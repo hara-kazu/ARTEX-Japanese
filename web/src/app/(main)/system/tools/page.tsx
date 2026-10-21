@@ -330,7 +330,7 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
         )}
         {tool.deferred && (
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            deferred
+            遅延公開
           </Badge>
         )}
         {!tool.enabled && (
@@ -737,12 +737,12 @@ function CustomToolDialog({
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs">Headers（JSON、使用可能： {"{param}"}）</Label>
+                <Label className="text-xs">ヘッダー（JSON、使用可能： {"{param}"}）</Label>
                 <Textarea className="font-mono text-xs" rows={2} value={ex.headers}
                   placeholder={'{"Authorization": "Bearer {token}"}'} onChange={(e) => setEx({ ...ex, headers: e.target.value })} />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs">Body（使用可能： {"{param}"}）</Label>
+                <Label className="text-xs">本文（使用可能： {"{param}"}）</Label>
                 <Textarea className="font-mono text-xs" rows={2} value={ex.body} onChange={(e) => setEx({ ...ex, body: e.target.value })} />
               </div>
               <div className="flex items-center gap-4">
@@ -796,7 +796,7 @@ function CustomToolDialog({
             </label>
             {kind !== "shell" && (
               <label className="flex items-center gap-2 text-sm">
-                <Switch checked={deferred} onCheckedChange={setDeferred} /> deferred（大量の使用頻度の低いツールがある場合のみ）
+                <Switch checked={deferred} onCheckedChange={setDeferred} /> 遅延公開（deferred、使用頻度の低いツールが大量にある場合のみ）
               </label>
             )}
           </div>

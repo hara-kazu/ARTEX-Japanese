@@ -162,7 +162,7 @@ export default function LogsPage() {
                 className="h-8"
                 onClick={() => setLevel(lv)}
               >
-                {lv === "all" ? "すべて" : lv}
+                {{ all: "すべて", info: "情報", warn: "警告", error: "エラー" }[lv]}
               </Button>
             ))}
           </div>
