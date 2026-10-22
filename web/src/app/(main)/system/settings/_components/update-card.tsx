@@ -137,7 +137,7 @@ export function UpdateCard() {
       `更新しますか： ${info.latest}？\n\n` +
         "更新するとプログラムを再起動し、実行中のタスクが中断されます。\n" +
         (info.mode === "docker"
-          ? "\n注意：コンテナー内の更新はプログラム本体のみで、イメージ内の playwright / nmap などのツールは更新しません。\n" +
+          ? "\n注意：コンテナー内の更新はプログラム本体のみで、イメージ内の playwright / nmap などのツールは更新しません。" +
             "新しいバージョンが新しいツールを必要とする場合は、docker compose pull を使用してください。"
           : ""),
     );
