@@ -156,7 +156,7 @@ function appendUploads(desc: string, atts: ChatAttachment[]): string {
     return `${desc.replace(/\s*$/, "")}\n${bullets}\n`;
   }
   const head = desc.trim() ? `${desc.replace(/\s*$/, "")}\n\n` : "";
-  return `${head}${UPLOAD_MARKER} Worker は Read / Bash で次のパスを開けます：
+  return `${head}${UPLOAD_MARKER} worker は Read / Bash で次のパスを開けます：
 ${bullets}\n`;
 }
 
@@ -179,10 +179,10 @@ function fmtDuration(sec: number): string {
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  if (d > 0) return `${d}日 ${h}時間`;
-  if (h > 0) return `${h}時間 ${m}分`;
-  if (m > 0) return `${m}分 ${s}秒`;
-  return `${s}秒`;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 // taskDuration is the task's run duration in seconds: created → now while running,
@@ -971,7 +971,7 @@ export default function TasksPage() {
                       align="right"
                       onSort={sortTasksBy}
                     />
-                    <TableHead className="text-right">トークン</TableHead>
+                    <TableHead className="text-right">Token</TableHead>
                     <TableHead className="sticky right-0 z-10 bg-card text-right shadow-[-1px_0_0_0_hsl(var(--border))]">
                       操作
                     </TableHead>
@@ -1596,7 +1596,7 @@ function archiveDate(value?: string): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("ja-JP");
+  return date.toLocaleString();
 }
 
 function ArchiveDeleteDialog({
@@ -1619,7 +1619,7 @@ function ArchiveDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>{archives.length}件のタスクアーカイブを完全に削除しますか？</AlertDialogTitle>
           <AlertDialogDescription className="[overflow-wrap:anywhere]">
-            約 {formatArchiveBytes(bytes)} のアーカイブと {rows.toLocaleString("ja-JP")} 件の関連データのスナップショットを完全に削除します。この操作は元に戻せません。
+            約 {formatArchiveBytes(bytes)} のアーカイブと {rows.toLocaleString()} 件の関連データのスナップショットを完全に削除します。この操作は元に戻せません。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1933,7 +1933,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
                     >
                       {archiveCompressionLabel(archive)}
                     </TableCell>
-                    <TableCell className="text-xs tabular-nums">{archiveDataTotal(archive).toLocaleString("ja-JP")}</TableCell>
+                    <TableCell className="text-xs tabular-nums">{archiveDataTotal(archive).toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex min-w-0 flex-col gap-1.5">
                         <ArchiveStateBadge state={archive.state} />
@@ -2131,7 +2131,7 @@ function DeleteOptionFields({
           />
           <FieldContent>
             <FieldLabel htmlFor={`delete-llm-records-${idPrefix}`}>LLM リクエスト / レスポンスの記録</FieldLabel>
-            <FieldDescription>記録した LLM のリクエスト、レスポンス、トークン、エラー詳細を完全に削除します。</FieldDescription>
+            <FieldDescription>記録した LLM のリクエスト、レスポンス、Token、エラー詳細を完全に削除します。</FieldDescription>
           </FieldContent>
         </Field>
       </FieldGroup>
@@ -3239,7 +3239,7 @@ function CreateTaskSheet({
                 onCategoryCreated={onCategoriesChanged}
                 portalContainer={sheetContentRef}
               />
-              <FieldDescription>任意で1つ選択できます。タスク一覧の絞り込みと整理に使用し、エージェントの実行には影響しません。</FieldDescription>
+              <FieldDescription>任意で1つ選択できます。タスク一覧の絞り込みと整理に使用し、Agentの実行には影響しません。</FieldDescription>
             </Field>
             <div className="grid gap-2">
               <Label htmlFor="description">説明</Label>
@@ -3272,7 +3272,7 @@ function CreateTaskSheet({
                 <span className="text-muted-foreground text-xs">
                   {uploadCount > 0
                     ? `アップロード済み： ${uploadCount} 個のファイル。説明の末尾に絶対パスを追加しました（編集可能）`
-                    : "複数選択可能。アップロード後に絶対パスを説明に追加し、Worker が Read / Bash で開けるようにします"}
+                    : "複数選択可能。アップロード後に絶対パスを説明に追加し、worker が Read / Bash で開けるようにします"}
                 </span>
               </div>
             </div>
@@ -3308,7 +3308,7 @@ function CreateTaskSheet({
                 portalContainer={sheetContentRef}
               />
               <FieldDescription>
-                タスク作成時、選択した企業の現在の資産を「テスト対象の資産」に追加し、ドメイン、IP、CIDR、ICP、企業キーワードをエージェントに範囲情報として渡します。インテントの自動生成や実行目標の強制変更は行いません。
+                タスク作成時、選択した企業の現在の資産を「テスト対象の資産」に追加し、ドメイン、IP、CIDR、ICP、企業キーワードをAgentに範囲情報として渡します。インテントの自動生成や実行目標の強制変更は行いません。
               </FieldDescription>
             </Field>
             <Field>
@@ -3350,7 +3350,7 @@ function CreateTaskSheet({
                     onChange={(e) => setTimeoutMin(e.target.value)}
                   />
                   <p className="text-muted-foreground text-xs">
-                    期限に達すると正常終了処理（各エージェントの書き戻しと planner の最終判定）を行い、タスクは timeout 状態で終了します。
+                    期限に達すると正常終了処理（各agentの書き戻しと planner の最終判定）を行い、タスクは timeout 状態で終了します。
                   </p>
                 </div>
                 <div className="grid gap-2">
@@ -3365,7 +3365,7 @@ function CreateTaskSheet({
                     onChange={(e) => setHeartbeatMin(e.target.value)}
                   />
                   <p className="text-muted-foreground text-xs">
-                    前回の計画終了 / タスク開始から指定時間が経ち、その間にトリガーがなかった場合、自動的に計画を実行します（停止の検知と実行中の Worker の監督）。最小10分です。
+                    前回の計画終了 / タスク開始から指定時間が経ち、その間にトリガーがなかった場合、自動的に計画を実行します（停止の検知と実行中の worker の監督）。最小10分です。
                   </p>
                 </div>
                 <div className="grid gap-2">
@@ -3378,7 +3378,7 @@ function CreateTaskSheet({
                     最初のインテントを直接送信（説明＋目標）
                   </label>
                   <p className="text-muted-foreground text-xs">
-                    有効にすると、作成時に「説明＋目標」を1件のインテントとして送信し、Worker が最初の計画を待たずに実行します。終了後に planner が判定 / 補足します。CTF など1回の作業で解決する場合に適しています。無効の場合は、計画してから実行します。
+                    有効にすると、作成時に「説明＋目標」を1件のインテントとして送信し、worker が最初の計画を待たずに実行します。終了後に planner が判定 / 補足します。CTF など1回の work で解決する場合に適しています。無効の場合は、計画してから実行します。
                   </p>
                 </div>
                 <div className="grid gap-2">
@@ -3391,7 +3391,7 @@ function CreateTaskSheet({
                     資産カバレッジ機能
                   </label>
                   <p className="text-muted-foreground text-xs">
-                    初期状態では有効です。カバレッジを計算・表示し、状況図にテストの進捗を表示して範囲を蓄積します。無効にすると、カバレッジを計算・表示せず、状況図は資産のみ表示します。エージェントも範囲関連のツールを使用しません。「企業の資産範囲の関連付け」には影響しません。
+                    初期状態では有効です。カバレッジを計算・表示し、状況図にテストの進捗を表示して範囲を蓄積します。無効にすると、カバレッジを計算・表示せず、状況図は資産のみ表示します。agentも範囲関連のツールを使用しません。「企業の資産範囲の関連付け」には影響しません。
                   </p>
                 </div>
               </CollapsibleContent>

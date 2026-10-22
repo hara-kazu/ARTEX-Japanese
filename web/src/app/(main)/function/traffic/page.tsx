@@ -453,7 +453,7 @@ export default function TrafficPage() {
           </PopoverContent>
         </Popover>
         <div className="relative w-48">
-          <Input placeholder="ホスト…" value={host} onChange={(e) => setHost(e.target.value)} className="h-8" />
+          <Input placeholder="host…" value={host} onChange={(e) => setHost(e.target.value)} className="h-8" />
         </div>
         <Button
           variant="destructive"
@@ -644,7 +644,7 @@ export default function TrafficPage() {
                     onSort={toggleSort}
                     className="w-36"
                   />
-                  <TableHead className="w-44">ホスト</TableHead>
+                  <TableHead className="w-44">host</TableHead>
                   <TableHead className="w-20">メソッド</TableHead>
                   <TableHead>URL</TableHead>
                   <SortableHead
@@ -655,7 +655,7 @@ export default function TrafficPage() {
                     onSort={toggleSort}
                     className="w-20"
                   />
-                  <TableHead className="w-36">コンテンツ種別</TableHead>
+                  <TableHead className="w-36">content-type</TableHead>
                   <SortableHead
                     field="resp_len"
                     label="レスポンスの長さ"
@@ -743,8 +743,8 @@ export default function TrafficPage() {
               </SheetHeader>
               <Tabs defaultValue="request" className="min-h-0 flex-1 gap-0">
                 <TabsList className="mx-5 mt-4 grid w-auto grid-cols-2">
-                  <TabsTrigger value="request">リクエスト</TabsTrigger>
-                  <TabsTrigger value="response">レスポンス</TabsTrigger>
+                  <TabsTrigger value="request">リクエスト Request</TabsTrigger>
+                  <TabsTrigger value="response">レスポンス Response</TabsTrigger>
                 </TabsList>
                 <TabsContent value="request" className="min-h-0 overflow-auto">
                   {detailLoading ? (
@@ -804,7 +804,7 @@ export default function TrafficPage() {
               )}
               {deleteMode === "filter" && (
                 <>
-                  ホストに <span className="font-mono font-semibold">{hostQ}</span> を含むすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）を完全に削除します。この操作は取り消せません。
+                  host に <span className="font-mono font-semibold">{hostQ}</span> を含むすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）を完全に削除します。この操作は取り消せません。
                 </>
               )}
             </AlertDialogDescription>

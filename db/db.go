@@ -198,19 +198,19 @@ var builtinAgents = []builtinAgent{
 		{"Goal", "タスク全体の目標", "example.com の管理者権限を検証", "exploration"},
 		{"AssetSummary", "資産数 / 種類別の分布の要約（任意）", "domain:3 ip:5 site:2", "distilled"},
 	}, false, nil},
-	{"mainagent", "メイン", "main", "進捗を確認し、ユーザーの指示をヒントや優先度の高いインテントとして反映します。", []promptVar{
+	{"mainagent", "メイン", "main", "進捗を確認し、ユーザーの指示を hint や優先度の高いインテントとして反映します。", []promptVar{
 		{"Goal", "現在のタスクの目標", "example.com の管理者権限を検証", "exploration"},
 		{"AssetSummary", "開始時の状況の要約（任意）", "domain:3 ip:5", "distilled"},
 		{"FindingsSummary", "確認済みの脆弱性の要約（任意）", "high:1 medium:2", "distilled"},
 	}, false, nil},
 	{"worker", "実行", "worker", "1件のインテントを実行し、検出した事実 / 脆弱性をグラフに書き戻して停止します。", []promptVar{
 		{"ProxyAddr", "記録プロキシのアドレス（if 分岐の条件にも使用）", "127.0.0.1:8080", "runtime"},
-		{"WorkerName", "Worker の識別名（任意）", "worker-1", "runtime"},
+		{"WorkerName", "worker の識別名（任意）", "worker-1", "runtime"},
 	}, false, nil},
 	// Auto:内置「平台操作」agent。不参与渗透编排循环,经对话页驱动,用工具操作平台。
-	{"auto", "Auto", "assistant", "プラットフォーム操作アシスタントです。ツールでタスク（作成 / 表示 / 一時停止 / ヒント）と資産を管理し、スキル、カスタムツール、MCP を作成 / 変更します。", nil, false, nil},
+	{"auto", "Auto", "assistant", "プラットフォーム操作アシスタントです。ツールでタスク（作成 / 表示 / 一時停止 / ヒント）と資産を管理し、skill、カスタムツール、MCP を作成 / 変更します。", nil, false, nil},
 	// 渗透测试:内置「独立渗透」agent。经对话页驱动,一人从侦察到收尾走完整条渗透链,自己规划自己执行自己验证。默认开启交互式 shell。
-	{"pentest", "ペネトレーションテスト", "assistant", "独立したテストエージェントです。調査、対象範囲の特定、詳細検証、終了処理までを、自ら計画・実行・反証して進めます。", nil, true, intp(0)},
+	{"pentest", "ペネトレーションテスト", "assistant", "独立したテスト agent です。調査、対象範囲の特定、詳細検証、終了処理までを、自ら計画・実行・反証して進めます。", nil, true, intp(0)},
 }
 
 // seedBuiltins inserts the fixed built-in agents and their variable catalog (idempotent).
@@ -402,13 +402,13 @@ func (d *DB) seedDefaultInterceptRules() error {
 			priority:   100,
 		},
 		{
-			name:       "[組み込み] フォーク爆弾",
+			name:       "[組み込み] Fork 爆弾",
 			legacyName: "[内置] Fork 炸弹",
 			target:     "tool_input",
 			typ:        "regex",
 			pattern:    `:\(\)\s*\{[^}]*:\|:`,
 			action:     "deny",
-			message:    "フォーク爆弾の実行は禁止されています",
+			message:    "Fork 爆弾の実行は禁止されています",
 			priority:   100,
 		},
 		{

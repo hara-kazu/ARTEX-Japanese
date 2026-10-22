@@ -312,7 +312,7 @@ export function FindingsTable({
                               <span className="break-all">
                                 {f.name || f.vulnclass || f.summary || `#${f.finding_id}`}
                               </span>
-                              」を完全に削除します。検出結果一覧、タスクの検出結果タブ、探索グラフからも削除されます。この操作は取り消せません。
+                              」を完全に削除します。検出結果一覧、タスクの検出結果 Tab、探索グラフからも削除されます。この操作は取り消せません。
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

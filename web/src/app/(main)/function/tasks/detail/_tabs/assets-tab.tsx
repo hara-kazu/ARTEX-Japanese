@@ -309,7 +309,7 @@ function AddTaskAssetsSheet({
         <SheetHeader>
           <SheetTitle>テスト対象の資産を追加</SheetTitle>
           <SheetDescription>
-            テスト範囲を直接入力します。ドメインと IP は全体の資産を作成または再利用します。CIDR、ICP、キーワードはエージェントに範囲の情報として渡します。
+            テスト範囲を直接入力します。ドメインと IP は全体の資産を作成または再利用します。CIDR、ICP、キーワードはAgentに範囲の情報として渡します。
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
@@ -521,7 +521,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
         </TabsContent>
 
         <TabsContent value="ip" className="mt-0 flex min-h-0 flex-1 flex-col">
-          <AssetCard cols={["IP", "/24 ネットワーク", "紐づくドメイン", "開放ポート", "出典", "操作"]} {...commonCardProps}>
+          <AssetCard cols={["IP", "C セグメント", "紐づくドメイン", "開放ポート", "出典", "操作"]} {...commonCardProps}>
             {rows.map((asset) => (
               <TableRow key={asset.id}>
                 <TableCell className="font-medium font-mono text-xs">{asset.ip}</TableCell>

@@ -30,7 +30,7 @@ type Dimension = "project" | "task";
 const ASSET_TYPES: { key: string; label: string }[] = [
   { key: "subdomain", label: "サブドメイン" },
   { key: "service", label: "サービス" },
-  { key: "app", label: "アプリ" },
+  { key: "app", label: "App" },
 ];
 
 export default function AssetSyncPage() {
@@ -159,7 +159,7 @@ function DataSourceCard({
           <>
             {!status.configured && (
               <p className="text-amber-600 text-sm dark:text-amber-500">
-                データソースは作成済みですが未設定です。MCP アドレスと API キーを入力して有効化してください。
+                データソースは作成済みですが未設定です。MCP アドレスと API Keyを入力して有効化してください。
               </p>
             )}
             {status.configured && !status.enabled && (
@@ -171,7 +171,7 @@ function DataSourceCard({
                 <Input placeholder="http://<ホスト>:8082/mcp" value={url} onChange={(e) => setUrl(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>API キー（X-API-Key、空欄で現在の値を保持）</Label>
+                <Label>API Key（X-API-Key、空欄で現在の値を保持）</Label>
                 <Input
                   type="password"
                   placeholder="ssk_..."

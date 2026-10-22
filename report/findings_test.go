@@ -13,12 +13,31 @@ import (
 
 func TestJapaneseExportsPreserveEvidenceAndMachineCodes(t *testing.T) {
 	evidence := "GET /api?q=中文\n原始レスポンス: {\"status\":\"fixed\"}"
-	finding := &db.DBFinding{ID: 7, Name: "認可の検証", Severity: "critical", Status: "fixed", Evidence: evidence}
+	finding := &db.DBFinding{
+		ID: 7, Name: "認可の検証", Severity: "critical", Status: "fixed", Evidence: evidence,
+		TrafficBindings: []db.FindingTrafficBinding{{ID: 9, Role: "proof"}},
+	}
 	generated := time.Date(2026, 10, 22, 3, 0, 0, 0, time.UTC)
 	markdown := FindingsMarkdown([]*db.DBFinding{finding}, generated)
-	for _, want := range []string{"# 脆弱性の検出結果の集計レポート", "[緊急] 認可の検証", "**状態**：修正済み", evidence} {
+	for _, want := range []string{"# 脆弱性の検出結果の集計レポート", "[CRITICAL] 認可の検証", "**状態**：fixed", "証拠 #9 · proof**", evidence} {
 		if !strings.Contains(markdown, want) {
 			t.Fatalf("Japanese report is missing %q:\n%s", want, markdown)
+		}
+	}
+	single := SingleFindingMarkdown(finding, generated)
+	for _, want := range []string{"[CRITICAL] 認可の検証", "**重大度**：critical", "**状態**：fixed", "証拠 #9 · proof**", evidence} {
+		if !strings.Contains(single, want) {
+			t.Fatalf("Single finding report is missing %q:\n%s", want, single)
+		}
+	}
+	taskReport := Markdown(Input{
+		GeneratedAt: generated,
+		AssetCounts: map[string]int{"service": 2},
+		Findings:    []*db.Node{{Payload: []byte(`{"severity":"high","name":"English finding"}`)}},
+	})
+	for _, want := range []string{"- 資産：service 2", "[HIGH] English finding"} {
+		if !strings.Contains(taskReport, want) {
+			t.Fatalf("Task report is missing %q:\n%s", want, taskReport)
 		}
 	}
 	csvData := FindingsCSV([]*db.DBFinding{finding})

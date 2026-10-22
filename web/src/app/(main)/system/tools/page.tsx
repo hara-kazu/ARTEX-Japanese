@@ -201,13 +201,13 @@ function ToolEditor({
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4">
         {trafficGated && (
           <div className="border-amber-500/40 bg-amber-500/10 text-muted-foreground rounded-md border px-3 py-2 text-xs">
-            このツールに必要な機能：<b>トラフィックのキャプチャ</b>。「システム設定」でトラフィックのキャプチャを有効にすると、エージェントへの関連付けと有効化ができます。
+            このツールに必要な機能：<b>トラフィックのキャプチャ</b>。「システム設定」でトラフィックのキャプチャを有効にすると、Agentへの関連付けと有効化ができます。
           </div>
         )}
         {/* binding + switch */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="grid gap-1.5">
-            <Label className="text-muted-foreground text-xs">エージェントの関連付け（このツールを渡す相手）</Label>
+            <Label className="text-muted-foreground text-xs">Agentの関連付け（このツールを渡す相手）</Label>
             <div className="flex flex-wrap gap-3">
               {agents.map((ag) => (
                 <label key={ag.key} className="flex items-center gap-2 text-sm">
@@ -220,7 +220,7 @@ function ToolEditor({
                   <span className="text-muted-foreground font-mono text-xs">{ag.key}</span>
                 </label>
               ))}
-              {agents.length === 0 && <span className="text-muted-foreground text-xs">（エージェントなし）</span>}
+              {agents.length === 0 && <span className="text-muted-foreground text-xs">（Agentなし）</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
         )}
         {tool.deferred && (
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            遅延公開
+            deferred
           </Badge>
         )}
         {!tool.enabled && (
@@ -351,7 +351,7 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
       </p>
       <div className="mt-auto flex flex-wrap gap-1 pt-1">
         {tool.agents.length === 0 && (
-          <span className="text-muted-foreground text-[10px]">（エージェント未関連付け）</span>
+          <span className="text-muted-foreground text-[10px]">（Agent未関連付け）</span>
         )}
         {tool.agents.map((a) => (
           <Badge key={a} variant="outline" className="px-1.5 py-0 text-[10px]">
@@ -409,7 +409,7 @@ export default function ToolsPage() {
           <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
           <Input
             className="h-8 pl-8 text-sm"
-            placeholder="ツール名、説明、エージェントを検索…"
+            placeholder="ツール名、説明、Agentを検索…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -428,14 +428,14 @@ export default function ToolsPage() {
               <CardTitle>システムツール</CardTitle>
               <CardDescription>
                 {query.trim()
-                  ? `${systemTools.length} / ${allSystemCount} 個が一致。カードから説明、パラメーターの既定値、エージェントの関連付けを編集できます`
-                  : `合計 ${allSystemCount} 個。カードから説明、パラメーターの既定値、エージェントの関連付けを編集できます`}
+                  ? `${systemTools.length} / ${allSystemCount} 個が一致。カードから説明、パラメーターの既定値、Agentの関連付けを編集できます`
+                  : `合計 ${allSystemCount} 個。カードから説明、パラメーターの既定値、Agentの関連付けを編集できます`}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {systemTools.length === 0 ? (
                 <p className="text-muted-foreground py-6 text-center text-sm">
-                  {query.trim() ? "一致するシステムツールはありません" : "（システムツールはありません。バックエンドの初期登録を待っています）"}
+                  {query.trim() ? "一致するシステムツールはありません" : "（システムツールはありません。バックエンドの seed を待っています）"}
                 </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -457,7 +457,7 @@ export default function ToolsPage() {
                   <CardDescription>
                     {query.trim()
                       ? `shell/command/script/http，${customTools.length} / ${allCustomCount} 個が一致。カードをクリックして編集`
-                      : `shell（Bash 環境の宣言）/ command（コマンド）/ script（Python）/ http（API）、合計 ${allCustomCount} 個。カードをクリックして編集`}
+                      : `shell（bash 環境の宣言）/ command（コマンド）/ script（Python）/ http（API）、合計 ${allCustomCount} 個。カードをクリックして編集`}
                   </CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setCustomEdit("new")}>
@@ -491,7 +491,7 @@ export default function ToolsPage() {
             <>
               <SheetHeader className="px-4">
                 <SheetTitle className="font-mono">{selected.key}</SheetTitle>
-                <SheetDescription>説明、パラメーターの既定値、エージェントの関連付けを編集</SheetDescription>
+                <SheetDescription>説明、パラメーターの既定値、Agentの関連付けを編集</SheetDescription>
               </SheetHeader>
               <ToolEditor
                 key={selected.key}
@@ -679,12 +679,12 @@ function CustomToolDialog({
       >
         <SheetHeader className="px-4">
           <SheetTitle>{isNew ? "カスタムツールを作成" : `編集 ${tool?.key}`}</SheetTitle>
-          <SheetDescription>shell は Bash 環境の宣言です（名前と説明で Bash から利用可能と伝えます）。command / script / http は実行仕様が必要です。</SheetDescription>
+          <SheetDescription>shell は bash 環境の宣言です（名前と説明で bash から利用可能と伝えます）。command / script / http は実行仕様が必要です。</SheetDescription>
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           <div className="grid gap-1.5">
-            <Label className="text-xs">キー</Label>
+            <Label className="text-xs">Key</Label>
             <Input className="font-mono" placeholder="例：nmap_scan" value={key} disabled={!isNew}
               onChange={(e) => setKey(e.target.value)} />
           </div>
@@ -698,14 +698,14 @@ function CustomToolDialog({
             <Select value={kind} onValueChange={(v) => setKind(v as "shell" | "command" | "script" | "http")}>
               <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="shell">shell（Bash 環境の宣言）</SelectItem>
+                <SelectItem value="shell">shell（bash 環境の宣言）</SelectItem>
                 <SelectItem value="command">command（shell コマンドのテンプレート）</SelectItem>
                 <SelectItem value="script">script（Python スクリプト）</SelectItem>
                 <SelectItem value="http">http（API リクエスト）</SelectItem>
               </SelectContent>
             </Select>
             {kind === "shell" && (
-              <p className="text-muted-foreground text-xs">nmap、sqlmap、ffuf などの既知のツールに適しています。モデルが使い方を知っているため、Bash から呼び出せることを宣言するだけです。名前と説明を Bash ツールの説明に追加します。</p>
+              <p className="text-muted-foreground text-xs">nmap、sqlmap、ffuf などの既知のツールに適しています。モデルが使い方を知っているため、bash から呼び出せることを宣言するだけです。名前と説明を Bash ツールの説明に追加します。</p>
             )}
           </div>
 
@@ -728,7 +728,7 @@ function CustomToolDialog({
             <div className="grid gap-2">
               <div className="flex gap-2">
                 <div className="grid gap-1.5">
-                  <Label className="text-xs">メソッド</Label>
+                  <Label className="text-xs">Method</Label>
                   <Input className="w-24" value={ex.method} onChange={(e) => setEx({ ...ex, method: e.target.value })} />
                 </div>
                 <div className="grid flex-1 gap-1.5">
@@ -737,12 +737,12 @@ function CustomToolDialog({
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs">ヘッダー（JSON、使用可能： {"{param}"}）</Label>
+                <Label className="text-xs">Headers（JSON、使用可能： {"{param}"}）</Label>
                 <Textarea className="font-mono text-xs" rows={2} value={ex.headers}
                   placeholder={'{"Authorization": "Bearer {token}"}'} onChange={(e) => setEx({ ...ex, headers: e.target.value })} />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs">本文（使用可能： {"{param}"}）</Label>
+                <Label className="text-xs">Body（使用可能： {"{param}"}）</Label>
                 <Textarea className="font-mono text-xs" rows={2} value={ex.body} onChange={(e) => setEx({ ...ex, body: e.target.value })} />
               </div>
               <div className="flex items-center gap-4">
@@ -779,7 +779,7 @@ function CustomToolDialog({
           )}
 
           <div className="grid gap-1.5">
-            <Label className="text-muted-foreground text-xs">エージェントを関連付け</Label>
+            <Label className="text-muted-foreground text-xs">Agentを関連付け</Label>
             <div className="flex flex-wrap gap-3">
               {agents.map((a) => (
                 <label key={a.key} className="flex items-center gap-2 text-sm">
@@ -796,7 +796,7 @@ function CustomToolDialog({
             </label>
             {kind !== "shell" && (
               <label className="flex items-center gap-2 text-sm">
-                <Switch checked={deferred} onCheckedChange={setDeferred} /> 遅延公開（deferred、使用頻度の低いツールが大量にある場合のみ）
+                <Switch checked={deferred} onCheckedChange={setDeferred} /> deferred（大量の使用頻度の低いツールがある場合のみ）
               </label>
             )}
           </div>

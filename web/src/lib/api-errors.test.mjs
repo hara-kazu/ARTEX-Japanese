@@ -8,9 +8,11 @@ test("backend validation messages retain dynamic values", () => {
   assert.equal(localizeApiError('未知传输方式 "custom"'), '不明な通信方式 "custom"');
   assert.equal(
     localizeApiError("变量 {{.TaskID}} 不在该 agent 允许列表"),
-    "変数 {{.TaskID}} は、このエージェントで使用できません",
+    "変数 {{.TaskID}} は、この agent で使用できません",
   );
   assert.equal(localizeApiError("模板语法错误: unexpected EOF"), "テンプレートの構文エラー：unexpected EOF");
+  assert.equal(localizeApiError("未提供 API Key"), "API Key が未指定です");
+  assert.equal(localizeApiError("token 生成失败"), "token の生成に失敗しました");
 });
 
 test("nested errors retain diagnostic details", () => {
@@ -21,6 +23,26 @@ test("nested errors retain diagnostic details", () => {
   const diagnostic = "GET /tasks: 502 gateway unavailable";
   assert.equal(localizeApiError(diagnostic), diagnostic);
   assert.equal(localizeApiError("下载 file.zip: socket closed"), "file.zip のダウンロード：socket closed");
+  assert.equal(localizeApiError("安装失败：task not found"), "インストールに失敗しました：task not found");
+});
+
+test("English diagnostics remain unchanged, including templates and prefixes", () => {
+  for (const message of [
+    "task not found",
+    "invalid JSON: unexpected EOF",
+    "description must be at most 4000 characters",
+    "provider init failed: socket closed",
+    "skill already exists",
+    "GET /tasks: 502 gateway unavailable",
+  ]) {
+    assert.equal(localizeApiError(message), message);
+  }
+  const payload = {
+    error: "task not found",
+    warnings: ["database unavailable"],
+    items: [{ last_error: "provider init failed: socket closed" }],
+  };
+  assert.equal(localizeApiResponse(payload), payload);
 });
 
 test("successful and partial responses localize diagnostics without changing user content", () => {

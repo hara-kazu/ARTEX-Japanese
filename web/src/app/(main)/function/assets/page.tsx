@@ -461,7 +461,7 @@ export default function AssetsPage() {
         <TabsContent value="ip" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
-            cols={["", "IP", "/24 ネットワーク", "紐づくドメイン", "開放ポート", ""]}
+            cols={["", "IP", "C セグメント", "紐づくドメイン", "開放ポート", ""]}
             loaded={loaded}
             total={total}
             page={page}
@@ -550,7 +550,7 @@ export default function AssetsPage() {
         <TabsContent value="app" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
-            cols={["", "アプリ名", "バンドル ID", "カテゴリ", "ICP 登録", ""]}
+            cols={["", "アプリ名", "Bundle ID", "カテゴリ", "ICP 登録", ""]}
             loaded={loaded}
             total={total}
             page={page}
@@ -1022,7 +1022,7 @@ function CompanyDialog({ onSaved }: { onSaved: () => void }) {
       <SheetContent className="w-full! max-w-none! gap-0 p-0 sm:w-[520px]! sm:max-w-[520px]!">
         <SheetHeader className="border-b p-6">
           <SheetTitle>企業を追加</SheetTitle>
-          <SheetDescription>企業と資産の範囲を設定します。キーワードはエージェントへのヒントとしてのみ使用され、資産は自動的に紐づけられません。</SheetDescription>
+          <SheetDescription>企業と資産の範囲を設定します。キーワードはAgentへのヒントとしてのみ使用され、資産は自動的に紐づけられません。</SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-6">
           <FieldGroup>
@@ -1101,7 +1101,7 @@ function EditScopeDialog({ company, onSaved }: { company: Company; onSaved: () =
         <DialogHeader>
           <DialogTitle>資産範囲を編集 · {company.name}</DialogTitle>
           <DialogDescription>
-            編集すると既存の範囲がすべて置き換わります。ICP は資産との完全一致に使用し、企業キーワードはエージェントへのヒントとしてのみ使用します。
+            編集すると既存の範囲がすべて置き換わります。ICP は資産との完全一致に使用し、企業キーワードはAgentへのヒントとしてのみ使用します。
           </DialogDescription>
         </DialogHeader>
         <FieldGroup className="py-2">
@@ -1183,7 +1183,7 @@ function AppendScopeDialog({ company, onSaved }: { company: Company; onSaved: ()
       <DialogContent>
         <DialogHeader>
           <DialogTitle>資産範囲を追加 · {company.name}</DialogTitle>
-          <DialogDescription>新しい範囲を既存の範囲に追加します。ICP は資産との完全一致に使用し、企業キーワードはエージェントへのヒントとしてのみ使用します。</DialogDescription>
+          <DialogDescription>新しい範囲を既存の範囲に追加します。ICP は資産との完全一致に使用し、企業キーワードはAgentへのヒントとしてのみ使用します。</DialogDescription>
         </DialogHeader>
         <FieldGroup className="py-2">
           <ScopeTextEditor

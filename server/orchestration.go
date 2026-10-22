@@ -175,7 +175,7 @@ func (s *Server) delegateToTask(ctx context.Context, in json.RawMessage, pick fu
 
 func (s *Server) toolListTasks() actool.CoreTool {
 	return roTool("list_tasks",
-		"すべてのタスクの ID・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーションエージェントが全体の状況、停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、指定がない場合はグローバルのアクティブ設定に従います。",
+		"すべてのタスクの id・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーション agentが全体の状況、停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、指定がない場合はグローバルのアクティブ設定に従います。",
 		objSchema(map[string]any{}),
 		func(context.Context, json.RawMessage) (actool.Result, error) {
 			lastAct, _ := s.m.PG().LastActivityAll()
@@ -221,7 +221,7 @@ func (s *Server) toolListTasks() actool.CoreTool {
 // orchestration agent can pick one for spawn_task's llm_profile. Never leaks keys.
 func (s *Server) toolListLLMProfiles() actool.CoreTool {
 	return roTool("list_llm_profiles",
-		"利用可能な LLM 設定（profile）の ID・名前・モデル・形式・現在のアクティブ設定かどうかを一覧表示します。spawn_task の llm_profile_id に ID を渡すと、子タスク専用の LLM を指定できます（例: 偵察には低コストのモデル、エクスプロイトには高性能なモデル）。API キーは含みません。",
+		"利用可能な LLM 設定（profile）の id・名前・モデル・形式・現在のアクティブ設定かどうかを一覧表示します。spawn_task の llm_profile_id に id を渡すと、子タスク専用の LLM を指定できます（例: 偵察には低コストのモデル、エクスプロイトには高性能なモデル）。API Keyは含みません。",
 		objSchema(map[string]any{}),
 		func(context.Context, json.RawMessage) (actool.Result, error) {
 			profs, err := s.m.pg.ListProfiles()
@@ -240,16 +240,16 @@ func (s *Server) toolListLLMProfiles() actool.CoreTool {
 
 func (s *Server) toolSpawnTask() actool.CoreTool {
 	return wrTool("spawn_task",
-		"子タスクを作成して探索エンジンを起動し、task_id を返します。個別の課題や目標を独立したタスクとして割り当てるために使用します。parent_ref は任意で、現在のオーケストレーションに関連する親タスクの ID を指定すると親子関係を設定できます。",
+		"子タスクを作成して探索エンジンを起動し、task_id を返します。個別の課題や目標を独立したタスクとして割り当てるために使用します。parent_ref は任意で、現在のオーケストレーションに関連する親タスクの id を指定すると親子関係を設定できます。",
 		objSchema(map[string]any{
 			"description":            strParam("タスクの説明（短いタイトル）"),
 			"goal":                   strParam("タスクの目標（達成すること）"),
-			"parent_ref":             strParam("任意: 親タスクの ID（親子関係を設定）"),
-			"source_task_ids":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": fmt.Sprintf("任意: 読み取り専用で継承する元タスクの ID 一覧（最大%d件）。子タスクは、これらのタスクで判明した資産や結論を出発点として参照できます。親子関係だけを表す parent_ref と異なり、内容を継承します。", db.MaxTaskSourceCount)},
-			"llm_profile_id":         map[string]any{"type": "integer", "description": "任意: この子タスクの planner/worker が使う LLM 設定の ID（list_llm_profiles を参照）。省略時は親タスクの設定を継承し、それもなければグローバルのアクティブ設定を使用します"},
+			"parent_ref":             strParam("任意: 親タスクの id（親子関係を設定）"),
+			"source_task_ids":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": fmt.Sprintf("任意: 読み取り専用で継承する元タスクの id 一覧（最大%d件）。子タスクは、これらのタスクで判明した資産や結論を出発点として参照できます。親子関係だけを表す parent_ref と異なり、内容を継承します。", db.MaxTaskSourceCount)},
+			"llm_profile_id":         map[string]any{"type": "integer", "description": "任意: この子タスクの planner/worker が使う LLM 設定の id（list_llm_profiles を参照）。省略時は親タスクの設定を継承し、それもなければグローバルのアクティブ設定を使用します"},
 			"timeout_seconds":        map[string]any{"type": "integer", "description": "任意: タスクのタイムアウト（秒）。時間に達すると終了処理を行い、最終状態 timeout になります。省略または 0 は時間制限なしです"},
-			"plan_heartbeat_seconds": map[string]any{"type": "integer", "description": "任意: planner のハートビート間隔（秒）。前回の計画終了またはタスク開始から、この時間だけトリガーがなければ計画を実行します。デッドロックの回避と実行中のワーカーの監督に使用します。省略または 0 は既定の 600 秒（10分）です"},
-			"seed_first_intent":      map[string]any{"type": "boolean", "description": "任意: 単純なタスクで有効にすると、作成時に説明と目標から初期インテントを1件割り当て、ワーカーが最初の計画を待たずにテストを開始します。既定の false では、通常どおり計画してから実行します。"},
+			"plan_heartbeat_seconds": map[string]any{"type": "integer", "description": "任意: planner のハートビート間隔（秒）。前回の計画終了またはタスク開始から、この時間だけトリガーがなければ計画を実行します。デッドロックの回避と実行中のworkerの監督に使用します。省略または 0 は既定の 600 秒（10min）です"},
+			"seed_first_intent":      map[string]any{"type": "boolean", "description": "任意: 単純なタスクで有効にすると、作成時に説明と目標から初期インテントを1件割り当て、workerが最初の planner を待たずにテストを開始します。既定の false では、通常どおり計画してから実行します。"},
 		}, "description", "goal"),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a struct {
@@ -330,7 +330,7 @@ func (s *Server) toolSpawnTask() actool.CoreTool {
 
 func (s *Server) toolPauseTask() actool.CoreTool {
 	return wrTool("pause_task", "指定したタスクを一時停止し、planner/worker のループを停止します。",
-		objSchema(map[string]any{"task_id": strParam("一時停止するタスクの ID")}, "task_id"),
+		objSchema(map[string]any{"task_id": strParam("一時停止するタスクの id")}, "task_id"),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a struct {
 				TaskID string `json:"task_id"`
@@ -349,7 +349,7 @@ func (s *Server) toolPauseTask() actool.CoreTool {
 
 func (s *Server) toolGetTaskGraph() actool.CoreTool {
 	return roTool("get_task_graph", "task_id で指定したタスクの探索グラフの概要を読み取ります（graph_overview と同じく、資産数・frontier・検出結果・カバレッジなどを含みます）。",
-		objSchema(map[string]any{"task_id": strParam("タスク ID")}, "task_id"),
+		objSchema(map[string]any{"task_id": strParam("タスク id")}, "task_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).GraphOverviewTool)
 		})
@@ -357,7 +357,7 @@ func (s *Server) toolGetTaskGraph() actool.CoreTool {
 
 func (s *Server) toolListTaskFindings() actool.CoreTool {
 	return roTool("list_task_findings", "task_id で指定したタスクの確認済み脆弱性を読み取ります。flag/PoC を含み、各項目に id/task_id/intent_id/vulnclass/severity・要約・状態を返します。",
-		objSchema(map[string]any{"task_id": strParam("タスク ID")}, "task_id"),
+		objSchema(map[string]any{"task_id": strParam("タスク id")}, "task_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).ListFindingsTool)
 		})
@@ -365,13 +365,13 @@ func (s *Server) toolListTaskFindings() actool.CoreTool {
 
 func (s *Server) toolAddHint() actool.CoreTool {
 	return wrTool("add_task_hint", "指定したタスクに戦略ヒントを追加します。そのタスクの planner が次回のインテント生成時に読み取ります。\n"+
-		"★一括登録を優先: 複数のヒントは hints 配列でまとめて送信してください。返される ids 配列は hints と同じ件数・順序で、失敗項目の ID は 0 です。1件だけなら hints を省略し、最上位の text を指定します。",
+		"★一括登録を優先: 複数のヒントは hints 配列でまとめて送信してください。返される ids 配列は hints と同じ件数・順序で、失敗項目の id は 0 です。1件だけなら hints を省略し、最上位の text を指定します。",
 		objSchema(map[string]any{
-			"task_id":      strParam("タスク ID"),
+			"task_id":      strParam("タスク id"),
 			"hints":        map[string]any{"type": "array", "description": "【こちらを優先】ヒントの配列。各要素のフィールドは最上位と同じです（text/asset_ids/traffic_refs）。", "items": objSchema(map[string]any{"text": strParam("ヒントの内容"), "asset_ids": map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}, "traffic_refs": agent.HintTrafficSchema()})},
 			"text":         strParam("[1件のみ] ヒントの内容"),
 			"traffic_refs": agent.HintTrafficSchema(),
-			"asset_ids":    map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "description": "関連付ける資産の ID（任意。0件・1件・複数件を指定でき、このタスク内の資産 ID を使用します）"},
+			"asset_ids":    map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "description": "関連付ける資産の id（任意。0件・1件・複数件を指定でき、このタスク内の資産 id を使用します）"},
 		}, "task_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).AddHintTool)
@@ -382,9 +382,9 @@ func (s *Server) toolGetWorkerTrace() actool.CoreTool {
 	return roTool("get_task_worker_trace",
 		"指定したタスクの work（インテント）の実行過程を確認します。get_task_worker_trace(task_id, intent_id) でステップの要約を取得し、step_ids=[...] を追加して該当ステップの全文を取得します。1回に最大5件で、それ以上指定した場合は先頭5件だけを返します。",
 		objSchema(map[string]any{
-			"task_id":   strParam("タスク ID"),
-			"intent_id": map[string]any{"type": "integer", "description": "インテント ID（このタスクの work）"},
-			"step_ids":  map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "description": "任意: 全文を取得するステップの ID（1回に最大5件。それ以上指定した場合は先頭5件を返し、残りは omitted_step_ids に列挙します）"},
+			"task_id":   strParam("タスク id"),
+			"intent_id": map[string]any{"type": "integer", "description": "インテント id（このタスクの work）"},
+			"step_ids":  map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "description": "任意: 全文を取得するステップの id（1回に最大5件。それ以上指定した場合は先頭5件を返し、残りは omitted_step_ids に列挙します）"},
 		}, "task_id", "intent_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).GetWorkerTraceTool)
@@ -393,7 +393,7 @@ func (s *Server) toolGetWorkerTrace() actool.CoreTool {
 
 func (s *Server) toolListWorkerTraces() actool.CoreTool {
 	return roTool("list_task_worker_traces", "指定したタスクで実行した work（インテント）と、それぞれのステップ数を一覧表示します。詳しく確認する work を選び、get_task_worker_trace で内容を取得するために使用します。",
-		objSchema(map[string]any{"task_id": strParam("タスク ID")}, "task_id"),
+		objSchema(map[string]any{"task_id": strParam("タスク id")}, "task_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).ListWorkerTracesTool)
 		})
@@ -401,7 +401,7 @@ func (s *Server) toolListWorkerTraces() actool.CoreTool {
 
 func (s *Server) toolSearchWorkerTraces() actool.CoreTool {
 	return roTool("search_task_worker_traces", "指定したタスクの全 work の実行過程をキーワードで検索し、一致したステップの要約と intent_id を返します。",
-		objSchema(map[string]any{"task_id": strParam("タスク ID"), "q": strParam("検索キーワード")}, "task_id", "q"),
+		objSchema(map[string]any{"task_id": strParam("タスク id"), "q": strParam("検索キーワード")}, "task_id", "q"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).SearchWorkerTracesTool)
 		})
@@ -409,10 +409,10 @@ func (s *Server) toolSearchWorkerTraces() actool.CoreTool {
 
 func (s *Server) toolGetTaskNodeDetail() actool.CoreTool {
 	return roTool("get_task_node_detail",
-		"指定したタスクの探索グラフノードの全文を読み取ります（検出結果・事実・インテント・目標の要約と、詳細・証拠・PoC）。id は探索ノードの ID です（report_finding の戻り値や list_task_findings の id）。脆弱性レポートを作成する前に、これを使って証拠全体を取得してください。",
+		"指定したタスクの探索グラフノードの全文を読み取ります（検出結果・事実・インテント・目標の要約と、詳細・証拠・PoC）。id は探索ノードの id です（report_finding の戻り値や list_task_findings の id）。脆弱性レポートを作成する前に、これを使って証拠全体を取得してください。",
 		objSchema(map[string]any{
-			"task_id": strParam("タスク ID"),
-			"id":      map[string]any{"type": "integer", "description": "探索グラフのノード ID（資産 ID ではありません）"},
+			"task_id": strParam("タスク id"),
+			"id":      map[string]any{"type": "integer", "description": "探索グラフのノード id（資産 id ではありません）"},
 		}, "task_id", "id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			return s.delegateToTask(ctx, in, (*agent.ToolSet).NodeDetailTool)
@@ -425,9 +425,9 @@ func (s *Server) toolGetTaskNodeDetail() actool.CoreTool {
 // task-agnostic, so this host tool needs no task_id / exploration store.
 func (s *Server) toolUpdateFindingReport() actool.CoreTool {
 	return wrTool("update_finding_report",
-		"登録済みの脆弱性の詳細レポートを作成・更新します。Markdown の全文で既存の内容を上書きします。finding_id には report_finding が返す ID（\"finding recorded: <id>\" の数字）を指定してください。レポートには脆弱性の概要、影響とリスク、再現手順、証拠 / PoC、修正案を含めることを推奨します。",
+		"登録済みの脆弱性の詳細レポートを作成・更新します。Markdown の全文で既存の内容を上書きします。finding_id には report_finding が返す id（\"finding recorded: <id>\" の数字）を指定してください。レポートには脆弱性の概要、影響とリスク、再現手順、証拠 / PoC、修正案を含めることを推奨します。",
 		objSchema(map[string]any{
-			"finding_id":       map[string]any{"type": "integer", "description": "対象の脆弱性 ID（report_finding が返す ID）"},
+			"finding_id":       map[string]any{"type": "integer", "description": "対象の脆弱性 id（report_finding が返す id）"},
 			"report":           strParam("詳細レポートの全文（Markdown 形式）"),
 			"evidence_version": map[string]any{"type": "integer", "description": "get_finding_traffic が返す証拠の version。新しい証拠の変更を古いレポートで上書きしないために使用します"},
 		}, "finding_id", "report"),

@@ -228,7 +228,7 @@ func (d *DB) FinishFindingRetest(id int64, status, reason string) error {
 	var finalStatus, verdict string
 	err = tx.QueryRow(`UPDATE finding_retests SET
 	status=CASE WHEN $2='completed' AND verdict='' THEN 'failed' ELSE $2 END,
-	error=CASE WHEN $2='completed' AND verdict='' THEN 'エージェントが再テスト結果を保存しませんでした。チャットを確認してから再テストしてください' ELSE $3 END,
+	error=CASE WHEN $2='completed' AND verdict='' THEN 'Agent が再テスト結果を保存しませんでした。チャットを確認してから再テストしてください' ELSE $3 END,
 	finished_at=now() WHERE id=$1 AND status IN ('pending','running') RETURNING status,verdict`, id, status, reason).Scan(&finalStatus, &verdict)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil // A replay must not overwrite a later manual triage decision.

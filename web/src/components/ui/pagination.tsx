@@ -8,7 +8,7 @@ function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
       role="navigation"
-      aria-label="ページ切り替え"
+      aria-label="pagination"
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
       {...props}
@@ -63,12 +63,12 @@ function PaginationLink({
 
 function PaginationPrevious({
   className,
-  text = "前へ",
+  text = "Previous",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
-      aria-label="前のページへ"
+      aria-label="Go to previous page"
       size="default"
       className={cn("pl-1.5!", className)}
       {...props}
@@ -81,12 +81,12 @@ function PaginationPrevious({
 
 function PaginationNext({
   className,
-  text = "次へ",
+  text = "Next",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
-      aria-label="次のページへ"
+      aria-label="Go to next page"
       size="default"
       className={cn("pr-1.5!", className)}
       {...props}
@@ -113,7 +113,7 @@ function PaginationEllipsis({
     >
       <MoreHorizontalIcon
       />
-      <span className="sr-only">ほかのページ</span>
+      <span className="sr-only">More pages</span>
     </span>
   )
 }

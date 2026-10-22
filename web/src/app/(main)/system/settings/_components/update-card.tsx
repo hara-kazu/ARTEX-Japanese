@@ -95,7 +95,7 @@ export function UpdateCard() {
       }
     }
     setRestarting(false);
-    toast.error("サービスの再起動を待機中にタイムアウトしました。バックエンドのログ、または start.sh / start.bat で起動したかを確認してください。");
+    toast.error("サービスの再起動を待機中にタイムアウトしました。バックエンドのログ、または artex を start.sh / start.bat で起動したかを確認してください。");
   }, []);
 
   // 订阅更新进度。SSE 不走 Next 的 /api 重写（那层会缓冲，事件推不出来）。
@@ -307,7 +307,7 @@ export function UpdateCard() {
 
         <p className="text-xs text-muted-foreground">
           ワンクリック更新は監視スクリプトによる再起動が必要です。次のスクリプトで <span className="font-mono">start.sh</span>（Windows は
-          <span className="font-mono"> start.bat</span>）ARTEX を起動してください。本体を直接実行した場合、終了後に自動再起動しません。
+          <span className="font-mono"> start.bat</span>）ARTEX を起動してください。artex 本体を直接実行した場合、終了後に自動再起動しません。
         </p>
       </CardContent>
     </Card>

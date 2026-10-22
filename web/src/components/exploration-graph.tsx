@@ -574,19 +574,6 @@ function ExplorationGraphInner({
   return (
     <>
       <ReactFlow
-        ariaLabelConfig={{
-          "controls.ariaLabel": "グラフの操作",
-          "controls.zoomIn.ariaLabel": "拡大",
-          "controls.zoomOut.ariaLabel": "縮小",
-          "controls.fitView.ariaLabel": "全体を表示",
-          "controls.interactive.ariaLabel": "操作の有効・無効を切り替え",
-          "minimap.ariaLabel": "ミニマップ",
-          "handle.ariaLabel": "接続点",
-          "node.a11yDescription.default": "Enter またはスペースでノードを選択し、Delete で削除、Escape でキャンセルします。",
-          "node.a11yDescription.keyboardDisabled": "Enter またはスペースでノードを選択し、矢印キーで移動、Delete で削除、Escape でキャンセルします。",
-          "node.a11yDescription.ariaLiveMessage": ({ x, y }) => `選択したノードを移動しました。新しい位置：X ${x}、Y ${y}`,
-          "edge.a11yDescription.default": "Enter またはスペースで接続線を選択し、Delete で削除、Escape でキャンセルします。",
-        }}
         nodes={rfNodes}
         edges={rfEdges}
         onNodesChange={onNodesChange}

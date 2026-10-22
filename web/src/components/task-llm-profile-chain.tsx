@@ -136,7 +136,7 @@ export function TaskLLMProfileChain({
       </Combobox>
 
       {value.length === 0 ? (
-        <p className="text-muted-foreground text-xs">設定が未指定の場合、タスクはエージェントまたは全体の有効な設定に従います。</p>
+        <p className="text-muted-foreground text-xs">設定が未指定の場合、タスクはAgentまたは全体の有効な設定に従います。</p>
       ) : (
         <div className="flex flex-col divide-y rounded-lg border">
           {value.map((id, index) => {

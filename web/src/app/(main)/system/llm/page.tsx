@@ -59,17 +59,17 @@ const MAX_TOKENS_FIELD_HINTS: Record<string, string> = {
 };
 const EFFORT_LEVELS: { value: string; label: string }[] = [
   { value: NONE, label: "送信しない（デフォルト）" },
-  { value: "low", label: "低（low）" },
-  { value: "medium", label: "中（medium）" },
-  { value: "high", label: "高（high）" },
-  { value: "xhigh", label: "非常に高い（xhigh）" },
-  { value: "max", label: "最大（max）" },
+  { value: "low", label: "low" },
+  { value: "medium", label: "medium" },
+  { value: "high", label: "high" },
+  { value: "xhigh", label: "xhigh" },
+  { value: "max", label: "max" },
 ];
 
 function cooldownText(secs: number) {
   if (secs <= 0) return "";
-  if (secs < 60) return `${secs}秒`;
-  return `${Math.ceil(secs / 60)}分`;
+  if (secs < 60) return `${secs}s`;
+  return `${Math.ceil(secs / 60)}min`;
 }
 
 // 一个配置在卡片上显示的「是否正常」。没填 Key 的配置根本发不出请求，比熔断更该先说；
@@ -78,9 +78,9 @@ type Health = { label: string; cls: string; hint?: string };
 function healthOf(p: LLMProfile, m?: LLMPoolMember): Health {
   if (!p.api_key_hint) {
     return {
-      label: "キー未設定",
+      label: "Key未設定",
       cls: "border-muted-foreground/40 text-muted-foreground",
-      hint: "API キーが未入力のため呼び出せません",
+      hint: "API Keyが未入力のため呼び出せません",
     };
   }
   if (m?.state === "tripped") {
@@ -166,7 +166,7 @@ function PoolSheet({
             <ZapIcon className="size-4" /> LLM の順次切り替え · フェイルオーバー
           </SheetTitle>
           <SheetDescription>
-            有効にすると、<b>モデルが未指定</b>のエージェントは、現在の設定を利用できない場合（残高不足 / キー無効 / レート制限 / サービス異常）、次の設定に自動で切り替えます。
+            有効にすると、<b>モデルが未指定</b>のAgentは、現在の設定を利用できない場合（残高不足 / Key無効 / レート制限 / サービス異常）、次の設定に自動で切り替えます。
           </SheetDescription>
         </SheetHeader>
 
@@ -190,7 +190,7 @@ function PoolSheet({
                 <div className="grid gap-0.5">
                   <Label className="text-sm">指定モデルの失敗時にも切り替える</Label>
                   <p className="text-muted-foreground text-xs">
-                    初期状態では無効です。エージェントやタスクが設定を指定した場合、その設定のみ使用し、失敗時も他のモデルには切り替えません。有効にすると、指定した設定の失敗時にも以下のチェーンを使用します。
+                    初期状態では無効です。Agentやタスクが設定を指定した場合、その設定のみ使用し、失敗時も他のモデルには切り替えません。有効にすると、指定した設定の失敗時にも以下のチェーンを使用します。
                   </p>
                 </div>
                 <Switch
@@ -214,7 +214,7 @@ function PoolSheet({
                 </div>
                 {inChain.length < 2 && (
                   <p className="text-muted-foreground text-xs">
-                    現在、利用可能な設定は {inChain.length} 個です。API キーを設定し、切り替え対象に含めた設定が2個以上必要です。
+                    現在、利用可能な設定は {inChain.length} 個です。API Keyを設定し、切り替え対象に含めた設定が2個以上必要です。
                   </p>
                 )}
                 {chain.map((m) => {
@@ -281,7 +281,7 @@ function PoolSheet({
               </div>
 
               <div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs leading-relaxed">
-                有効な設定が常に最優先で、それ以外は各設定の優先度の高い順です。失敗するとクールダウン（60秒 → 5分 → 30分）に入り、その間はスキップし、復旧後に自動で戻します。現在のリクエストがコンテキストに収まらない設定もスキップします。モデルを指定したエージェントとタスクは、初期状態では切り替え対象外です。
+                有効な設定が常に最優先で、それ以外は各設定の優先度の高い順です。失敗するとクールダウン（60s → 5min → 30min）に入り、その間はスキップし、復旧後に自動で戻します。現在のリクエストがコンテキストに収まらない設定もスキップします。モデルを指定した Agent とタスクは、初期状態では切り替え対象外です。
               </div>
             </>
           )}
@@ -401,7 +401,7 @@ function ProfileSheet({
       );
       // 回复内容一并展示：看得见模型确实说了话，才算和会话里跑通是一回事。
       if (r.ok)
-        toast.success(`接続成功 · ${r.latency_ms ?? "?"}ミリ秒 · ${r.model ?? model}`, {
+        toast.success(`接続成功 · ${r.latency_ms ?? "?"}ms · ${r.model ?? model}`, {
           description: r.reply ? `応答：${r.reply}` : undefined,
         });
       else toast.error(`接続に失敗しました：${localizeApiError(r.error ?? "不明")}`);
@@ -472,7 +472,7 @@ function ProfileSheet({
           <SheetDescription>
             {isNew
               ? "作成後は自動的に有効化されません。カードの「有効にする」を選択してください。"
-              : "変更後に保存してください。有効な設定を保存すると、すべてのエージェントに即時反映されます。"}
+              : "変更後に保存してください。有効な設定を保存すると、すべてのAgentに即時反映されます。"}
           </SheetDescription>
         </SheetHeader>
 
@@ -550,7 +550,7 @@ function ProfileSheet({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="p-base-url">ベース URL（任意）</Label>
+            <Label htmlFor="p-base-url">Base URL（任意）</Label>
             <Input
               id="p-base-url"
               className="font-mono"
@@ -584,12 +584,12 @@ function ProfileSheet({
               onChange={(e) => setSessionHeaderKey(e.target.value)}
             />
             <p className="text-muted-foreground text-xs">
-              名前を入力すると、各リクエストにこの HTTP ヘッダーを付与します。値は自動的に <b>現在のセッション ID</b>になります（チャットは conv-12、Worker は exp3-worker-i87 など）。セッション ID でプロンプトキャッシュや固定ルーティングを行うゲートウェイ向けです。同じセッションでは固定し、異なるセッションでは別の値になります。空欄の場合は送信しません。
+              名前を入力すると、各リクエストにこの HTTP ヘッダーを付与します。値は自動的に <b>現在のsession id</b>になります（chatは conv-12、worker は exp3-worker-i87 など）。session-id ヘッダーでプロンプトキャッシュや固定ルーティングを行うゲートウェイ向けです。同じセッションでは固定し、異なるセッションでは別の値になります。空欄の場合は送信しません。
             </p>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="p-api-key">API キー</Label>
+            <Label htmlFor="p-api-key">API Key</Label>
             <Input
               id="p-api-key"
               type="password"
@@ -622,7 +622,7 @@ function ProfileSheet({
             </div>
           </div>
           <p className="-mt-2 text-muted-foreground text-xs">
-            レート制限は0で無制限、全エージェントで共有します。コンテキストの単位は K（千トークン）、0 は標準の200K、上限は1000（1M）です。大きすぎると圧縮が実行されません。
+            レート制限は0で無制限、全Agentで共有します。コンテキストの単位は K（千token）、0 は標準の200K、上限は1000（1M）です。大きすぎると圧縮が実行されません。
           </p>
 
           <div className="grid gap-3 rounded-lg border p-3">
@@ -647,7 +647,7 @@ function ProfileSheet({
               <div className="grid gap-0.5">
                 <Label className="text-sm">切り替え対象から除外</Label>
                 <p className="text-muted-foreground text-xs">
-                  有効にするとフェイルオーバー先から除外します（エージェント / タスクから明示的に指定することは可能）。特定のエージェント専用の高額な設定などに適しています。
+                  有効にするとフェイルオーバー先から除外します（Agent / タスクから明示的に指定することは可能）。特定のAgent専用の高額な設定などに適しています。
                 </p>
               </div>
               <Switch checked={poolExclude} onCheckedChange={setPoolExclude} aria-label="切り替え対象から除外" />
@@ -656,7 +656,7 @@ function ProfileSheet({
               <div className="grid gap-0.5">
                 <Label className="text-sm">ストリーミング出力 · streaming</Label>
                 <p className="text-muted-foreground text-xs">
-                  有効（デフォルト）では SSE で配信し、進捗とトークン数をリアルタイムに表示します。無効では stream:false で完全な応答を一度に返します。一部ゲートウェイの SSE の不具合（空フレーム / 思考フィールドの欠落）を回避できますが、実行中の進捗は表示できません。
+                  有効（デフォルト）では SSE で配信し、進捗とtoken数をリアルタイムに表示します。無効では stream:false で完全な応答を一度に返します。一部ゲートウェイの SSE の不具合（空フレーム / 思考フィールドの欠落）を回避できますが、実行中の進捗は表示できません。
                 </p>
               </div>
               <Switch checked={streaming} onCheckedChange={setStreaming} aria-label="ストリーミング出力" />
@@ -670,7 +670,7 @@ function ProfileSheet({
                   出力上限 · max tokens
                 </Label>
                 <p className="text-muted-foreground text-xs">
-                  1回の応答で生成する最大トークン数で、各リクエストに送信します。0（デフォルト）はフィールドを送らず、サーバーの既定値を使用します。「コンテキストウィンドウ」はモデル全体の容量で、ローカルの圧縮しきい値の計算にのみ使用します。小さすぎると推論中に上限に達し、回答を生成できません。
+                  1回の応答で生成する最大token数で、各リクエストに送信します。0（デフォルト）はフィールドを送らず、サーバーの既定値を使用します。「コンテキストウィンドウ」はモデル全体の容量で、ローカルの圧縮しきい値の計算にのみ使用します。小さすぎると推論中に上限に達し、回答を生成できません。
                 </p>
               </div>
               <Input
@@ -844,7 +844,7 @@ export default function LLMPage() {
         <div>
           <h1 className="font-semibold text-xl tracking-tight">LLM</h1>
           <p className="text-muted-foreground text-sm">
-            全エージェントで共有する形式 / モデル / レート制限の設定です。カードをクリックして編集します。星印が現在有効な設定です。
+            全Agentで共有する形式 / モデル / レート制限の設定です。カードをクリックして編集します。星印が現在有効な設定です。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -915,11 +915,11 @@ export default function LLMPage() {
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-6 text-muted-foreground text-xs">
                       {p.api_key_hint && <span>{p.api_key_hint}</span>}
                       <span>
-                        {p.rate_per_second}回/秒 · {p.rate_per_minute}回/分
+                        {p.rate_per_second}/s · {p.rate_per_minute}/min
                       </span>
                       {p.proxy && <span className="truncate">プロキシ {p.proxy}</span>}
                       {p.reasoning_effort && (
-                        <span>思考 {p.reasoning_effort === "off" ? "無効" : (EFFORT_LEVELS.find((level) => level.value === p.reasoning_effort)?.label ?? p.reasoning_effort)}</span>
+                        <span>思考 {p.reasoning_effort === "off" ? "無効" : p.reasoning_effort}</span>
                       )}
                       {/* 轮询相关的两个字段只在轮询开着时才有意义，关着时不占版面 */}
                       {poolOn &&

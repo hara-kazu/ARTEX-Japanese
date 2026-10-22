@@ -92,10 +92,10 @@ function SidePanel({
         {side.snapshot ? (
           <>
             <p>{side.snapshot.model.model}</p>
-            <p>コンテキストの更新日時： {new Date(side.snapshot.captured_at).toLocaleString("ja-JP")}</p>
+            <p>コンテキストの更新日時： {new Date(side.snapshot.captured_at).toLocaleString()}</p>
           </>
         ) : (
-          "メインエージェントの初回実行後に質問できます"
+          "メイン Agentの初回実行後に質問できます"
         )}
       </div>
       <div
@@ -116,7 +116,7 @@ function SidePanel({
           <Empty>
             <EmptyHeader>
               <EmptyTitle>いつでも質問できます</EmptyTitle>
-              <EmptyDescription>現在のエージェントのコンテキストに基づいて回答します。メインタスクは実行を続けます。</EmptyDescription>
+              <EmptyDescription>現在のAgentのコンテキストに基づいて回答します。メインタスクは実行を続けます。</EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}
@@ -127,8 +127,8 @@ function SidePanel({
               <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                 <Badge variant="secondary">{status[item.status]}</Badge>
                 <span className="truncate">{item.model.model}</span>
-                <time dateTime={item.snapshot_at} title={new Date(item.snapshot_at).toLocaleString("ja-JP")}>
-                  コンテキスト {new Date(item.snapshot_at).toLocaleTimeString("ja-JP")}
+                <time dateTime={item.snapshot_at} title={new Date(item.snapshot_at).toLocaleString()}>
+                  コンテキスト {new Date(item.snapshot_at).toLocaleTimeString()}
                 </time>
               </div>
               {item.context?.estimated_input_tokens != null && (
@@ -211,7 +211,7 @@ function SidePanel({
           <AlertDialogHeader>
             <AlertDialogTitle>サイド質問の履歴を消去しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              現在のエージェントのサイド質問履歴を削除し、生成中の回答を停止します。メインセッションとコンテキストのスナップショットは保持します。
+              現在のAgentのサイド質問履歴を削除し、生成中の回答を停止します。メインセッションとコンテキストのスナップショットは保持します。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

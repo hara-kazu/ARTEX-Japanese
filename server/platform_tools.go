@@ -80,10 +80,10 @@ func (s *Server) toolDeleteAssetsByHost() actool.CoreTool {
 
 func (s *Server) toolCreateSkill() actool.CoreTool {
 	return wrTool("create_skill",
-		"agentskills.io 仕様の SKILL.md を作成し、新しいスキルを追加します。name には小文字の英字・数字・ハイフンを使用します。",
+		"agentskills.io 仕様の SKILL.md を作成し、新しい skill を追加します。name には小文字の英字・数字・ハイフンを使用します。",
 		objSchema(map[string]any{
-			"name":         strParam("スキル名（小文字の英字で開始し、英字・数字・ハイフンを使用）"),
-			"description":  strParam("スキルの説明（必須。機能と使用する場面を記述）"),
+			"name":         strParam("skill 名（小文字の英字で開始し、英字・数字・ハイフンを使用）"),
+			"description":  strParam("skill の説明（必須。機能と使用する場面を記述）"),
 			"instructions": strParam("Markdown 形式の手順本文（任意）"),
 		}, "name", "description"),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
@@ -122,9 +122,9 @@ func (s *Server) toolCreateSkill() actool.CoreTool {
 
 func (s *Server) toolUpdateSkillFile() actool.CoreTool {
 	return wrTool("update_skill_file",
-		"スキル内のファイルを作成または上書きします（既定: SKILL.md）。スキルの内容変更や、スクリプト・参考資料の追加に使用します。",
+		"skill 内のファイルを作成または上書きします（既定: SKILL.md）。スキルの内容変更や、スクリプト・参考資料の追加に使用します。",
 		objSchema(map[string]any{
-			"name":    strParam("スキル名"),
+			"name":    strParam("skill 名"),
 			"file":    strParam("相対パス（任意。既定: SKILL.md。例: scripts/run.py）"),
 			"content": strParam("ファイルの内容全体"),
 		}, "name", "content"),
@@ -176,8 +176,8 @@ func customToolSchema(keyDesc string) map[string]any {
 		"description": strParam("モデルに提示する説明"),
 		"kind":        strParam("shell | command | script（Python のみ）| http。shell は bash 環境の宣言です。bash から直接呼び出せることをモデルに伝えるだけなので exec/schema は不要です。他の3種類には exec が必要です"),
 		"exec":        map[string]any{"type": "object", "description": "実行仕様（shell では不要）: command→{command}; script→{code}; http→{method,url,headers,body,proxy,use_recording_proxy}"},
-		"schema":      map[string]any{"type": "object", "description": "引数の JSON Schema（shell/command/script では省略可能。http では必須で、properties を含める必要があります）"},
-		"agents":      map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "割り当てるエージェントのキー（任意）"},
+		"schema":      map[string]any{"type": "object", "description": "引数の JSON-Schema（shell/command/script では省略可能。http では必須で、properties を含める必要があります）"},
+		"agents":      map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "割り当てる agent key（任意）"},
 		"deferred":    map[string]any{"type": "boolean", "description": "遅延読み込みを有効にするか（shell には適用されません。使用頻度の低い command/script/http ツールでのみ有効にします）"},
 		"enabled":     map[string]any{"type": "boolean", "description": "有効にするか（既定: true）"},
 	}, "key", "kind")
@@ -196,7 +196,7 @@ func toDBTool(a customToolToolInput) *db.Tool {
 
 func (s *Server) toolCreateCustomTool() actool.CoreTool {
 	return wrTool("create_custom_tool", "【重要】プラットフォームにないツールをインストールした場合は、このツールで登録して呼び出せるようにしてください。カスタムツール（shell/command/script/http）を作成します。shell は bash 環境の宣言で、key・description・agents のみ指定し、exec/schema は不要です。",
-		customToolSchema("ツールのキー（小文字の英字で開始し、英字・数字・アンダースコアを使用）"),
+		customToolSchema("ツールの key（小文字の英字で開始し、英字・数字・アンダースコアを使用）"),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a customToolToolInput
 			_ = json.Unmarshal(in, &a)
@@ -221,8 +221,8 @@ func (s *Server) toolCreateCustomTool() actool.CoreTool {
 }
 
 func (s *Server) toolUpdateCustomTool() actool.CoreTool {
-	return wrTool("update_custom_tool", "キーを指定して、既存のカスタムツールを変更します。",
-		customToolSchema("変更するカスタムツールのキー"),
+	return wrTool("update_custom_tool", "key を指定して、既存のカスタムツールを変更します。",
+		customToolSchema("変更するカスタムツールの key"),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a customToolToolInput
 			_ = json.Unmarshal(in, &a)
@@ -270,7 +270,7 @@ func mcpSchema(withID bool) map[string]any {
 	}
 	required := []string{"name", "transport"}
 	if withID {
-		props["id"] = map[string]any{"type": "integer", "description": "変更する MCP サーバーの ID"}
+		props["id"] = map[string]any{"type": "integer", "description": "変更する MCP サーバーの id"}
 		required = []string{"id", "name", "transport"}
 	}
 	return objSchema(props, required...)
@@ -292,7 +292,7 @@ func (a mcpToolInput) toDB() *db.MCPServer {
 }
 
 func (s *Server) toolCreateMCP() actool.CoreTool {
-	return wrTool("create_mcp", "MCP サーバー（stdio/http/sse）を作成します。作成後、エージェントごとにツールのアクセス権を設定してください。",
+	return wrTool("create_mcp", "MCP サーバー（stdio/http/sse）を作成します。作成後、agent ごとにツールのアクセス権を設定してください。",
 		mcpSchema(false),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a mcpToolInput
@@ -310,7 +310,7 @@ func (s *Server) toolCreateMCP() actool.CoreTool {
 }
 
 func (s *Server) toolUpdateMCP() actool.CoreTool {
-	return wrTool("update_mcp", "ID を指定して、既存の MCP サーバーを変更します。",
+	return wrTool("update_mcp", "id を指定して、既存の MCP サーバーを変更します。",
 		mcpSchema(true),
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			var a mcpToolInput

@@ -30,7 +30,7 @@ func (s *Server) resolutionFromProfile(p *db.LLMProfile, source string) taskLLMR
 		Source:    source,
 	}
 	if p.APIKey == "" {
-		result.Reason = "LLM 設定に API キーが設定されていません"
+		result.Reason = "LLM 設定に API Key が設定されていません"
 		return result
 	}
 	if _, _, ok := s.providerForProfile(p.ID); !ok {

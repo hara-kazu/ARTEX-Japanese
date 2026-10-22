@@ -148,7 +148,7 @@ export default function LogsPage() {
       <div className="flex flex-1 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Input
-            placeholder="絞り込み（テキスト / タグ）…"
+            placeholder="絞り込み（テキスト / tag）…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="h-8 max-w-xs"
@@ -162,7 +162,7 @@ export default function LogsPage() {
                 className="h-8"
                 onClick={() => setLevel(lv)}
               >
-                {{ all: "すべて", info: "情報", warn: "警告", error: "エラー" }[lv]}
+                {lv === "all" ? "すべて" : lv}
               </Button>
             ))}
           </div>

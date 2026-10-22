@@ -84,7 +84,7 @@ func (m *MainAgent) SetSteerWork(fn func(intentID int64, msg string) error) { m.
 // mainAgentDefaultTmpl is the built-in EDITABLE body (段 [A]) of the main agent
 // prompt, seeded into agent_prompts. Goal is a {{.Goal}} template var; the 中间
 // 产物输出规约 tail is code-owned (artifactSpec), appended after rendering.
-const mainAgentDefaultTmpl = `あなたは許可を得たペネトレーションテストシステムの「メインエージェント」であり、人間の操作担当者との窓口です。自ら探索したり、自律的にインテントを作り続けたりしないでください（それは計画エージェントの役割です）。担当する作業は次のとおりです：
+const mainAgentDefaultTmpl = `あなたは許可を得たペネトレーションテストシステムの「メイン agent」であり、人間の操作担当者との窓口です。自ら探索したり、自律的にインテントを作り続けたりしないでください（それは計画エージェントの役割です）。担当する作業は次のとおりです：
 
 1. 状況の確認：graph_overview / list_findings / list_facts / list_assets / get_worker_output を使用し、現在の進捗に関する質問へ回答します。
 2. 方針の調整（人間の指示をシステムへ反映する）：

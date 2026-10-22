@@ -67,13 +67,13 @@ interface MockBindingSeed {
 // 每条漏洞预置的流量证据(finding id → 绑定的抓包)。选取与漏洞语义对应的请求,
 // 让 demo 详情页的「关联流量」区块看起来真实。
 const mockFindingTrafficSeeds: Record<string, MockBindingSeed[]> = {
-  "f-1": [{ traffic_id: "x-2", role: "proof", note: "q のペイロードに対し、MSSQL のエラーが返る。" }],
+  "f-1": [{ traffic_id: "x-2", role: "proof", note: "q のpayloadに対し、MSSQL のエラーが返る。" }],
   "f-2": [
     { traffic_id: "x-8", role: "baseline", note: "自分の注文 id=1001 を正常時の比較対象に使用。" },
     { traffic_id: "x-9", role: "proof", note: "id=1002 に変更し、他人の注文を取得。" },
   ],
   "f-12": [
-    { traffic_id: "x-15", role: "proof", note: "Fastjson @type の JNDI ペイロードで接続を確認。" },
+    { traffic_id: "x-15", role: "proof", note: "Fastjson @type の JNDI payloadで接続を確認。" },
     { traffic_id: "x-16", role: "verification", note: "2回目のリクエストでコマンド実行を確認。" },
   ],
   "f-15": [
@@ -181,7 +181,7 @@ function advanceMockRetests() {
     retest.verdict = "inconclusive";
     retest.summary = "デモ環境では実際の検証を行っていないため、現在の脆弱性の状態は確認できません。";
     retest.evidence =
-      "### デモの記録\n\n元の脆弱性を関連付けました。この環境は実際のエージェントに接続しておらず、対象にもリクエストを送信していません。実際の環境で再テストしてください。";
+      "### デモの記録\n\n元の脆弱性を関連付けました。この環境は実際のAgentに接続しておらず、対象にもリクエストを送信していません。実際の環境で再テストしてください。";
     retest.finished_at = new Date().toISOString();
     mockRetestMessages[retest.conversation_id].push({
       seq: 3,
@@ -812,7 +812,7 @@ function mockProfileResolution(profileID: number | undefined, source: TaskLLMRes
     model: profile.model,
     source,
     available: Boolean(profile.api_key_hint),
-    reason: profile.api_key_hint ? undefined : "LLM 設定の API キーが未設定です",
+    reason: profile.api_key_hint ? undefined : "LLM 設定の API Keyが未設定です",
   };
 }
 
@@ -2224,7 +2224,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   if (path === "/settings/web-search/test") return { ok: true, count: 5, backend: D.settings.web_search_backend };
   if (path === "/settings/python/detect") return { python_interpreter: "/usr/bin/python3" };
   if (path === "/chat")
-    return { reply: "（デモ）提案を高優先度のインテントとして追加しました。Worker が順次実行します。", mode: "hint" };
+    return { reply: "（demo）提案を高優先度のインテントとして追加しました。work agent が順次実行します。", mode: "hint" };
   if (path === "/gc") return { removed: 0 };
 
   // ── 工具执行历史 ──
@@ -2370,7 +2370,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   // ── tools ──
   if (path === "/tools" && m === "GET") return { tools: D.tools };
   if (path === "/tools/custom" && m === "POST") return { key: String(b.key ?? "custom-tool") };
-  if (path === "/tools/custom/test") return { output: "（デモ）ツール実行の出力サンプル。", is_error: false };
+  if (path === "/tools/custom/test") return { output: "（demo）ツール実行の出力サンプル。", is_error: false };
 
   // ── mcp ──
   if (path === "/mcp" && m === "GET") return { servers: D.mcpServers };
@@ -2393,7 +2393,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   if (path === "/skills" && m === "POST") return { name: String(b.name ?? "new-skill") };
   if (seg[0] === "skills" && seg[2] === "files" && seg.length === 3) return { files: ["SKILL.md"] };
   if (seg[0] === "skills" && seg[2] === "files" && seg.length >= 4)
-    return { content: "# SKILL.md\n\n（デモ）このスキルの説明ファイルのサンプルです。", file: seg.slice(3).join("/") };
+    return { content: "# SKILL.md\n\n（demo）このskillの説明ファイルのサンプルです。", file: seg.slice(3).join("/") };
 
   // ── visibility ──
   if (seg[0] === "visibility" && m === "GET") return { agents: [] };

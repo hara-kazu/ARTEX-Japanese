@@ -159,7 +159,7 @@ function summaryOf(n: TaskNode): string {
 }
 
 function prettyPayload(raw?: string): string {
-  if (!raw?.trim()) return "（ペイロードなし）";
+  if (!raw?.trim()) return "（payloadなし）";
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
@@ -419,7 +419,7 @@ function BroadcastRow({
               </div>
             )}
             <div>
-              <div className="mb-1.5 text-xs font-medium text-muted-foreground">ペイロード</div>
+              <div className="mb-1.5 text-xs font-medium text-muted-foreground">payload</div>
               <pre className="max-h-64 overflow-auto rounded-md border bg-background p-3 font-mono text-xs whitespace-pre-wrap">
                 {prettyPayload(node.payload)}
               </pre>
@@ -573,7 +573,7 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
           <Input
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
-            placeholder="内容 / 出典 / ノード ID を検索"
+            placeholder="内容 / 出典 / ノード id を検索"
             className="h-8 pl-8"
             aria-label="イベントを検索"
           />

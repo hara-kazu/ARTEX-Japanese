@@ -1,6 +1,6 @@
 import errorMessages from "./api-error-messages.json" with { type: "json" };
 
-// Display translations for the existing wire messages; identifiers stay unchanged.
+// Translate Chinese wire messages only; English diagnostics and identifiers stay unchanged.
 const messages = errorMessages.map(([source, target]) => [source, target] as const);
 
 const placeholder = /%[sdqwv]/g;
@@ -16,7 +16,7 @@ const prefixes = messages
   .filter(([source]) => !source.includes("%") && /[：:(（]\s*$/.test(source))
   .toSorted(([left], [right]) => right.length - left.length);
 
-/** Translate known backend errors while retaining IDs, paths and unknown diagnostics. */
+/** Translate known Chinese backend errors while retaining English, IDs, paths and unknown diagnostics. */
 export function localizeApiError(message: string): string {
   return translate(message, 0);
 }

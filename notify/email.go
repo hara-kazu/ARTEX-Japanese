@@ -93,7 +93,7 @@ func (c emailChannel) Send(ctx context.Context, cfg map[string]any, m Message) (
 			// 这是**正确**的安全行为，不能绕过，但需要把原因翻译清楚——
 			// 否则使用者只会看到「unencrypted connection」而不知道该怎么办。
 			if strings.Contains(err.Error(), "unencrypted connection") {
-				return 0, Permanent(fmt.Errorf("接続が暗号化されていないため、認証情報を送信しません。TLS を有効にするか、ポート465（暗黙的 TLS）を使用してください (%w)", err))
+				return 0, Permanent(fmt.Errorf("接続が暗号化されていないため、認証情報を送信しません。TLS を有効にするか、ポート465（暗黙的 TLS）を使用するか、「TLS を有効にする」を選択してください (%w)", err))
 			}
 			return 0, Permanent(fmt.Errorf("SMTP 認証に失敗しました: %w", err))
 		}

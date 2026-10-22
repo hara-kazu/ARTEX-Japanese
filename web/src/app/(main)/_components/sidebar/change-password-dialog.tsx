@@ -66,7 +66,7 @@ export function ChangePasswordDialog({
           <DialogHeader>
             <DialogTitle>パスワードを変更</DialogTitle>
             <DialogDescription>
-              ユーザー名は固定です： <b>ARTEX</b>。現在のパスワードで確認する必要があります。変更後も発行済みのログイントークンは有効期限まで使用できます。
+              ユーザー名は固定です： <b>ARTEX</b>。現在のパスワードで確認する必要があります。変更後も発行済みのログインtokenは有効期限まで使用できます。
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-4">

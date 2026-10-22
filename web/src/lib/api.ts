@@ -191,7 +191,7 @@ function mockReport(_task?: string): string {
 - search API のクエリをパラメーター化し、出力をエンコード。
 - API にオブジェクト単位の認可を追加（IDOR）し、強力な JWT キーに変更。
 
-> （デモ）画面のデモ用にモックデータから生成したレポートです。`;
+> （demo）画面のdemo用にmock データから生成したレポートです。`;
 }
 
 export function sseUrl(path: string): string {
@@ -462,7 +462,7 @@ export const api = {
   workspaceDownload: async (path: string) => {
     let blob: Blob;
     if (MOCK) {
-      blob = new Blob([`（デモ）${path} のダウンロード内容のサンプル。`], { type: "text/plain" });
+      blob = new Blob([`（demo）${path} のダウンロード内容のサンプル。`], { type: "text/plain" });
     } else {
       const token = getToken();
       const r = await fetch(`/api/workspace/download?path=${encodeURIComponent(path)}`, {
@@ -582,7 +582,7 @@ export const api = {
     const r = await fetch(`/api/exploration/findings/export?${p.toString()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!r.ok) throw new Error(`エクスポートに失敗しました：${r.status}`);
+    if (!r.ok) throw new Error(`export: ${r.status}`);
     const blob = await r.blob();
     // 文件名优先取后端 Content-Disposition,取不到则用默认名。
     const disp = r.headers.get("Content-Disposition") ?? "";
@@ -876,7 +876,7 @@ export const api = {
     const r = await fetch(`/api/report${tq(task)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!r.ok) throw new Error(`レポートの取得に失敗しました：${r.status}`);
+    if (!r.ok) throw new Error(`report: ${r.status}`);
     return r.text();
   },
   chatMentions: (kind: string, query: string, signal?: AbortSignal, cursor = "") =>

@@ -304,7 +304,7 @@ function JudgeCard() {
           <CardContent className="p-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">承認のトークン消費量</p>
+                <p className="text-sm font-medium">承認のToken消費量</p>
                 <p className="text-xs text-muted-foreground">
                   モデルによる補完承認の累計使用量。worker=judge として別途集計し、各モデル設定の統計には含めません
                 </p>
@@ -314,9 +314,9 @@ function JudgeCard() {
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              <JudgeStat label="承認呼び出し" value={usage.calls.toLocaleString("ja-JP")} />
-              <JudgeStat label="入力トークン" value={fmtTokens(usage.input_tokens)} />
-              <JudgeStat label="出力トークン" value={fmtTokens(usage.output_tokens)} />
+              <JudgeStat label="承認呼び出し" value={usage.calls.toLocaleString()} />
+              <JudgeStat label="入力Token" value={fmtTokens(usage.input_tokens)} />
+              <JudgeStat label="出力Token" value={fmtTokens(usage.output_tokens)} />
               <JudgeStat label="キャッシュ読み取り" value={fmtTokens(usage.cache_read_tokens)} />
               <JudgeStat label="キャッシュ書き込み" value={fmtTokens(usage.cache_write_tokens)} />
             </div>

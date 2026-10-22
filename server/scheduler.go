@@ -172,10 +172,10 @@ func (sc *Scheduler) fireFindings(triggers []*db.AgentTrigger) {
 		if len(want) == 0 {
 			continue
 		}
-		msgCtx := fmt.Sprintf("\n\n【今回はタスクの検出結果による実行です】\n検出結果: [%s/%s] %s",
+		msgCtx := fmt.Sprintf("\n\n【今回はタスクの検出結果 finding による実行です】\n検出結果: [%s/%s] %s",
 			e.VulnClass, e.Severity, e.Summary)
 		for _, tr := range want {
-			sc.s.StartTriggeredRun(tr.AgentKey, fmt.Sprintf("検出結果トリガー · task#%d", e.TaskID), tr.FindingMessage+msgCtx, e.TaskID, true, e.TaskDesc, e.TaskGoal)
+			sc.s.StartTriggeredRun(tr.AgentKey, fmt.Sprintf("finding トリガー · task#%d", e.TaskID), tr.FindingMessage+msgCtx, e.TaskID, true, e.TaskDesc, e.TaskGoal)
 		}
 	}
 	_ = sc.pg.SetSchedState(schedKeyLastFinding, strconv.FormatInt(maxID, 10))

@@ -33,7 +33,7 @@ type SearchItem = {
 const sidebarGroupLabels = new Set(sidebarItems.flatMap((group) => (group.label ? [group.label] : [])));
 
 function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
-  return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "その他") : itemTitle;
+  return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Other") : itemTitle;
 }
 
 const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
@@ -52,7 +52,7 @@ const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
     return [
       {
         id: item.id,
-        group: group.label ?? "その他",
+        group: group.label ?? "Other",
         label: item.title,
         url: item.url,
         icon: item.icon,
@@ -138,16 +138,16 @@ export function SearchDialog() {
         className="px-0! font-normal text-muted-foreground hover:no-underline"
       >
         <Search data-icon="inline-start" />
-        検索
+        Search
         <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
           <span className="text-xs">⌘</span>J
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={handleOpenChange}>
         <Command>
-          <CommandInput placeholder="画面や機能を検索…" value={query} onValueChange={setQuery} />
+          <CommandInput placeholder="Search dashboards, users, and more…" value={query} onValueChange={setQuery} />
           <CommandList>
-            <CommandEmpty>結果が見つかりません。</CommandEmpty>
+            <CommandEmpty>No results found.</CommandEmpty>
             {query ? renderGroups(searchItems) : renderGroups(recommendations)}
           </CommandList>
         </Command>

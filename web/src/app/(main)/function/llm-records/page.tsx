@@ -59,8 +59,8 @@ function fmtTime(ts: string) {
 }
 
 function fmtLatency(ms: number) {
-  if (ms < 1000) return `${ms}ミリ秒`;
-  return `${(ms / 1000).toFixed(1)}秒`;
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 function fmtTokens(n: number) {
@@ -270,14 +270,14 @@ export default function LLMRecordsPage() {
         <div className="relative max-w-sm flex-1">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="セッション ID を検索..."
+            placeholder="Session ID を検索..."
             value={session}
             onChange={(e) => setSession(e.target.value)}
             className="h-8 pl-8"
           />
         </div>
         <Input
-          placeholder="モデル"
+          placeholder="Model"
           className="h-8 w-48"
           value={model}
           onChange={(e) => setModel(e.target.value)}
@@ -382,11 +382,11 @@ export default function LLMRecordsPage() {
                 <TableRow>
                   <TableHead className="w-[130px]">日時</TableHead>
                   <TableHead className="w-[60px]">タスク</TableHead>
-                  <TableHead className="w-[90px]">実行元</TableHead>
-                  <TableHead className="w-[100px]">設定</TableHead>
-                  <TableHead className="w-[140px]">モデル</TableHead>
+                  <TableHead className="w-[90px]">Worker</TableHead>
+                  <TableHead className="w-[100px]">Profile</TableHead>
+                  <TableHead className="w-[140px]">Model</TableHead>
                   <TableHead className="w-[70px]">遅延</TableHead>
-                  <TableHead className="w-[90px]">トークン</TableHead>
+                  <TableHead className="w-[90px]">Tokens</TableHead>
                   <TableHead className="w-[60px]">状態</TableHead>
                 </TableRow>
               </TableHeader>
@@ -442,9 +442,9 @@ export default function LLMRecordsPage() {
                       </TableCell>
                       <TableCell>
                         {rec.status === "ok" ? (
-                          <Badge variant="secondary" className="text-xs text-emerald-600">成功</Badge>
+                          <Badge variant="secondary" className="text-xs text-emerald-600">OK</Badge>
                         ) : (
-                          <Badge variant="destructive" className="text-xs">エラー</Badge>
+                          <Badge variant="destructive" className="text-xs">Error</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -481,9 +481,9 @@ export default function LLMRecordsPage() {
                 {fmtLatency(selected.latency_ms)}
               </span>
               {selected.status === "ok" ? (
-                <Badge variant="secondary" className="text-xs text-emerald-600">成功</Badge>
+                <Badge variant="secondary" className="text-xs text-emerald-600">OK</Badge>
               ) : (
-                <Badge variant="destructive" className="text-xs">エラー</Badge>
+                <Badge variant="destructive" className="text-xs">Error</Badge>
               )}
               {/* 原文视图开关。旧记录没有原文，此时禁用而非静默回退，避免看着像
                   「原文与解析一致」。 */}
@@ -492,7 +492,7 @@ export default function LLMRecordsPage() {
                 size="sm"
                 className="ml-auto h-7 shrink-0 text-xs"
                 disabled={!hasRaw}
-                title={hasRaw ? "プロバイダーと実際に送受信した HTTP の原文を表示" : "この機能の導入前の記録のため、原文はありません"}
+                title={hasRaw ? "providerと実際に送受信した HTTP の原文を表示" : "この機能の導入前の記録のため、原文はありません"}
                 onClick={() => setRawView((v) => !v)}
               >
                 原文
@@ -510,7 +510,7 @@ export default function LLMRecordsPage() {
             <div className="grid min-h-0 flex-1 grid-cols-2 divide-x">
               <div className="flex min-h-0 min-w-0 flex-col">
                 <div className="flex items-center gap-2 border-b py-0.5 pr-1.5 pl-3 text-[11px] font-medium text-muted-foreground">
-                  <span>リクエスト{showRaw && " · 原文"}</span>
+                  <span>Request{showRaw && " · 原文"}</span>
                   <CopyButton text={reqText || ""} />
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto">
@@ -528,7 +528,7 @@ export default function LLMRecordsPage() {
               </div>
               <div className="flex min-h-0 min-w-0 flex-col">
                 <div className="flex items-center gap-2 border-b py-0.5 pr-1.5 pl-3 text-[11px] font-medium text-muted-foreground">
-                  <span>レスポンス{showRaw && " · 原文（SSE）"}</span>
+                  <span>Response{showRaw && " · 原文（SSE）"}</span>
                   <CopyButton text={respText || ""} />
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto">

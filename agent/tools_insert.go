@@ -163,7 +163,7 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 					},
 					// app
 					"app_name":    str("アプリ名（app では必須）"),
-					"bundle_id":   str("バンドル ID（app で指定可能。任意）"),
+					"bundle_id":   str("Bundle ID（app で指定可能。任意）"),
 					"category":    str("アプリのカテゴリ（任意）"),
 					"description": str("アプリの説明（任意）"),
 					"app_icp":     str("アプリの ICP 登録番号（任意）"),
@@ -377,7 +377,7 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 func (t *ToolSet) addCompanyScope() actool.CoreTool {
 	return writeTool(
 		"add_company_scope",
-		"ドメイン / IP / CIDR / ICP 登録番号 / 企業のキーワードを、指定企業の【資産範囲】へ追加します。ドメイン、ネットワーク、ICP で一致した資産は自動で所属を設定します。キーワードはエージェントへの範囲のヒントとしてだけ提供します。\n"+
+		"ドメイン / IP / CIDR / ICP 登録番号 / 企業のキーワードを、指定企業の【資産範囲】へ追加します。ドメイン、ネットワーク、ICP で一致した資産は自動で所属を設定します。キーワードは Agent への範囲のヒントとしてだけ提供します。\n"+
 			"企業名は一意です。company が存在しなければ作成し、すでに存在する場合は再利用して範囲だけを統合します。\n"+
 			"scope は1行に1項目を記述します。ルートドメイン / URL / 単一 IP / CIDR のネットワーク / ICP 登録番号 / 企業のキーワードをシステムが自動判別します。\n"+
 			"reason に所属を判断した根拠（whois / 証明書 / ASN など）を必ず指定してください。\n"+

@@ -101,7 +101,7 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
     .filter(Boolean)
     .join(" · ");
   let editorDescription = "順序や現在の設定の変更は、次回の LLM 呼び出しから反映されます。";
-  if (terminal) editorDescription = "タスクは終了しています。変更は今後のメインエージェントとのチャットにのみ反映されます。";
+  if (terminal) editorDescription = "タスクは終了しています。変更は今後のメイン Agentとのチャットにのみ反映されます。";
   let saveLabel = "保存";
   if (exhausted) saveLabel = "保存してリセット";
   if (saving) saveLabel = "保存中";

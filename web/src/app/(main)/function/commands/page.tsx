@@ -207,7 +207,7 @@ export default function CommandsPage() {
                 <TableRow>
                   <TableHead className="w-[130px]">日時</TableHead>
                   <TableHead className="w-[60px]">タスク</TableHead>
-                  <TableHead className="w-[90px]">実行元</TableHead>
+                  <TableHead className="w-[90px]">Worker</TableHead>
                   <TableHead className="w-[110px]">ツール</TableHead>
                   <TableHead>入力</TableHead>
                   <TableHead className="w-[60px]">状態</TableHead>
@@ -362,7 +362,7 @@ export default function CommandsPage() {
               </SheetHeader>
               <div className="grid min-h-0 flex-1 grid-rows-2 divide-y">
                 <div className="flex min-h-0 min-w-0 flex-col">
-                  <div className="border-b px-5 py-2 text-xs font-medium text-muted-foreground">入力</div>
+                  <div className="border-b px-5 py-2 text-xs font-medium text-muted-foreground">入力 Input</div>
                   <div className="min-h-0 flex-1 overflow-auto">
                     <pre className="p-5 font-mono text-xs break-all whitespace-pre-wrap">
                       {toolInput(selected.command)}
@@ -370,7 +370,7 @@ export default function CommandsPage() {
                   </div>
                 </div>
                 <div className="flex min-h-0 min-w-0 flex-col">
-                  <div className="border-b px-5 py-2 text-xs font-medium text-muted-foreground">出力</div>
+                  <div className="border-b px-5 py-2 text-xs font-medium text-muted-foreground">出力 Output</div>
                   <div className="min-h-0 flex-1 overflow-auto">
                     <pre
                       className={cn(

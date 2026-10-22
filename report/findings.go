@@ -65,11 +65,11 @@ func FindingsMarkdown(fs []*db.DBFinding, generatedAt time.Time) string {
 
 	b.WriteString("## 脆弱性の詳細\n\n")
 	for i, f := range items {
-		fmt.Fprintf(&b, "### %d. [%s] %s\n\n", i+1, severityLabel(nz(f.Severity, "info")), findingTitle(f))
+		fmt.Fprintf(&b, "### %d. [%s] %s\n\n", i+1, strings.ToUpper(nz(f.Severity, "info")), findingTitle(f))
 		if f.VulnClass != "" {
 			fmt.Fprintf(&b, "- **カテゴリ**：%s\n", f.VulnClass)
 		}
-		fmt.Fprintf(&b, "- **状態**：%s\n", statusLabel(nz(f.Status, "pending")))
+		fmt.Fprintf(&b, "- **状態**：%s\n", nz(f.Status, "pending"))
 		if desc := strings.TrimSpace(f.TaskDescription); desc != "" {
 			fmt.Fprintf(&b, "- **所属タスク**：%s\n", desc)
 		}
@@ -94,12 +94,12 @@ func FindingsMarkdown(fs []*db.DBFinding, generatedAt time.Time) string {
 // SingleFindingMarkdown 渲染单条漏洞为一份独立 Markdown(用于「一漏洞一文件」打包)。
 func SingleFindingMarkdown(f *db.DBFinding, generatedAt time.Time) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# [%s] %s\n\n", severityLabel(nz(f.Severity, "info")), findingTitle(f))
+	fmt.Fprintf(&b, "# [%s] %s\n\n", strings.ToUpper(nz(f.Severity, "info")), findingTitle(f))
 	if f.VulnClass != "" {
 		fmt.Fprintf(&b, "- **カテゴリ**：%s\n", f.VulnClass)
 	}
-	fmt.Fprintf(&b, "- **重大度**：%s\n", severityLabel(nz(f.Severity, "info")))
-	fmt.Fprintf(&b, "- **状態**：%s\n", statusLabel(nz(f.Status, "pending")))
+	fmt.Fprintf(&b, "- **重大度**：%s\n", nz(f.Severity, "info"))
+	fmt.Fprintf(&b, "- **状態**：%s\n", nz(f.Status, "pending"))
 	if desc := strings.TrimSpace(f.TaskDescription); desc != "" {
 		fmt.Fprintf(&b, "- **所属タスク**：%s\n", desc)
 	}
@@ -192,7 +192,7 @@ func findingTrafficMarkdown(f *db.DBFinding, attachments bool) string {
 		out.WriteString("証拠が変更されています。詳細レポートの更新が必要です。\n\n")
 	}
 	for i, b := range f.TrafficBindings {
-		fmt.Fprintf(&out, "%d. **証拠 #%d · %s** — `%s %s`、ステータスコード %d\n", i+1, b.ID, trafficRoleLabel(b.Role), b.Snapshot.Method, strings.ReplaceAll(b.Snapshot.URL, "`", "%60"), b.Snapshot.Status)
+		fmt.Fprintf(&out, "%d. **証拠 #%d · %s** — `%s %s`、ステータスコード %d\n", i+1, b.ID, b.Role, b.Snapshot.Method, strings.ReplaceAll(b.Snapshot.URL, "`", "%60"), b.Snapshot.Status)
 		if b.Note != "" {
 			fmt.Fprintf(&out, "   %s\n", strings.ReplaceAll(b.Note, "\n", "\n   "))
 		}
@@ -202,12 +202,4 @@ func findingTrafficMarkdown(f *db.DBFinding, attachments bool) string {
 	}
 	out.WriteString("\n")
 	return out.String()
-}
-
-func trafficRoleLabel(key string) string {
-	labels := map[string]string{"baseline": "正常時の比較対象", "proof": "脆弱性の立証", "verification": "追加検証", "supporting": "補助的な証拠"}
-	if label, ok := labels[key]; ok {
-		return label
-	}
-	return key
 }

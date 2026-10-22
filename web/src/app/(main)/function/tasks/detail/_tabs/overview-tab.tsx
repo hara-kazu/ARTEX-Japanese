@@ -738,7 +738,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CoinsIcon className="size-4 text-amber-500" /> LLM トークン使用量
+            <CoinsIcon className="size-4 text-amber-500" /> LLM Token使用量
             <span className="text-muted-foreground text-xs font-normal">
               （モデル別集計{tokenTotals.calls > 0 ? `、合計 ${tokenTotals.calls} 回の呼び出し` : ""}）
             </span>
@@ -835,7 +835,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               className="h-7 w-56 text-sm"
               placeholder={
                 scopeKind === "company"
-                  ? "会社名または ID"
+                  ? "会社名または id"
                   : scopeKind === "ip" || scopeKind === "cidr"
                     ? "例：10.0.0.1 または 10.0.0.0/24"
                     : scopeKind === "icp"

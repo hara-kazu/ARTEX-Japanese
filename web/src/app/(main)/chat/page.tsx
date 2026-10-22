@@ -78,11 +78,11 @@ function fmtTokens(n: number): string {
 // fmtDuration renders an elapsed milliseconds span compactly (90s → 1m30s).
 function fmtDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}秒`;
+  if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}分${String(s % 60).padStart(2, "0")}秒`;
+  if (m < 60) return `${m}m${String(s % 60).padStart(2, "0")}s`;
   const h = Math.floor(m / 60);
-  return `${h}時間${String(m % 60).padStart(2, "0")}分`;
+  return `${h}h${String(m % 60).padStart(2, "0")}m`;
 }
 
 // HISTORY_PAGE is how many steps one history page loads: the latest page on open,
@@ -421,7 +421,7 @@ function DraftChat({
   const agentPicker = (
     <Select value={agentKey} onValueChange={setAgentKey}>
       <SelectTrigger className="w-full sm:w-40">
-        <SelectValue placeholder="エージェントを選択…" />
+        <SelectValue placeholder="Agentを選択…" />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -450,7 +450,7 @@ function DraftChat({
         <div className="bg-primary/10 flex size-12 items-center justify-center rounded-full">
           <Bot className="text-primary size-6" />
         </div>
-        <div className="text-sm font-medium">「{agent?.name ?? "エージェント"}」とチャットを開始</div>
+        <div className="text-sm font-medium">「{agent?.name ?? "Agent"}」とチャットを開始</div>
         {agent?.description && <p className="text-muted-foreground max-w-md text-xs">{agent.description}</p>}
       </div>
 
@@ -778,13 +778,13 @@ function ChatView({
         <SideQuestionButton side={side} />
         <div className="text-muted-foreground ml-auto flex min-w-0 max-w-full items-center justify-end gap-x-3 gap-y-1 text-xs max-sm:w-full max-sm:flex-wrap">
           {tokenTotal.turns > 0 && (
-            <span title="エージェントのループ回数（モデル呼び出し回数）" className="tabular-nums">
+            <span title="agentのループ回数（モデル呼び出し回数）" className="tabular-nums">
               {tokenTotal.turns} 回
             </span>
           )}
           {tokenTotal.any && (
-            <span title="入力 / キャッシュ読み取り / 出力トークン" className="min-w-0 truncate tabular-nums">
-              入力 {fmtTokens(tokenTotal.i)} · キャッシュ {fmtTokens(tokenTotal.cr)} · 出力 {fmtTokens(tokenTotal.o)}
+            <span title="input / cache(read) / output tokens" className="min-w-0 truncate tabular-nums">
+              input {fmtTokens(tokenTotal.i)} · cache {fmtTokens(tokenTotal.cr)} · output {fmtTokens(tokenTotal.o)}
             </span>
           )}
         </div>
@@ -816,7 +816,7 @@ function ChatView({
         onSend={send}
         disabled={running || sending}
         allowBtw
-        placeholder={running ? "エージェントが応答中です。/btw で質問できます…" : "メッセージを入力、@ で記録を参照、Enter で送信"}
+        placeholder={running ? "Agentが応答中です。/btw で質問できます…" : "メッセージを入力、@ で記録を参照、Enter で送信"}
         running={running}
         onStop={stop}
         stopDisabled={stopping}
@@ -931,7 +931,7 @@ const ConversationItem = React.memo(function ConversationItem({
             {pinned && <PinIcon className="text-primary size-3 shrink-0" aria-label="ピン留め済み" />}
             <div className="truncate text-sm">{conv.title || "新しいチャット"}</div>
             {conv.running ? (
-              <Badge variant="secondary" className="shrink-0 gap-1" title="エージェントが実行中">
+              <Badge variant="secondary" className="shrink-0 gap-1" title="Agentが実行中">
                 <Spinner className="size-3" aria-hidden="true" />
                 実行中
               </Badge>
@@ -1362,13 +1362,13 @@ export default function ChatPage() {
               onValueChange={(value) => changeAgentFilter(value === "all" ? null : value.slice(6))}
               disabled={bulkDeleting}
             >
-              <SelectTrigger size="sm" className="w-full min-w-0" aria-label="エージェントでチャットを絞り込む">
+              <SelectTrigger size="sm" className="w-full min-w-0" aria-label="Agentでチャットを絞り込む">
                 <Bot />
-                <SelectValue placeholder="すべてのエージェント" />
+                <SelectValue placeholder="すべてのAgent" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="all">すべてのエージェント</SelectItem>
+                  <SelectItem value="all">すべてのAgent</SelectItem>
                   {agentFilterOptions.map((agent) => (
                     <SelectItem key={agent.key} value={`agent:${agent.key}`}>
                       {agent.name}（{agent.count}）
@@ -1430,7 +1430,7 @@ export default function ChatPage() {
             <div className="flex min-w-0 flex-col gap-0.5 p-2">
               {filteredConversations.length === 0 && (
                 <p className="text-muted-foreground px-2 py-6 text-center text-xs">
-                  {agentFilter === null ? "チャットはありません" : "このエージェントのチャットはありません"}
+                  {agentFilter === null ? "チャットはありません" : "このAgentのチャットはありません"}
                 </p>
               )}
               {pinnedConversations.map((c) => (

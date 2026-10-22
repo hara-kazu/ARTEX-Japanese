@@ -1,7 +1,7 @@
 export const THEME_MODE_OPTIONS = [
-  { label: "ライト", value: "light" },
-  { label: "ダーク", value: "dark" },
-  { label: "システム設定", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+  { label: "System", value: "system" },
 ] as const;
 
 export const THEME_MODE_VALUES = THEME_MODE_OPTIONS.map((o) => o.value);
@@ -12,7 +12,7 @@ export type ResolvedThemeMode = "light" | "dark";
 
 export const THEME_PRESET_OPTIONS = [
   {
-    label: "デフォルト",
+    label: "Default",
     value: "default",
     primary: {
       light: "oklch(0.205 0 0)",
@@ -20,7 +20,7 @@ export const THEME_PRESET_OPTIONS = [
     },
   },
   {
-    label: "ブルータリスト",
+    label: "Brutalist",
     value: "brutalist",
     primary: {
       light: "oklch(0.6489 0.237 26.9728)",
@@ -28,7 +28,7 @@ export const THEME_PRESET_OPTIONS = [
     },
   },
   {
-    label: "ソフトポップ",
+    label: "Soft Pop",
     value: "soft-pop",
     primary: {
       light: "oklch(0.5106 0.2301 276.9656)",
@@ -36,7 +36,7 @@ export const THEME_PRESET_OPTIONS = [
     },
   },
   {
-    label: "タンジェリン",
+    label: "Tangerine",
     value: "tangerine",
     primary: {
       light: "oklch(0.64 0.17 36.44)",

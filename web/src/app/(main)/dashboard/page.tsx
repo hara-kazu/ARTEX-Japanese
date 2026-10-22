@@ -55,12 +55,12 @@ function fmtRel(ts?: string | number): string {
   if (!ts) return "—";
   const ms = Date.now() - (typeof ts === "number" ? ts * 1000 : Date.parse(ts as string));
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}秒前`;
+  if (s < 60) return `${s}s 前`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}分前`;
+  if (m < 60) return `${m}m 前`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}時間前`;
-  return `${Math.floor(h / 24)}日前`;
+  if (h < 24) return `${h}h 前`;
+  return `${Math.floor(h / 24)}d 前`;
 }
 
 function fmtTokens(n: number): string {
@@ -471,26 +471,10 @@ export default function DashboardPage() {
   const dailyTokenData = tokenVersion === "new" ? dailyTokenDataNew : dailyTokenDataOld;
 
   // activity kind label
-  function activityKindLabel(kind: Activity["kind"]): string {
-    return {
-      tool_use: "ツール実行",
-      tool_result: "ツール結果",
-      text: "説明",
-      thinking: "推論",
-      result: "要約",
-      user: "ユーザー",
-      intent: "探索目標",
-      round: "実行ラウンド",
-      usage: "使用量",
-      llm_switch: "LLM 切り替え",
-      llm_failover: "LLM 障害時切り替え",
-      intercept_request: "実行承認要求",
-    }[kind];
-  }
-
   function kindLabel(a: Activity): string {
-    if (a.kind === "tool_use") return a.tool ?? activityKindLabel(a.kind);
-    return activityKindLabel(a.kind);
+    if (a.kind === "tool_use") return a.tool ?? "tool_use";
+    if (a.kind === "tool_result") return "tool_result";
+    return a.kind;
   }
 
   function workerColor(w: string): string {
@@ -589,7 +573,7 @@ export default function DashboardPage() {
         <Card className="gap-1">
           <CardHeader className="pb-0">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <ZapIcon className="size-3" /> トークン使用量
+              <ZapIcon className="size-3" /> Token使用量
             </div>
             <div className="text-2xl font-semibold tabular-nums">
               {fmtTokens(displayedTokens.input + displayedTokens.output) || "—"}
@@ -608,7 +592,7 @@ export default function DashboardPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold">
             <ZapIcon className="size-3.5 text-muted-foreground" />
-            LLM トークン消費量
+            LLM Token消費量
             {/* 数据源开关：旧版=activity 统计（含历史任务），新版=llm_usage 计量账本（更准，仅覆盖启用后） */}
             <div className="ml-1 flex gap-0.5 rounded-md border bg-muted/30 p-0.5">
               {(
@@ -638,7 +622,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <span className="text-[10px] font-normal text-muted-foreground">
-              {tokenVersion === "new" ? "呼び出し台帳" : "アクティビティ集計"}
+              {tokenVersion === "new" ? "llm_usage" : "activity"}
             </span>
           </div>
           {/* Profile tabs */}
@@ -888,7 +872,7 @@ export default function DashboardPage() {
               if (count === 0) return null;
               return (
                 <span key={kind} className="rounded border bg-muted/20 px-1.5 py-0.5 text-[9px] text-muted-foreground">
-                  {activityKindLabel(kind)} <strong className="text-foreground/70">{count}</strong>
+                  {kind} <strong className="text-foreground/70">{count}</strong>
                 </span>
               );
             })}
@@ -914,7 +898,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <Badge variant="outline" className="px-1.5 py-0 text-[9px] text-muted-foreground">
-                      {activityKindLabel(a.kind)}
+                      {a.kind}
                     </Badge>
                     <div className="mt-0.5 text-[9px] tabular-nums text-muted-foreground">{fmtRel(a.ts)}</div>
                   </div>

@@ -55,7 +55,7 @@ function AgentGridCard({
   async function del() {
     try {
       await api.deleteAgent(agent.key);
-      toast.success(`エージェントを削除しました：「${agent.name}」`);
+      toast.success(`Agentを削除しました：「${agent.name}」`);
       onDeleted();
     } catch (e) {
       toast.error("削除に失敗しました：" + (e as Error).message);
@@ -88,7 +88,7 @@ function AgentGridCard({
         </p>
         <div className="text-muted-foreground flex flex-wrap gap-1.5 text-[10px]">
           <span className="rounded border px-1.5 py-0.5">MCP {agent.mcp_count ?? 0}</span>
-          <span className="rounded border px-1.5 py-0.5">スキル {agent.skill_count ?? 0}</span>
+          <span className="rounded border px-1.5 py-0.5">Skill {agent.skill_count ?? 0}</span>
           <span className="rounded border px-1.5 py-0.5">ツール {agent.tool_count ?? 0}</span>
         </div>
       </button>
@@ -105,7 +105,7 @@ function AgentGridCard({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>エージェント「{agent.name}」を削除しますか？</AlertDialogTitle>
+              <AlertDialogTitle>Agent「{agent.name}」を削除しますか？</AlertDialogTitle>
               <AlertDialogDescription>
                 プロンプト、変数、公開範囲、ツールの関連付けも削除します。この操作は取り消せません。
               </AlertDialogDescription>
@@ -132,7 +132,7 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
     setBusy(true);
     try {
       const a = await api.createAgent(key.trim(), name.trim(), description.trim());
-      toast.success(`エージェントを作成しました：「${a.name}」`);
+      toast.success(`Agentを作成しました：「${a.name}」`);
       setOpen(false);
       setKey("");
       setName("");
@@ -152,19 +152,19 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm">
-          <PlusIcon /> エージェントを作成
+          <PlusIcon /> Agentを作成
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>カスタムエージェントを作成</DialogTitle>
+          <DialogTitle>カスタム Agentを作成</DialogTitle>
           <DialogDescription>
             チャット用のアシスタントを作成します。key は内部識別子で、作成後は変更できません。名前と説明は識別に使用します。
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="agent-key">キー</Label>
+            <Label htmlFor="agent-key">Key</Label>
             <Input
               id="agent-key"
               placeholder="例：research_helper"
@@ -189,7 +189,7 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
             <Label htmlFor="agent-desc">説明</Label>
             <Textarea
               id="agent-desc"
-              placeholder="このエージェントの役割を1文で記述"
+              placeholder="このAgentの役割を1文で記述"
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -223,9 +223,9 @@ export default function AgentsPage() {
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">エージェント</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Agent</h1>
           <p className="text-muted-foreground text-sm">
-            組み込みエージェントのプロンプト / 設定と、カスタムチャットエージェントの作成・管理
+            組み込みAgentのプロンプト / 設定と、カスタムチャットAgentの作成・管理
           </p>
         </div>
         <CreateAgentDialog
@@ -238,12 +238,12 @@ export default function AgentsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>エージェント一覧</CardTitle>
+          <CardTitle>Agent一覧</CardTitle>
           <CardDescription>合計 {agents.length} 個</CardDescription>
         </CardHeader>
         <CardContent>
           {agents.length === 0 ? (
-            <p className="text-muted-foreground py-6 text-center text-sm">（エージェントはありません）</p>
+            <p className="text-muted-foreground py-6 text-center text-sm">（Agentはありません）</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {agents.map((a) => (

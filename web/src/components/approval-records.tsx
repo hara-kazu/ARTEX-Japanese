@@ -153,8 +153,8 @@ function CodeBlock({ label, text, truncated = false }: { label: string; text: st
 
 const contextLabels: Record<string, string> = {
   user: "ユーザーメッセージ",
-  assistant: "エージェントのメッセージ",
-  text: "エージェントのメッセージ",
+  assistant: "Agentのメッセージ",
+  text: "Agentのメッセージ",
   tool_use: "ツールのリクエスト",
   tool_result: "ツールの出力",
 };
@@ -336,7 +336,7 @@ export function ApprovalDetail({
       <div className="grid min-w-0 gap-5 rounded-xl border bg-muted/20 p-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-3">
           <CodeBlock
-            label={`${current.agent_name || current.conv_agent_key || "エージェント"} · ツールのリクエスト`}
+            label={`${current.agent_name || current.conv_agent_key || "Agent"} · ツールのリクエスト`}
             text={JSON.stringify(row.tool_input ?? {}, null, 2)}
           />
           {command ? (

@@ -60,7 +60,7 @@ export const RETRY_LAYERS = {
     desc: "同じリクエストをそのまま再送します。ストリーム開始後（HTTP 200 受信後）の切断は、この層の対象外です。",
     attemptsLabel: "再試行回数",
     defAttempts: 3,
-    defInterval: "0.5秒 → 1秒 → 2秒の指数バックオフ（上限8秒）",
+    defInterval: "0.5s → 1s → 2s の指数バックオフ（上限8s）",
     offHint: "-1 = 再試行せず、直ちにエラーを返す",
   },
   empty: {
@@ -69,23 +69,23 @@ export const RETRY_LAYERS = {
     trigger:
       "HTTP 200 で finish_reason が正常な stop でも、内容のブロックが1つもない応答です。ゲートウェイの空フレーム、思考フィールドの欠落、生成の一時的な不具合などで発生します。",
     skips: "max_tokens による打ち切りは対象外です（出力上限の調整が必要で、再送しても再発します）。",
-    desc: "プロンプト全体を再送するため、長いコンテキストではコストが高くなります。回数を増やしすぎないでください。",
+    desc: "prompt全体を再送するため、長いコンテキストではコストが高くなります。回数を増やしすぎないでください。",
     attemptsLabel: "再試行回数",
     defAttempts: 2,
-    defInterval: "0.5秒 → 1秒 → 2秒の指数バックオフ（上限8秒）",
+    defInterval: "0.5s → 1s → 2s の指数バックオフ（上限8s）",
     offHint: "-1 = 空のレスポンスをそのまま返す",
   },
   stream: {
-    title: "同じプロバイダー内での安全な再試行",
+    title: "同じprovider内での安全な再試行",
     where: "アプリ側 · 出力の引き渡し前",
     trigger:
-      "HTTP 200 受信後に、途中切断、プロバイダーの overloaded、ストリーム内の 429 / 5xx エラーが発生し、呼び出し元にまだ1トークンも渡していない場合です。",
+      "HTTP 200 受信後に、途中切断、プロバイダーの overloaded、ストリーム内の 429 / 5xx エラーが発生し、呼び出し元にまだ1tokenも渡していない場合です。",
     skips:
       "利用枠不足（402 / insufficient_quota は設定切り替え）、コンテキスト超過（413 / context length は圧縮）、400 / 401 / 403 / 404 / 422 の確定的な拒否は再試行しません。",
     desc: "同じ設定で同じリクエストを再送します。出力をまだ渡していないため、モデルの出力やツールの実行は重複しません。",
     attemptsLabel: "再試行回数",
     defAttempts: 2,
-    defInterval: "0.5秒 → 1秒の指数バックオフ（上限4秒）",
+    defInterval: "0.5s → 1s の指数バックオフ（上限4s）",
     offHint: "-1 = ストリーム切断を外側のインテント再実行に渡す",
   },
   breaker: {
@@ -97,19 +97,19 @@ export const RETRY_LAYERS = {
     desc: "遮断後はクールダウンに入り、その間は切り替え対象から除外します。状態はデータベースに保存され、再起動後も保持されます。",
     attemptsLabel: "遮断する連続失敗回数",
     defAttempts: 3,
-    defInterval: "1分 → 5分 → 30分の段階制",
+    defInterval: "1min → 5min → 30min の段階制",
     offHint: "-1 = 一時的な障害では遮断しない（確定的な失敗では遮断）",
   },
   intent: {
     title: "インテントの再実行",
     where: "アプリ側 · プロセス全体で共有",
     trigger:
-      "前の層で回復できず、Worker が model_error で終了した場合です。内部の再試行を使い切った場合や、出力開始後の切断（安全に再送できず、最初から実行が必要）が対象です。",
+      "前の層で回復できず、worker が model_error で終了した場合です。内部の再試行を使い切った場合や、出力開始後の切断（安全に再送できず、最初から実行が必要）が対象です。",
     skips: "利用枠不足は設定切り替えで処理し、ここでは再実行しません。タスクの一時停止 / 終了 / 終了処理に入ると、バックオフを待たずに中断します。",
     desc: "インテント全体を最初から実行します。最も外側の処理のため、再実行ごとに内部の各層の再試行回数も再び適用されます。",
     attemptsLabel: "再実行回数",
     defAttempts: 2,
-    defInterval: "固定3秒",
+    defInterval: "固定3s",
     offHint: "-1 = 再実行せず、このインテントを blocked と判定",
   },
 } satisfies Record<string, LayerMeta>;
@@ -119,9 +119,9 @@ type LayerKey = keyof typeof RETRY_LAYERS;
 /** 毫秒的人话，只用于在输入框旁边回显，免得数零。 */
 function humanMs(ms: number) {
   if (!Number.isFinite(ms) || ms <= 0) return "";
-  if (ms < 1000) return `${ms}ミリ秒`;
-  if (ms < 60_000) return `${Number((ms / 1000).toFixed(2))}秒`;
-  return `${Number((ms / 60_000).toFixed(2))}分`;
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${Number((ms / 1000).toFixed(2))}s`;
+  return `${Number((ms / 60_000).toFixed(2))}min`;
 }
 
 /** 受控数字输入：空串 ↔ 0，中间态（"-"、"1e"）原样留在本地，不打扰父级。 */
@@ -311,7 +311,7 @@ export function RetryPolicyPanel() {
     <div className="grid gap-4">
       <div className="rounded-lg border bg-muted/30 p-3 text-muted-foreground text-xs leading-relaxed">
         モデル呼び出しの失敗は、内側から外側へ次の5層で再試行します：
-        <span className="text-foreground"> 接続 → 空のレスポンス → 同じプロバイダーの安全な再試行 → 切り替え時の遮断 → インテント再実行</span>
+        <span className="text-foreground"> 接続 → 空のレスポンス → 同じproviderの安全な再試行 → 切り替え時の遮断 → インテント再実行</span>
         。内側を使い切ってから外側へ進むため、回数は
         <span className="text-foreground">掛け算</span>
         になります。各層を最大にすると、1回の障害で数十回のリクエストが発生し得ます。すべて空欄なら既定値を使用し、従来と同じ動作です。最初の3層はモデル設定ごとに上書きできます。

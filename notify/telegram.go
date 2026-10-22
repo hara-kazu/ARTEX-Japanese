@@ -98,7 +98,7 @@ func telegramEndpoint(cfg map[string]any) (string, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		// 不透传 err：地址里含 Bot Token，且此时连 addr 都不该回显。
-		return "", fmt.Errorf("API アドレスの結合に失敗しました（アドレス: %s）", redactRequestTarget(base))
+		return "", fmt.Errorf("API アドレスの結合に失敗しました（API アドレス: %s）", redactRequestTarget(base))
 	}
 	return u.String(), nil
 }

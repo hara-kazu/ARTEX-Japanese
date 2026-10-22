@@ -177,23 +177,23 @@ function SkillsOverview({
   if (skills.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground">スキルはありません。左側の「新規作成」または「アーカイブをアップロード」から開始してください</p>
+        <p className="text-sm text-muted-foreground">Skillはありません。左側の「新規作成」または「アーカイブをアップロード」から開始してください</p>
       </div>
     );
   }
 
   const stats: { label: string; value: React.ReactNode; hint?: string }[] = [
-    { label: "スキルの総数", value: skills.length, hint: `${agg.usedCount} 個に呼び出し実績あり` },
+    { label: "Skillの総数", value: skills.length, hint: `${agg.usedCount} 個に呼び出し実績あり` },
     { label: "累計呼び出し", value: agg.totalCalls },
-    { label: "未使用", value: agg.neverUsed.length, hint: agg.neverUsed.length > 0 ? "どのエージェントからも読み込まれていません" : "すべて使用済み" },
-    { label: "見つからなかった呼び出し", value: agg.missingCalls, hint: missing.length > 0 ? `${missing.length} 個の存在しないスキル` : "なし" },
+    { label: "未使用", value: agg.neverUsed.length, hint: agg.neverUsed.length > 0 ? "どのagentからも読み込まれていません" : "すべて使用済み" },
+    { label: "見つからなかった呼び出し", value: agg.missingCalls, hint: missing.length > 0 ? `${missing.length} 個の存在しないskill` : "なし" },
   ];
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <div>
         <h2 className="text-base font-semibold">スキルライブラリの概要</h2>
-        <p className="text-muted-foreground text-sm">左側のスキルを選択して詳細と呼び出し記録を確認するか、ここで全体の使用状況を確認できます。</p>
+        <p className="text-muted-foreground text-sm">左側のSkillを選択して詳細と呼び出し記録を確認するか、ここで全体の使用状況を確認できます。</p>
       </div>
 
       {/* 指标卡 */}
@@ -212,7 +212,7 @@ function SkillsOverview({
         <Label className="text-xs text-muted-foreground">呼び出しランキング</Label>
         {agg.ranked.length === 0 ? (
           <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-xs">
-            スキルの呼び出し記録はまだありません。
+            Skillの呼び出し記録はまだありません。
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -265,11 +265,11 @@ function SkillsOverview({
         {/* 未使用（可清理 / 需曝光） */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">
-            未使用のスキル
+            未使用のSkill
             {agg.neverUsed.length > 0 && <span className="ml-1 font-normal">（{agg.neverUsed.length}）</span>}
           </Label>
           {agg.neverUsed.length === 0 ? (
-            <p className="text-muted-foreground text-xs">すべてのスキルに呼び出し実績があります。</p>
+            <p className="text-muted-foreground text-xs">すべてのSkillに呼び出し実績があります。</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {agg.neverUsed.map((s) => (
@@ -362,7 +362,7 @@ export default function SkillsPage() {
     setUploading(true);
     try {
       const r = await api.uploadSkill(file, overwrite);
-      toast.success(`スキルをインストールしました：${r.name}（${r.files} 個のファイル）`);
+      toast.success(`Skillをインストールしました：${r.name}（${r.files} 個のファイル）`);
       load();
     } catch (e) {
       const msg = (e as Error).message;
@@ -370,7 +370,7 @@ export default function SkillsPage() {
       if (!overwrite && (msg.includes("既に存在") || msg.includes("已存在"))) {
         if (window.confirm(`${msg}
 
-同名のスキルを上書きしますか？`)) {
+同名のSkillを上書きしますか？`)) {
           await uploadZip(file, true);
           return;
         }
@@ -505,7 +505,7 @@ export default function SkillsPage() {
   async function deleteSkill(name: string) {
     try {
       await api.deleteSkill(name);
-      toast.success(`スキルを削除しました：${name}`);
+      toast.success(`Skillを削除しました：${name}`);
       if (selected?.skill === name) setSelected(null);
       load();
     } catch (e) {
@@ -567,8 +567,8 @@ export default function SkillsPage() {
   }
 
   async function createNewSkill() {
-    if (!newName.trim()) { toast.error("名前を入力してください"); return; }
-    if (!newDesc.trim()) { toast.error("説明を入力してください"); return; }
+    if (!newName.trim()) { toast.error("name を入力してください"); return; }
+    if (!newDesc.trim()) { toast.error("description は必須です"); return; }
     setCreatingSkill(true);
     try {
       const name = newName.trim();
@@ -581,7 +581,7 @@ export default function SkillsPage() {
       });
       // apply initial visibility (fire-and-forget per agent; best-effort)
       await Promise.all(newVisibility.map((id) => api.toggleSkillVisibility(id, name, true)));
-      toast.success("スキルを作成しました");
+      toast.success("Skill を作成しました");
       setNewOpen(false);
       setNewName(""); setNewDesc(""); setNewLicense(""); setNewCompat(""); setNewInst("");
       setNewMcps([]); setNewVisibility([]);
@@ -706,8 +706,8 @@ export default function SkillsPage() {
     <div data-content-padding="false" className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b px-4 py-2.5 lg:px-6">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-sm font-semibold leading-tight">スキル</h1>
-          <p className="text-muted-foreground text-xs">スキルライブラリ · agentskills.io 準拠 · エージェントごとに公開</p>
+          <h1 className="text-sm font-semibold leading-tight">Skill</h1>
+          <p className="text-muted-foreground text-xs">スキルライブラリ · agentskills.io 準拠 · Agentごとに公開</p>
         </div>
         {/* 缺口清单：agent 点名调用、但库里没有的 skill —— 直接是该补什么的依据。 */}
         {missing.length > 0 && (
@@ -720,7 +720,7 @@ export default function SkillsPage() {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80">
               <p className="mb-2 text-xs text-muted-foreground">
-                エージェントが指定したものの、ライブラリに存在しなかったスキルです。指定された回数順に表示します。
+                Agentが指定したものの、ライブラリに存在しなかったskillです。指定された回数順に表示します。
               </p>
               <div className="space-y-1">
                 {missing.map((m) => (
@@ -740,7 +740,7 @@ export default function SkillsPage() {
         <div className="flex w-64 shrink-0 flex-col border-r">
           <div className="flex flex-col gap-2 border-b p-2">
             <Button size="sm" variant="outline" className="w-full" onClick={() => setNewOpen(true)}>
-              <PlusIcon className="size-3.5" />スキルを作成
+              <PlusIcon className="size-3.5" />Skillを作成
             </Button>
             <input
               ref={uploadRef}
@@ -809,7 +809,7 @@ export default function SkillsPage() {
                           onClick={(e) => { e.stopPropagation(); startCreate(s.name, "", "dir"); }}>
                           <FolderPlusIcon className="size-3 text-muted-foreground" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="size-5" title="スキルを削除"
+                        <Button size="icon" variant="ghost" className="size-5" title="Skillを削除"
                           onClick={(e) => { e.stopPropagation(); setPendingDelete({ kind: "skill", skill: s.name }); }}>
                           <Trash2Icon className="size-3 text-destructive" />
                         </Button>
@@ -829,7 +829,7 @@ export default function SkillsPage() {
               })}
 
               {skills.length === 0 && (
-                <p className="p-3 text-xs text-muted-foreground">スキルはありません。「新規作成」から開始してください</p>
+                <p className="p-3 text-xs text-muted-foreground">Skillはありません。「新規作成」から開始してください</p>
               )}
             </div>
           </ScrollArea>
@@ -854,7 +854,7 @@ export default function SkillsPage() {
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedSkill.license && (
-                    <Badge variant="outline" className="text-xs font-normal">ライセンス：{selectedSkill.license}</Badge>
+                    <Badge variant="outline" className="text-xs font-normal">License: {selectedSkill.license}</Badge>
                   )}
                   {selectedSkill.compatibility && (
                     <Badge variant="secondary" className="text-xs font-normal">{selectedSkill.compatibility}</Badge>
@@ -920,7 +920,7 @@ export default function SkillsPage() {
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
                       MCP を関連付け
-                      <span className="ml-1 font-normal">（スキルの読み込み時にツールを公開 / 有効化）</span>
+                      <span className="ml-1 font-normal">（Skillの読み込み時にツールを公開 / 有効化）</span>
                     </Label>
                     {mcpOptions.length === 0 ? (
                       <p className="text-xs text-muted-foreground">MCP はありません。「MCP」画面で追加できます。</p>
@@ -940,7 +940,7 @@ export default function SkillsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">公開範囲（エージェントごとに許可）</Label>
+                    <Label className="text-xs text-muted-foreground">公開範囲（Agentごとに許可）</Label>
                     <div className="space-y-2">
                       {agents.map((a) => (
                         <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -952,7 +952,7 @@ export default function SkillsPage() {
                         </label>
                       ))}
                       {agents.length === 0 && (
-                        <span className="text-xs text-muted-foreground">（エージェントはありません）</span>
+                        <span className="text-xs text-muted-foreground">（Agentはありません）</span>
                       )}
                     </div>
                   </div>
@@ -990,13 +990,13 @@ export default function SkillsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingDelete?.kind === "skill" && `スキル「${pendingDelete.skill}」を削除しますか？`}
+              {pendingDelete?.kind === "skill" && `Skill「${pendingDelete.skill}」を削除しますか？`}
               {pendingDelete?.kind === "dir" && `フォルダー「${pendingDelete.path}」を削除しますか？`}
               {pendingDelete?.kind === "file" && `ファイル「${pendingDelete.path}」を削除しますか？`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDelete?.kind === "skill"
-                ? "このスキルのすべてのファイル、MCP の関連付け、公開設定を削除します。この操作は取り消せません。"
+                ? "このSkillのすべてのファイル、MCP の関連付け、公開設定を削除します。この操作は取り消せません。"
                 : pendingDelete?.kind === "dir"
                   ? "このフォルダー内のすべてのファイルも削除します。この操作は取り消せません。"
                   : "この操作は取り消せません。"}
@@ -1018,7 +1018,7 @@ export default function SkillsPage() {
       <Sheet open={newOpen} onOpenChange={setNewOpen}>
         <SheetContent side="right" className="flex w-full flex-col gap-0 data-[side=right]:sm:max-w-xl">
           <SheetHeader className="px-4 pt-4">
-            <SheetTitle>スキルを作成</SheetTitle>
+            <SheetTitle>Skillを作成</SheetTitle>
           </SheetHeader>
           <Tabs defaultValue="basic" className="flex min-h-0 flex-1 flex-col">
             <TabsList className="mx-4 mt-3 shrink-0 justify-start">
@@ -1051,16 +1051,16 @@ export default function SkillsPage() {
               <div className="grid gap-1.5">
                 <Label htmlFor="sk-desc">説明 <span className="text-destructive">*</span></Label>
                 <Textarea id="sk-desc" rows={2} className="resize-none"
-                  placeholder="このスキルの役割と使用する場面。"
+                  placeholder="このskillの役割と使用する場面。"
                   value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label className="text-muted-foreground text-xs">ライセンス（license）</Label>
+                  <Label className="text-muted-foreground text-xs">license</Label>
                   <Input placeholder="MIT / Proprietary" value={newLicense} onChange={(e) => setNewLicense(e.target.value)} />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label className="text-muted-foreground text-xs">動作要件（compatibility）</Label>
+                  <Label className="text-muted-foreground text-xs">compatibility</Label>
                   <Input placeholder="sqlmap、python3 が必要" value={newCompat} onChange={(e) => setNewCompat(e.target.value)} />
                 </div>
               </div>
@@ -1075,7 +1075,7 @@ export default function SkillsPage() {
 
             {/* 关联 MCP */}
             <TabsContent value="mcp" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
-              <p className="mb-3 text-xs text-muted-foreground">スキルの読み込み時に、選択した MCP のツールを公開して有効化します。</p>
+              <p className="mb-3 text-xs text-muted-foreground">Skillの読み込み時に、選択した MCP のツールを公開して有効化します。</p>
               {mcpOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground">MCP はありません。「MCP」画面で追加できます。</p>
               ) : (
@@ -1097,9 +1097,9 @@ export default function SkillsPage() {
 
             {/* 可见性 */}
             <TabsContent value="visibility" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
-              <p className="mb-3 text-xs text-muted-foreground">選択したエージェントは、作成後にこのスキルを参照できます。</p>
+              <p className="mb-3 text-xs text-muted-foreground">選択したAgentは、作成後にこのSkillを参照できます。</p>
               {agents.length === 0 ? (
-                <p className="text-xs text-muted-foreground">（エージェントはありません）</p>
+                <p className="text-xs text-muted-foreground">（Agentはありません）</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {agents.map((a) => (

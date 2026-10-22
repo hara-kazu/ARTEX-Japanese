@@ -106,15 +106,15 @@ export function LayoutControls() {
       <PopoverContent align="end">
         <div className="flex flex-col gap-5">
           <div className="space-y-1.5">
-            <h4 className="font-medium text-sm leading-none">表示設定</h4>
-            <p className="text-muted-foreground text-xs">ダッシュボードの表示方法を設定します。</p>
+            <h4 className="font-medium text-sm leading-none">Preferences</h4>
+            <p className="text-muted-foreground text-xs">Customize your dashboard layout preferences.</p>
           </div>
           <div className="space-y-3 **:data-[slot=toggle-group]:w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs">
             <div className="space-y-1">
-              <Label className="font-medium text-xs">テーマのプリセット</Label>
+              <Label className="font-medium text-xs">Theme Preset</Label>
               <Select value={themePreset} onValueChange={onThemePresetChange}>
                 <SelectTrigger size="sm" className="w-full text-xs">
-                  <SelectValue placeholder="プリセット" />
+                  <SelectValue placeholder="Preset" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -136,10 +136,10 @@ export function LayoutControls() {
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">フォント</Label>
+              <Label className="font-medium text-xs">Fonts</Label>
               <Select value={font} onValueChange={onFontChange}>
                 <SelectTrigger size="sm" className="w-full text-xs">
-                  <SelectValue placeholder="フォントを選択" />
+                  <SelectValue placeholder="Select font" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -154,7 +154,7 @@ export function LayoutControls() {
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">テーマ</Label>
+              <Label className="font-medium text-xs">Theme Mode</Label>
               <ToggleGroup
                 size="sm"
                 spacing={0}
@@ -163,20 +163,20 @@ export function LayoutControls() {
                 value={themeMode}
                 onValueChange={onThemeModeChange}
               >
-                <ToggleGroupItem value="light" aria-label="ライトに切り替え">
-                  ライト
+                <ToggleGroupItem value="light" aria-label="Toggle light">
+                  Light
                 </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="ダークに切り替え">
-                  ダーク
+                <ToggleGroupItem value="dark" aria-label="Toggle dark">
+                  Dark
                 </ToggleGroupItem>
-                <ToggleGroupItem value="system" aria-label="システム設定に切り替え">
-                  システム設定
+                <ToggleGroupItem value="system" aria-label="Toggle system">
+                  System
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">ページのレイアウト</Label>
+              <Label className="font-medium text-xs">Page Layout</Label>
               <ToggleGroup
                 size="sm"
                 spacing={0}
@@ -185,17 +185,17 @@ export function LayoutControls() {
                 value={contentLayout}
                 onValueChange={onContentLayoutChange}
               >
-                <ToggleGroupItem value="centered" aria-label="中央寄せに切り替え">
-                  中央寄せ
+                <ToggleGroupItem value="centered" aria-label="Toggle centered">
+                  Centered
                 </ToggleGroupItem>
-                <ToggleGroupItem value="full-width" aria-label="全幅に切り替え">
-                  全幅
+                <ToggleGroupItem value="full-width" aria-label="Toggle full-width">
+                  Full Width
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">ナビゲーションバーの動作</Label>
+              <Label className="font-medium text-xs">Navbar Behavior</Label>
               <ToggleGroup
                 size="sm"
                 spacing={0}
@@ -204,17 +204,17 @@ export function LayoutControls() {
                 value={navbarStyle}
                 onValueChange={onNavbarStyleChange}
               >
-                <ToggleGroupItem value="sticky" aria-label="固定表示に切り替え">
-                  固定
+                <ToggleGroupItem value="sticky" aria-label="Toggle sticky">
+                  Sticky
                 </ToggleGroupItem>
-                <ToggleGroupItem value="scroll" aria-label="スクロールに切り替え">
-                  スクロール
+                <ToggleGroupItem value="scroll" aria-label="Toggle scroll">
+                  Scroll
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">サイドバーのスタイル</Label>
+              <Label className="font-medium text-xs">Sidebar Style</Label>
               <ToggleGroup
                 size="sm"
                 spacing={0}
@@ -223,20 +223,20 @@ export function LayoutControls() {
                 value={variant}
                 onValueChange={onSidebarStyleChange}
               >
-                <ToggleGroupItem value="inset" aria-label="内側表示に切り替え">
-                  内側
+                <ToggleGroupItem value="inset" aria-label="Toggle inset">
+                  Inset
                 </ToggleGroupItem>
-                <ToggleGroupItem value="sidebar" aria-label="サイドバーに切り替え">
-                  サイドバー
+                <ToggleGroupItem value="sidebar" aria-label="Toggle sidebar">
+                  Sidebar
                 </ToggleGroupItem>
-                <ToggleGroupItem value="floating" aria-label="フローティングに切り替え">
-                  フローティング
+                <ToggleGroupItem value="floating" aria-label="Toggle floating">
+                  Floating
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="font-medium text-xs">サイドバーの折りたたみ方法</Label>
+              <Label className="font-medium text-xs">Sidebar Collapse Mode</Label>
               <ToggleGroup
                 size="sm"
                 spacing={0}
@@ -245,17 +245,17 @@ export function LayoutControls() {
                 value={collapsible}
                 onValueChange={onSidebarCollapseModeChange}
               >
-                <ToggleGroupItem value="icon" aria-label="アイコン表示に切り替え">
-                  アイコン
+                <ToggleGroupItem value="icon" aria-label="Toggle icon">
+                  Icon
                 </ToggleGroupItem>
-                <ToggleGroupItem value="offcanvas" aria-label="画面外に収納">
-                  画面外に収納
+                <ToggleGroupItem value="offcanvas" aria-label="Toggle offcanvas">
+                  OffCanvas
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={handleRestore}>
-              既定値に戻す
+              Restore Defaults
             </Button>
           </div>
         </div>

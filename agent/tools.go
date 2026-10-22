@@ -340,7 +340,7 @@ func jsonResult(v any) (actool.Result, error) {
 
 func (t *ToolSet) graphOverview() actool.CoreTool {
 	return t.readExpTool("graph_overview",
-		"（探索経路グラフ）探索状況の要約：資産数、エンドポイントのないサイト、frontier、検出結果、hints（人間 / メインエージェントからの方針のヒント。インテントの作成時に必ず考慮する）を返します。計画時には最初に呼び出してください。",
+		"（探索経路グラフ）探索状況の要約：資産数、エンドポイントのないサイト、frontier、検出結果、hints（人間 / メイン agentからの方針のヒント。インテントの作成時に必ず考慮する）を返します。計画時には最初に呼び出してください。",
 		obj(map[string]any{}),
 		func(context.Context, json.RawMessage) (actool.Result, error) {
 			return jsonResult(t.graphOverviewData())
@@ -1614,7 +1614,7 @@ func (t *ToolSet) setConstraints() actool.CoreTool {
 }
 
 func (t *ToolSet) addHint() actool.CoreTool {
-	return t.writeExpTool("add_hint", "人間 / メインエージェントからの方針のヒントを探索グラフに追加します。計画エージェントが次回インテントを作成するときに読み取ります。\n"+
+	return t.writeExpTool("add_hint", "人間 / メイン agentからの方針のヒントを探索グラフに追加します。計画エージェントが次回インテントを作成するときに読み取ります。\n"+
 		"★一括登録を優先：複数のヒントを hints 配列に入れ、1回で登録します（個別に呼び出すより往復回数を減らせます）。返される ids 配列は hints と同じ要素数・順序です（失敗した項目は id=0。詳細は errors）。1件だけなら hints を省略し、最上位の text を直接指定してください。",
 		obj(map[string]any{
 			"hints":        map[string]any{"type": "array", "description": "【こちらを優先】追加するヒントの配列。順番に処理します。各要素のフィールドは下の最上位フィールド（text / asset_ids / traffic_refs）と同じです。返される ids は、この配列と同じ要素数・順序です。", "items": obj(map[string]any{"text": str("ヒントの内容"), "asset_ids": map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}, "traffic_refs": HintTrafficSchema()})},

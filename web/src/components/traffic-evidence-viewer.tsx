@@ -83,14 +83,14 @@ export function TrafficEvidenceViewer({
         ) : detail ? (
           <Tabs defaultValue="request">
             <TabsList>
-              <TabsTrigger value="request">リクエスト</TabsTrigger>
-              <TabsTrigger value="response">レスポンス</TabsTrigger>
+              <TabsTrigger value="request">リクエスト Request</TabsTrigger>
+              <TabsTrigger value="response">レスポンス Response</TabsTrigger>
             </TabsList>
             {(["request", "response"] as const).map((side) => (
               <TabsContent key={side} value={side}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">
-                    本文 {detail[side].total.toLocaleString("ja-JP")} バイト{detail[side].truncated ? " · 現在はプレビュー" : ""}
+                    本文 {detail[side].total.toLocaleString()} バイト{detail[side].truncated ? " · 現在はプレビュー" : ""}
                   </span>
                   <Button
                     variant="outline"
@@ -162,8 +162,8 @@ export function CapturedTrafficViewer({ id, onClose }: { id: string | null; onCl
         ) : detail ? (
           <Tabs defaultValue="request">
             <TabsList>
-              <TabsTrigger value="request">リクエスト</TabsTrigger>
-              <TabsTrigger value="response">レスポンス</TabsTrigger>
+              <TabsTrigger value="request">リクエスト Request</TabsTrigger>
+              <TabsTrigger value="response">レスポンス Response</TabsTrigger>
             </TabsList>
             <TabsContent value="request">
               <HttpCodeBlock raw={detail.req} />

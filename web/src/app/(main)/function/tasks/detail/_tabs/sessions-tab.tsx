@@ -203,7 +203,7 @@ const TokenMetrics = React.forwardRef<
     labels?: "short" | "long";
   }
 >(({ input, cache, output, labels = "short", className, ...props }, ref) => {
-  const names = labels === "short" ? ["入力", "キャッシュ", "出力"] : ["入力トークン", "キャッシュ読み取り", "出力トークン"];
+  const names = labels === "short" ? ["入力", "キャッシュ", "出力"] : ["input", "cache", "output"];
   const values = [input, cache, output];
   return (
     <span
@@ -227,17 +227,17 @@ TokenMetrics.displayName = "TokenMetrics";
 // fmtDuration renders an elapsed milliseconds span compactly (90s → 1m30s).
 function fmtDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}秒`;
+  if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}分${String(s % 60).padStart(2, "0")}秒`;
+  if (m < 60) return `${m}m${String(s % 60).padStart(2, "0")}s`;
   const h = Math.floor(m / 60);
-  return `${h}時間${String(m % 60).padStart(2, "0")}分`;
+  return `${h}h${String(m % 60).padStart(2, "0")}m`;
 }
 
 const roleMeta = {
-  mainagent: { label: "メインエージェント", icon: UserIcon },
+  mainagent: { label: "メイン Agent", icon: UserIcon },
   planner: { label: "計画エージェント Planner", icon: BrainIcon },
-  worker: { label: "実行エージェント", icon: RadioIcon },
+  worker: { label: "Workers", icon: RadioIcon },
   system: { label: "システム監査", icon: HistoryIcon },
 } as const;
 
@@ -250,7 +250,7 @@ const roleMeta = {
 // segment is a switchable UI session; only the current (highest) one is writable.
 const mainSessionId = (seg: number) => `s-main-${seg}`;
 const mainSessionKey = (seg: number) => `main:${seg}`;
-const mainSessionTitle = (seg: number) => `メインエージェント · セッション #${seg + 1}`;
+const mainSessionTitle = (seg: number) => `メイン Agent · セッション #${seg + 1}`;
 const MAIN_ID = mainSessionId(0);
 const MAIN_SESSION: Session = {
   id: MAIN_ID,
@@ -1638,8 +1638,8 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  入力 {taskTokens.input_tokens.toLocaleString("ja-JP")} · 出力 {taskTokens.output_tokens.toLocaleString("ja-JP")} · キャッシュ読み取り {taskTokens.cache_read_tokens.toLocaleString("ja-JP")} · キャッシュ書き込み{" "}
-                  {taskTokens.cache_write_tokens.toLocaleString("ja-JP")}
+                  入力 {taskTokens.input_tokens.toLocaleString()} · 出力 {taskTokens.output_tokens.toLocaleString()} · キャッシュ読み取り {taskTokens.cache_read_tokens.toLocaleString()} · キャッシュ書き込み{" "}
+                  {taskTokens.cache_write_tokens.toLocaleString()}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -1667,8 +1667,8 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                           type="button"
                           onClick={() => setConfirmNewMain(true)}
                           disabled={creatingMain}
-                          title="メインエージェントのセッションを作成（コンテキストをクリアし、タスクの状態は保持）"
-                          aria-label="メインエージェントのセッションを作成"
+                          title="メイン Agentのセッションを作成（コンテキストをクリアし、タスクの状態は保持）"
+                          aria-label="メイン Agentのセッションを作成"
                           className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/60 hover:text-foreground disabled:opacity-50"
                         >
                           {creatingMain ? (
@@ -1816,10 +1816,10 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      入力 {activeTokens.input_tokens.toLocaleString("ja-JP")} · 出力{" "}
-                      {activeTokens.output_tokens.toLocaleString("ja-JP")} · キャッシュ読み取り{" "}
-                      {activeTokens.cache_read_tokens.toLocaleString("ja-JP")} · キャッシュ書き込み{" "}
-                      {activeTokens.cache_write_tokens.toLocaleString("ja-JP")}
+                      入力 {activeTokens.input_tokens.toLocaleString()} · 出力{" "}
+                      {activeTokens.output_tokens.toLocaleString()} · キャッシュ読み取り{" "}
+                      {activeTokens.cache_read_tokens.toLocaleString()} · キャッシュ書き込み{" "}
+                      {activeTokens.cache_write_tokens.toLocaleString()}
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -1903,7 +1903,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                   />
                 ) : (
                   <div className="pl-9 text-xs text-muted-foreground">
-                    {isMain ? "チャットはまだありません。下からメインエージェントにメッセージを送り、探索の方向を指示したり、処理に介入できます。" : "アクティビティの記録はありません。"}
+                    {isMain ? "チャットはまだありません。下からメイン Agentにメッセージを送り、探索の方向を指示したり、処理に介入できます。" : "アクティビティの記録はありません。"}
                   </div>
                 )}
               </div>
@@ -1944,9 +1944,9 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                   <MentionTextarea
                     inputGroup
                     rows={1}
-                    aria-label="メインエージェントにメッセージを送信"
+                    aria-label="メイン Agentにメッセージを送信"
                     placeholder={
-                      mainBusy ? "メインエージェントが実行中です。/btw で質問できます…" : "メインエージェントにメッセージを送信。@ で脆弱性や資産などを参照…"
+                      mainBusy ? "メイン Agentが実行中です。/btw で質問できます…" : "メイン Agentにメッセージを送信。@ で脆弱性や資産などを参照…"
                     }
                     value={input}
                     disabled={sending}
@@ -2187,7 +2187,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
             <AlertDialogHeader>
               <AlertDialogTitle>新しいセッションを開始しますか？</AlertDialogTitle>
               <AlertDialogDescription className="break-words whitespace-normal">
-                現在のセッションをアーカイブし（いつでも切り替え可能）、メインエージェントは新しいコンテキストで続行します。タスクのグラフ、資産、目標は保持されます。
+                現在のセッションをアーカイブし（いつでも切り替え可能）、メイン Agentは新しいコンテキストで続行します。タスクのグラフ、資産、目標は保持されます。
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
