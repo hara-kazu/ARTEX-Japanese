@@ -1678,7 +1678,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
         let restored = false;
         states.forEach((state, index) => {
           if (state.status !== "rejected" || !(state.reason instanceof Error)) return;
-          if (!state.reason.message.includes("アーカイブが存在しません")) return;
+          if (!state.reason.message.includes("アーカイブが存在しません") && !state.reason.message.includes("归档不存在")) return;
           pendingRestoreIDs.current.delete(pending[index]);
           restored = true;
         });

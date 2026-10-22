@@ -38,8 +38,33 @@ func TestParseVerdictRejectsIncompleteOrAmbiguousReplies(t *testing.T) {
 		"```json\n" + valid + "\n```\n此外我建议后续人工复核。",
 		"我的裁决是：\n" + valid,
 	} {
-		if got := ParseVerdict(reply); got.Action != "" {
-			t.Errorf("accepted incomplete/ambiguous verdict: %q => %+v", reply, got)
+		legacy := strings.NewReplacer("実際の操作：", "实际操作：", "；成功後の影響：", "；成功后的后果：", "；適用ルール：", "；命中规则：").Replace(reply)
+		for _, localized := range []string{reply, legacy} {
+			if got := ParseVerdict(localized); got.Action != "" {
+				t.Errorf("accepted incomplete/ambiguous verdict: %q => %+v", localized, got)
+			}
+		}
+	}
+}
+
+func TestParseVerdictLegacyChineseContract(t *testing.T) {
+	reason := "实际操作：读取文件；成功后的后果：返回内容；命中规则：A5"
+	for _, action := range []string{"allow", "ask", "deny"} {
+		raw, _ := json.Marshal(map[string]string{"decision": action, "comment": reason})
+		for _, reply := range []string{string(raw), "```json\n" + string(raw) + "\n```"} {
+			if got := ParseVerdict(reply); got.Action != action || got.Reason != reason {
+				t.Fatalf("lost legacy verdict: %q => %+v", reply, got)
+			}
+		}
+	}
+	for _, mixed := range []string{
+		strings.Replace(reason, "实际操作：", "実際の操作：", 1),
+		strings.Replace(reason, "；成功后的后果：", "；成功後の影響：", 1),
+		strings.Replace(reason, "；命中规则：", "；適用ルール：", 1),
+	} {
+		raw, _ := json.Marshal(map[string]string{"decision": "deny", "comment": mixed})
+		if got := ParseVerdict(string(raw)); got.Action != "" {
+			t.Fatalf("accepted mismatched explanation fields: %+v", got)
 		}
 	}
 }

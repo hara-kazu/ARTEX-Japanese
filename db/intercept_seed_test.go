@@ -44,3 +44,61 @@ func TestDeleteEndpointPathPattern(t *testing.T) {
 		}
 	}
 }
+
+func TestInterceptSeedPreservesLegacyRule(t *testing.T) {
+	d, err := Open(testDSN(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Close() })
+	d.SetMaxOpenConns(1)
+	d.SetMaxIdleConns(1)
+	// Keep fixtures on this connection without changing shared seed rows or flags.
+	for _, query := range []string{
+		`CREATE TEMP TABLE settings (LIKE public.settings INCLUDING ALL)`,
+		`CREATE TEMP TABLE intercept_rules (LIKE public.intercept_rules INCLUDING ALL)`,
+	} {
+		if _, err := d.Exec(query); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"", "[内置] 删除类接口路径", "[組み込み] 削除用インターフェース パス"} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := d.Exec(`TRUNCATE settings, intercept_rules`); err != nil {
+				t.Fatal(err)
+			}
+			if name != "" {
+				if _, err := d.Exec(`INSERT INTO intercept_rules(name, enabled, priority, match_target, match_type, pattern, action, message)
+VALUES ($1, false, 17, 'tool_input', 'regex', 'custom-pattern', 'ask', 'custom-message')`, name); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for range 2 {
+				if _, err := d.Exec(`DELETE FROM settings WHERE key='intercept_default_rules_v3'`); err != nil {
+					t.Fatal(err)
+				}
+				if err := d.seedDefaultInterceptRulesV3(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var count int
+			if err := d.QueryRow(`SELECT count(*) FROM intercept_rules`).Scan(&count); err != nil || count != 1 {
+				t.Fatalf("rule count=%d err=%v", count, err)
+			}
+			var actualName, pattern, action, message string
+			var enabled bool
+			var priority int
+			if err := d.QueryRow(`SELECT name, enabled, priority, pattern, action, message FROM intercept_rules`).Scan(
+				&actualName, &enabled, &priority, &pattern, &action, &message); err != nil {
+				t.Fatal(err)
+			}
+			if name != "" {
+				if actualName != name || enabled || priority != 17 || pattern != "custom-pattern" || action != "ask" || message != "custom-message" {
+					t.Fatalf("existing rule changed: %q %v %d %q %q %q", actualName, enabled, priority, pattern, action, message)
+				}
+			} else if actualName != "[組み込み] 削除用インターフェース パス" || !enabled || action != "deny" || pattern != deleteEndpointPathPattern {
+				t.Fatalf("new rule differs: %q %v %q %q", actualName, enabled, action, pattern)
+			}
+		})
+	}
+}

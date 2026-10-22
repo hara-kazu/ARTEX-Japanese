@@ -3818,12 +3818,20 @@ func (s *Server) fallbackChat(t *Task, msg string) string {
 	m := strings.TrimSpace(msg)
 	lower := strings.ToLower(m)
 	switch {
-	case strings.HasPrefix(m, "インテント") || strings.HasPrefix(lower, "intent"):
-		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "インテント"), "intent"))
+	case strings.HasPrefix(m, "インテント") || strings.HasPrefix(m, "意图") || strings.HasPrefix(lower, "intent"):
+		prefix := "意图"
+		if strings.HasPrefix(m, "インテント") {
+			prefix = "インテント"
+		}
+		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, prefix), "intent"))
 		_, _ = t.Store.AddIntent(map[string]any{"summary": text}, 9, nil, "human")
 		return "優先度の高いインテントを1件追加しました：" + text
-	case strings.HasPrefix(m, "ヒント") || strings.HasPrefix(lower, "hint"):
-		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "ヒント"), "hint"))
+	case strings.HasPrefix(m, "ヒント") || strings.HasPrefix(m, "提示") || strings.HasPrefix(lower, "hint"):
+		prefix := "提示"
+		if strings.HasPrefix(m, "ヒント") {
+			prefix = "ヒント"
+		}
+		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, prefix), "hint"))
 		_, _ = t.Store.AddNode(db.KindHint, map[string]any{"text": text}, 0, "active", "human", nil)
 		return "ヒントを記録しました。計画エージェントが次回読み取ります：" + text
 	default:

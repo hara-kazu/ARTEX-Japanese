@@ -17,10 +17,14 @@ const maxChatMentions = 10
 
 // The visible token survives drafts, uploads, retries and conversation history.
 // Labels are only for display: the server trusts only the type and numeric ID.
-var chatMentionPattern = regexp.MustCompile(`@\[(脆弱性|資産|企業|API|IP|アプリ|ドメイン|サブドメイン|サービス)#([0-9]+)(?: [^\]\r\n]*)?\]`)
+var chatMentionPattern = regexp.MustCompile(`@\[(脆弱性|漏洞|資産|资产|企業|企业|API|接口|IP|アプリ|应用|ドメイン|域名|サブドメイン|子域名|サービス|服务)#([0-9]+)(?: [^\]\r\n]*)?\]`)
 var chatMentionKinds = map[string]string{
 	"脆弱性": "finding", "資産": "asset", "企業": "company", "API": "endpoint",
 	"IP": "ip", "アプリ": "app", "ドメイン": "root_domain", "サブドメイン": "subdomain", "サービス": "service",
+}
+var legacyChatMentionLabels = map[string]string{
+	"漏洞": "脆弱性", "资产": "資産", "企业": "企業", "接口": "API",
+	"应用": "アプリ", "域名": "ドメイン", "子域名": "サブドメイン", "服务": "サービス",
 }
 
 type chatMentionRef struct {
@@ -41,13 +45,17 @@ func parseChatMentions(message string) ([]chatMentionRef, error) {
 		if err != nil || id <= 0 {
 			return nil, &chatMentionInputError{"参照 ID が無効です。選択し直してください"}
 		}
-		kind := chatMentionKinds[m[1]]
+		name := m[1]
+		if translated, ok := legacyChatMentionLabels[name]; ok {
+			name = translated
+		}
+		kind := chatMentionKinds[name]
 		key := kind + ":" + strconv.FormatInt(id, 10)
 		if seen[key] {
 			continue
 		}
 		seen[key] = true
-		refs = append(refs, chatMentionRef{kind, id, m[1]})
+		refs = append(refs, chatMentionRef{kind, id, name})
 		if len(refs) > maxChatMentions {
 			return nil, &chatMentionInputError{"メッセージごとに参照できる記録は10件までです"}
 		}

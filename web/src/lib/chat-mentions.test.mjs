@@ -29,3 +29,51 @@ test("tokens roundtrip labels and removing one reference preserves its neighbors
   const next = value.slice(0, selected[0].start) + value.slice(selected[0].start + selected[0].token.length);
   assert.equal(selectedMentions(next)[0].token, second);
 });
+
+const legacyMentionCases = [
+  ["finding", "漏洞", "脆弱性", "finding"],
+  ["asset", "资产", "資産", "asset"],
+  ["company", "企业", "企業", "company"],
+  ["endpoint", "接口", "API", "api"],
+  ["ip", "IP", "IP", "ip"],
+  ["app", "应用", "アプリ", "app"],
+  ["root_domain", "域名", "ドメイン", "domain"],
+  ["subdomain", "子域名", "サブドメイン", "subdomain"],
+  ["service", "服务", "サービス", "service"],
+];
+
+test("legacy Chinese references remain selectable with Japanese category labels", () => {
+  for (const [kind, legacy, label, alias] of legacyMentionCases) {
+    const token = `@[${legacy}#12 sample]`;
+    assert.deepEqual(selectedMentions(`before ${token} after`), [
+      { token, label: `${label} #12 · sample`, start: 7 },
+    ]);
+    assert.equal(mentionToken({ kind, id: 12, label: "sample" }), `@[${label}#12 sample]`);
+    for (const query of [legacy, label, alias.toUpperCase()]) {
+      const result = mentionSearch(`${query} target`);
+      assert.equal(result.kind, kind, query);
+      assert.equal(result.query, "target", query);
+    }
+  }
+  assert.equal(mentionSearch("漏").categories[0].label, "脆弱性");
+  assert.equal(mentionSearch("子域").categories[0].label, "サブドメイン");
+  assert.equal(mentionSearch("漏洞SQL注入").query, "SQL注入");
+});
+
+test("removing a legacy reference preserves mixed-language neighbors and offsets", () => {
+  const legacy = "@[漏洞#12 legacy]";
+  const japanese = "@[資産#34 current]";
+  const ip = "@[IP#56 192.0.2.1]";
+  const value = `😀 ${legacy} / ${japanese} / ${ip}`;
+  const selected = selectedMentions(value);
+  assert.equal(selected.length, 3);
+  for (const item of selected) {
+    assert.equal(value.slice(item.start, item.start + item.token.length), item.token);
+  }
+  const next = value.slice(0, selected[0].start) + value.slice(selected[0].start + selected[0].token.length);
+  assert.deepEqual(selectedMentions(next).map((item) => item.token), [japanese, ip]);
+  assert.equal(next, `😀  / ${japanese} / ${ip}`);
+  for (const invalid of ["@[未知#12 sample]", "@[漏洞#x sample]", "@[漏洞#12 sample\nnext]"]) {
+    assert.deepEqual(selectedMentions(invalid), [], invalid);
+  }
+});

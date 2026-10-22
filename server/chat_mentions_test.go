@@ -40,6 +40,47 @@ func TestChatMentionParsing(t *testing.T) {
 	}
 }
 
+func TestChatMentionLegacyLabels(t *testing.T) {
+	labels := []struct{ legacy, japanese, kind string }{
+		{"漏洞", "脆弱性", "finding"}, {"资产", "資産", "asset"},
+		{"企业", "企業", "company"}, {"接口", "API", "endpoint"},
+		{"IP", "IP", "ip"}, {"应用", "アプリ", "app"},
+		{"域名", "ドメイン", "root_domain"}, {"子域名", "サブドメイン", "subdomain"},
+		{"服务", "サービス", "service"},
+	}
+	var mixed strings.Builder
+	for _, label := range labels {
+		t.Run(label.kind, func(t *testing.T) {
+			for _, name := range []string{label.legacy, label.japanese} {
+				refs, err := parseChatMentions(fmt.Sprintf("@[%s#12 title]", name))
+				if err != nil || len(refs) != 1 || refs[0] != (chatMentionRef{label.kind, 12, label.japanese}) {
+					t.Fatalf("label=%s refs=%+v err=%v", name, refs, err)
+				}
+			}
+		})
+		fmt.Fprintf(&mixed, "@[%s#12 old] @[%s#12 new] ", label.legacy, label.japanese)
+	}
+	refs, err := parseChatMentions(mixed.String())
+	if err != nil || len(refs) != len(labels) {
+		t.Fatalf("mixed-language references were not deduplicated: %+v %v", refs, err)
+	}
+	for _, message := range []string{"@[漏洞#0]", "@[资产#999999999999999999999999]"} {
+		if _, err := parseChatMentions(message); err == nil {
+			t.Fatalf("accepted invalid legacy reference: %q", message)
+		}
+	}
+	var tooMany strings.Builder
+	for id := 1; id <= maxChatMentions+1; id++ {
+		fmt.Fprintf(&tooMany, "@[资产#%d] @[資産#%d] ", id, id)
+	}
+	if _, err := parseChatMentions(tooMany.String()); err == nil {
+		t.Fatal("accepted more than 10 mixed-language references")
+	}
+	if _, err := composeChatMentionMessage(nil, "@[漏洞#12 title]"); err == nil {
+		t.Fatal("legacy reference bypassed the record lookup")
+	}
+}
+
 func TestChatMentionPagination(t *testing.T) {
 	s, fid := newRetestServer(t)
 	pg := s.m.pg

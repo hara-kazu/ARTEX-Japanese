@@ -440,7 +440,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 	if _, err := pg.AppendConvActivity(c.ID, ua); err != nil {
 		log.Printf("[conv %d] append user msg failed: %v", c.ID, err)
 	}
-	if c.Title == "" || c.Title == "新しいチャット" {
+	if c.Title == "" || c.Title == "新しいチャット" || c.Title == "新对话" {
 		title := firstLine(msg, 40)
 		if title == "" {
 			title = "添付ファイルのメッセージ"

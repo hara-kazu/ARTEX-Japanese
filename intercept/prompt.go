@@ -190,16 +190,25 @@ func ParseVerdict(text string) Verdict {
 	if action != "allow" && action != "ask" && action != "deny" {
 		return Verdict{}
 	}
-	if len(reason) > 2400 || !strings.HasPrefix(reason, "実際の操作：") {
+	if len(reason) > 2400 {
 		return Verdict{}
 	}
-	operation, rest, ok := strings.Cut(strings.TrimPrefix(reason, "実際の操作："), "；成功後の影響：")
-	if !ok || strings.TrimSpace(operation) == "" {
-		return Verdict{}
+	for _, labels := range [][3]string{
+		{"実際の操作：", "；成功後の影響：", "；適用ルール："},
+		{"实际操作：", "；成功后的后果：", "；命中规则："},
+	} {
+		if !strings.HasPrefix(reason, labels[0]) {
+			continue
+		}
+		operation, rest, ok := strings.Cut(strings.TrimPrefix(reason, labels[0]), labels[1])
+		if !ok || strings.TrimSpace(operation) == "" {
+			return Verdict{}
+		}
+		consequence, rule, ok := strings.Cut(rest, labels[2])
+		if !ok || strings.TrimSpace(consequence) == "" || strings.TrimSpace(rule) == "" {
+			return Verdict{}
+		}
+		return Verdict{Action: action, Reason: reason}
 	}
-	consequence, rule, ok := strings.Cut(rest, "；適用ルール：")
-	if !ok || strings.TrimSpace(consequence) == "" || strings.TrimSpace(rule) == "" {
-		return Verdict{}
-	}
-	return Verdict{Action: action, Reason: reason}
+	return Verdict{}
 }

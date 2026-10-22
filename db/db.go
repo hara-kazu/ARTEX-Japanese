@@ -606,10 +606,11 @@ func (d *DB) seedDefaultInterceptRulesV3() error {
 	if _, err := d.Exec(`
 INSERT INTO intercept_rules(name, enabled, priority, match_target, match_type, pattern, action, message, timeout_enabled, timeout_seconds, timeout_action)
 SELECT $1, true, 80, 'tool_input', 'regex', $2, 'deny', $3, false, 60, 'deny'
-WHERE NOT EXISTS (SELECT 1 FROM intercept_rules WHERE name = $1)`,
+WHERE NOT EXISTS (SELECT 1 FROM intercept_rules WHERE name IN ($1, $4))`,
 		name,
 		deleteEndpointPathPattern,
 		"削除用インターフェース（/delete /remove /unlink /erase など）の呼び出しは、HTTP メソッドに関係なく禁止されています。多くのアプリでは GET/POST でも削除インターフェース を実行でき、対象のデータが実際に削除されます",
+		"[内置] 删除类接口路径",
 	); err != nil {
 		return fmt.Errorf("rule %q: %w", name, err)
 	}
