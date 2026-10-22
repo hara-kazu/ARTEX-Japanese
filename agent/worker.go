@@ -151,7 +151,7 @@ func (w *Worker) SetRunTimeout(run time.Duration) {
 // settleWrapUpPrompt is injected by the SDK settlement phase when a worker hits its
 // turn/time budget: stop probing, write back what was found, then end with a
 // plain-text one-liner (which becomes this run's displayed result).
-const settleWrapUpPrompt = "実行枠を使い切るため、まもなく終了します。追加のコマンドや調査を実行しないでください。次の順序で処理してください：(1) ここまでに特定した未保存の内容を1件ずつ書き戻します。新しい資産は insert_assets、探索の結論や事実は record_fact、確認済みの脆弱性は report_finding を使ってください。(2) **最後に、独立したプレーンテキストの日本語1文で**、実施した作業と主な結論を要約してください。この1文を今回の実行結果として表示するため、必ず出力してください。"
+const settleWrapUpPrompt = "実行枠を使い切るため、まもなく終了します。追加のコマンドや調査を実行しないでください。次の順序で処理してください：(1) ここまでに特定した未保存の内容を1件ずつ書き戻します。新しい資産は insert_assets、探索の結論や事実は record_fact、確認済みの脆弱性は report_finding を使ってください。(2) **最後に、独立したプレーンテキストの1文で**、実施した作業と主な結論を要約してください。この1文を今回の実行結果として表示するため、必ず出力してください。"
 
 func NewWorker(prov llm.Provider, model, workDir string, tx *transcript.Store, window, maxTurns int, extra ...actool.CoreTool) *Worker {
 	return &Worker{prov: prov, model: model, workDir: workDir, tx: tx, window: window, maxTurns: maxTurns, extraTools: extra}
@@ -251,21 +251,21 @@ func workerTrafficBlock(recording bool) string {
 	if !recording {
 		return ""
 	}
-	return "\n\n**流量工具**：\n- traffic_search / traffic_get / traffic_blob：回看响应、找已访问过的资源，**先查流量、不要重复 curl 同一 URL**。traffic_search **必须指定 host**、默认只回 3 条极轻量索引(id/method/url/status/resp_len，无响应内容)，需要更多显式调大 limit；可用 body_contains 在请求/响应正文里做全文搜索(至少 3 字符，支持子串和中文，如找密码/密钥/报错/内网地址)；要看某条原文用 traffic_get(id)，其中超大正文显示为 @blob sha256:<hash>，用 traffic_blob(hash) 分段取全文。"
+	return "\n\n**トラフィックのツール**：\n- traffic_search / traffic_get / traffic_blob：応答の再確認や、アクセス済みリソースの検索に使用します。**先にトラフィックを調べ、同じ URL に curl を繰り返さないでください**。traffic_search は **host の指定が必須**で、既定では非常に軽量な索引を3件だけ返します（id/method/url/status/resp_len。応答内容は含みません）。さらに必要なら limit を明示的に増やしてください。body_contains でリクエスト / レスポンス本文を全文検索できます（3文字以上。部分文字列と中国語に対応し、パスワード / 鍵 / エラー / 内部ネットワークのアドレスなどを検索）。個々の原文は traffic_get(id) で取得します。非常に大きい本文は @blob sha256:<hash> と表示されるため、traffic_blob(hash) で全文を分割して取得してください。"
 }
 
 // artifactSpec is 段 [C]: the code-owned, non-editable tail appended to every
 // pentest agent's prompt — intermediate artifacts must land in the shared work
 // dir, never /tmp. Guaranteed present regardless of how the DB body is edited.
 func artifactSpec(dir string) string {
-	return "\n\n**中间产物输出规约**：脚本、payload、抓到的响应体、临时数据等一切中间产物，**一律写到本任务工作目录 " + dir + "**（相对路径即写在这里，也可用该绝对路径）——**不要写 /tmp、不要用其它绝对路径**。"
+	return "\n\n**中間生成物の出力規約**：スクリプト、payload、取得した応答本文、一時データなど、すべての中間生成物は、**必ずこのタスクの作業ディレクトリに書き込んでください：" + dir + "**（相対パスならここに書き込まれます。この絶対パスも使用できます）。**/tmp に書き込んだり、他の絶対パスを使用したりしないでください**。"
 }
 
 // workerArtifactSpec is the worker's 段 [C]: its per-intent run dir is pre-created
 // by the engine (ensureRunDir), so it just writes relative paths there — no manual
 // mkdir, no cross-worker name collisions.
 func workerArtifactSpec(runDir string) string {
-	return "\n\n**中间产物输出规约**：脚本、payload、抓到的响应体、临时数据等一切中间产物，**一律写到本次意图的专属工作目录 " + runDir + "**（已自动建好，直接用相对路径写在这里即可，无需再手动建目录）——**不要写 /tmp、不要用其它绝对路径**。"
+	return "\n\n**中間生成物の出力規約**：スクリプト、payload、取得した応答本文、一時データなど、すべての中間生成物は、**必ず今回のインテント専用の作業ディレクトリに書き込んでください：" + runDir + "**（作成済みなので、相対パスでここに直接書き込めます。手動でのディレクトリ作成は不要です）。**/tmp に書き込んだり、他の絶対パスを使用したりしないでください**。"
 }
 
 // ensureRunDir builds and creates an agent's working directory under base:
@@ -314,7 +314,7 @@ func intentAssetIDs(intent *db.Node) []int64 {
 }
 
 func renderIntentTask(intent *db.Node) string {
-	return fmt.Sprintf("\n\n【你领到的意图（本次唯一任务：只做这一条、只产生事实、做完即停）】：\n%s\n意图 id: %d（写回 record_fact / report_finding 时传它）", string(intent.Payload), intent.ID)
+	return fmt.Sprintf("\n\n【割り当てられたインテント（今回の唯一の作業：この一件だけを実行し、事実だけを生成し、完了したら停止する）】：\n%s\nインテント id: %d（record_fact / report_finding に書き戻す際に渡してください）", string(intent.Payload), intent.ID)
 }
 
 // renderWorkerGraphOverview folds the global situational snapshot into the worker's
@@ -331,9 +331,9 @@ func renderWorkerGraphOverview(data map[string]any) string {
 	if err != nil {
 		return "" // fall back silently: the worker just won't have the global context
 	}
-	return "\n\n【全局探索态势（只读，帮你把自己这条意图放进大局看）】：\n" +
-		"下面是整个任务当前的探索概况。用途有两个：一是知道别人已发现什么，别重复；二是让你探自己这条意图时，能联想到它和全局的关系。\n" +
-		"**发散是好事**：探本意图时尽管深想、多联想。唯一的界线是——别真的动手去执行别的意图（那是别的 worker 的事，由规划者调度）。但凡你联想到有价值的线索（跨资产的联动、疑似另一条利用链的入口、全局层面的可疑点），**务必写进 fact 交规划者**——这是你重要的产出，不是可有可无。宁可多报一条让规划者判断，也别自己咽下去。\n" +
+	return "\n\n【探索全体の状況（読み取り専用。自分のインテントを全体の中で捉えるための情報）】：\n" +
+		"以下はタスク全体の現在の探索概要です。他の担当者の発見を把握して重複を避けることと、自分のインテントを探索する際に全体との関係を考えることの二つに使います。\n" +
+		"**発想を広げるのは良いことです**。このインテントの探索中は、深く考え、多くの関連を考えてください。唯一の境界は、他のインテントを実際に実行しないことです（他の worker の作業であり、計画エージェントが割り当てます）。価値のある手掛かり（資産をまたぐ連携、別の悪用経路と思われる入口、全体に関わる疑わしい箇所）を思い付いたら、**必ず fact に記録して計画エージェントへ渡してください**。これは任意の付加情報ではなく、重要な成果です。自分だけで留めるより、一件多く報告して計画エージェントの判断に委ねてください。\n" +
 		string(b)
 }
 
@@ -403,7 +403,7 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 		if ids := intentAssetIDs(intent); len(ids) > 0 {
 			if assets, err := as.GetByIDs(ids); err == nil && len(assets) > 0 {
 				if b, err := json.Marshal(assets); err == nil {
-					sysBody += "\n\n本意图 asset_ids 对应的目标资产：\n" + string(b)
+					sysBody += "\n\nこのインテントの asset_ids に対応する対象資産：\n" + string(b)
 				}
 				// 意图明确针对的这些资产 → 自动纳入任务测试范围（与 insertAssets 同一套
 				// 保守粒度）。upsertTaskScope 的 ON CONFLICT DO NOTHING + uq_task_scope
@@ -417,7 +417,7 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 			}
 		}
 	}
-	sysBody += "\n\n开始执行上面这条意图：只做它、只产生事实、assets、finding、做完即停。"
+	sysBody += "\n\n上記のインテントの実行を開始してください。この一件だけを実行し、事実、assets、finding だけを生成し、完了したら停止してください。"
 	system, boundary := deferredSystem(sysBody, def)
 	// 任务级 deadline(经 ctx 注入)夹逼本 run 的墙钟预算 + 决定收尾词(见 taskclock.go)。
 	tc := taskClockFrom(ctx)
@@ -487,7 +487,7 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 	// overview 罕见地 marshal 失败为空时，回退一句启动词，避免首轮出现空 user 消息。
 	input := overview
 	if strings.TrimSpace(input) == "" {
-		input = "开始执行 system 里领到的意图：只做它、只产生事实、assets、finding、做完即停。"
+		input = "system で割り当てられたインテントの実行を開始してください。この一件だけを実行し、事実、assets、finding だけを生成し、完了したら停止してください。"
 	}
 
 	// 实验功能:开启后由 noa 接管上下文压缩(归档集中在 <workDir>/noa/<SessionID> 下,持久)。
@@ -507,20 +507,20 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 		alreadyRecorded = requestID != "" && hasWorkerChatMessage(s.Messages(), requestID)
 		if len(s.Messages()) > 0 && message == "" {
 			seedUnlockFromHistory(s.Messages(), def.UnlockSkill)
-			input = "继续执行。"
+			input = "実行を続けてください。"
 		} else if len(s.Messages()) > 0 {
 			seedUnlockFromHistory(s.Messages(), def.UnlockSkill)
 		}
 	}
 	if message != "" {
 		if alreadyRecorded {
-			input = "继续执行上一次人工对话输入的新意图。不要重复已经完成的动作。"
+			input = "前回の人間とのチャットで入力された新しいインテントの実行を続けてください。完了済みの操作を繰り返さないでください。"
 		} else if len(s.Messages()) > 0 {
-			input = workerChatMarker(requestID) + "\n【人工对话输入的新意图】\n" + message +
-				"\n\n请立即按这条人工输入执行，完成后再根据上下文决定原任务是否需要继续。"
+			input = workerChatMarker(requestID) + "\n【人間とのチャットで入力された新しいインテント】\n" + message +
+				"\n\nこの人間からの入力に従って直ちに実行し、完了後に文脈に基づいて元のタスクを続ける必要があるか判断してください。"
 		} else {
-			input += "\n\n" + workerChatMarker(requestID) + "\n【人工对话输入的新意图】\n" + message +
-				"\n\n请优先执行这条人工输入。"
+			input += "\n\n" + workerChatMarker(requestID) + "\n【人間とのチャットで入力された新しいインテント】\n" + message +
+				"\n\nこの人間からの入力を優先して実行してください。"
 		}
 	}
 

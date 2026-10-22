@@ -1,7 +1,7 @@
 {
-  "_comment": "config.json にコピーしてください（環境変数 ARTEX_CONFIG で別のパスも指定可能）。ここでは database と skill_dir のみ設定します。LLM などは環境変数または画面で設定します。",
+  "_comment": "config.json にコピーしてください（環境変数 ARTEX_CONFIG で別のパスも指定可能）。このファイルには database と skill_dir の2項目だけを含みます。LLM などの残りの設定は環境変数またはアプリ内の設定を使用し、このファイルには含みません。",
 
-  "_comment_database": "PostgreSQL の接続設定。優先度：環境変数 ARTEX_PG_DSN > このファイルの database。下の各フィールドを指定する方法と、database.dsn に接続文字列を指定する方法のいずれかを使用してください。",
+  "_comment_database": "PostgreSQL の接続設定。優先度：環境変数 ARTEX_PG_DSN > このファイルの database。次のどちらかを使用してください：(A) 下の個別フィールドを指定する；(B) database.dsn に完全な接続文字列だけを指定する。",
   "database": {
     "host": "127.0.0.1",
     "port": 5433,
@@ -11,13 +11,13 @@
     "sslmode": "disable"
   },
 
-  "_comment_database_dsn": "DSN を使用する場合は、上の database を置き換えて接続文字列を指定します。dsn が空でなければ、個別のフィールドは使用しません。",
+  "_comment_database_dsn": "方法 (B)：上の database を削除し、完全な DSN を使用します。dsn が空でなければ、個別のフィールドは無視します。",
   "_example_database_dsn": {
     "database": {
       "dsn": "postgres://user:pass@db.example.com:5432/artex?sslmode=require"
     }
   },
 
-  "_comment_skill_dir": "スキルのルートディレクトリ（各サブディレクトリに SKILL.md を配置）。優先度：環境変数 ARTEX_SKILL_DIR > この値 > 標準の実行ファイルと同じ場所の skills/。空欄または項目を削除すると標準を使用します。相対パスは現在の作業ディレクトリを基準にします。",
-  "skill_dir": ""
+  "_comment_skill_dir": "skill のルートディレクトリ（各サブディレクトリに1つの skill と SKILL.md を配置）。優先度：環境変数 ARTEX_SKILL_DIR > この値 > 標準の実行ファイルと同じ場所の skills/。空欄または項目を削除すると標準を使用します。相対パスは現在の作業ディレクトリを基準にします。",
+  "skill_dir": "/opt/artex/skills"
 }

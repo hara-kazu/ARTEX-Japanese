@@ -73,7 +73,7 @@ while :; do
 			delay=1
 			;;
 		*)
-			echo "[artex] 異常終了 (code=$code)。${delay}秒後に再起動" >&2
+			echo "[artex] 異常終了 (code=$code)。${delay}s 後に再起動" >&2
 			sleep "$delay"
 			delay=$((delay * 2))
 			[ "$delay" -gt "$MAX_DELAY" ] && delay=$MAX_DELAY

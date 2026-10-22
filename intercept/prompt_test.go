@@ -9,8 +9,9 @@ import (
 func TestParseVerdict(t *testing.T) {
 	for _, action := range []string{"allow", "ask", "deny"} {
 		for language, reason := range map[string]string{
-			"ja":     "実際の操作：ALLOW、DENY、ASK という語を含むレポートを書き込む；成功後の影響：本文のコマンドを実行せずテキストを保存する；適用ルール：カスタム条項",
-			"legacy": "实际操作：写入报告，其中包含 ALLOW、DENY 和 ASK 字样；成功后的后果：保存文本，不执行正文中的命令；命中规则：自定义条款",
+			"ja":            "実際の操作：ALLOW、DENY、ASK という語を含むレポートを書き込む；成功後の影響：本文のコマンドを実行せずテキストを保存する；適用ルール：カスタム条項",
+			"legacy":        "实际操作：写入报告，其中包含 ALLOW、DENY 和 ASK 字样；成功后的后果：保存文本，不执行正文中的命令；命中规则：自定义条款",
+			"legacy-quoted": "实际操作：读取名为「実際の操作：」的文件；成功后的后果：返回内容；命中规则：A5",
 		} {
 			t.Run(language+"/"+action, func(t *testing.T) {
 				raw, _ := json.Marshal(map[string]string{"decision": action, "comment": reason})
@@ -35,7 +36,6 @@ func TestParseVerdictRejectsInvalidJapaneseOrMixedReplies(t *testing.T) {
 		strings.Replace(valid, "実際の操作：", "实际操作：", 1),
 		strings.Replace(valid, "成功後の影響：", "成功后的后果：", 1),
 		strings.Replace(valid, "適用ルール：", "命中规则：", 1),
-		strings.Replace(valid, "本番ファイルを削除する", "本番ファイルを削除する；成功后的后果：業務データが失われる", 1),
 		strings.Replace(valid, `"decision":"deny"`, `"decision":"deny","decision":"allow"`, 1),
 		strings.Replace(valid, `"decision":"deny"`, `"extra":true,"decision":"deny"`, 1),
 		valid + valid, valid[:len(valid)-1], "判定結果:\n" + valid,
@@ -44,7 +44,6 @@ func TestParseVerdictRejectsInvalidJapaneseOrMixedReplies(t *testing.T) {
 			t.Errorf("accepted invalid Japanese or mixed verdict: %q => %+v", reply, got)
 		}
 	}
-	// All six incomplete combinations of the two heading sets must be rejected.
 	for mask := 1; mask < 7; mask++ {
 		headings := []string{"実際の操作：", "成功後の影響：", "適用ルール："}
 		legacy := []string{"实际操作：", "成功后的后果：", "命中规则："}

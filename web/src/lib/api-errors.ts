@@ -1,27 +1,46 @@
 import errorMessages from "./api-error-messages.json" with { type: "json" };
 
-// Translate Chinese wire messages only; English diagnostics and identifiers stay unchanged.
-const messages = errorMessages.map(([source, target]) => [source, target] as const);
+type MessageOptions = {
+  diagnosticArguments?: number[];
+  suffix?: "diagnostic" | "value";
+};
+
+const messages = errorMessages as [string, string, MessageOptions?][];
 
 const placeholder = /%[sdqwv]/g;
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const exactMessages = new Map(messages.filter(([source]) => !source.includes("%")));
+const exactMessages = new Map(
+  messages.filter(([source]) => !source.includes("%")).map(([source, target]) => [source, target] as const),
+);
 const templates = messages
   .filter(([source]) => source.includes("%"))
-  .map(([source, target]) => ({
+  .map(([source, target, options]) => ({
     pattern: new RegExp(`^${source.split(placeholder).map(escapeRegex).join("([\\s\\S]+?)")}$`),
+    greedyPattern: new RegExp(`^${source.split(placeholder).map(escapeRegex).join("([\\s\\S]+)")}$`),
     target,
+    diagnosticArguments: new Set(
+      [...source.matchAll(placeholder)]
+        .map(([format], index) => (format === "%w" || options?.diagnosticArguments?.includes(index) ? index : -1))
+        .filter((index) => index >= 0),
+    ),
   }));
 const prefixes = messages
-  .filter(([source]) => !source.includes("%") && /[：:(（]\s*$/.test(source))
+  .filter(([, , options]) => options?.suffix)
   .toSorted(([left], [right]) => right.length - left.length);
 
-/** Translate known Chinese backend errors while retaining English, IDs, paths and unknown diagnostics. */
 export function localizeApiError(message: string): string {
-  return translate(message, 0);
+  return translate(message, 0) ?? message;
 }
 
-/** Localize diagnostic fields in successful/partial API responses, without touching user content. */
+export function localizeApiErrorBody(body: string): string {
+  try {
+    const parsed = JSON.parse(body);
+    const localized = localizeApiResponse(parsed);
+    if (localized !== parsed) return JSON.stringify(localized);
+  } catch {}
+  return localizeApiError(body);
+}
+
 export function localizeApiResponse<T>(value: T): T {
   if (!value || typeof value !== "object") return value;
   if (Array.isArray(value)) {
@@ -44,7 +63,6 @@ export function localizeApiResponse<T>(value: T): T {
     const localized = entries.map((entry) => (typeof entry === "string" ? localizeApiError(entry) : entry));
     if (localized.some((entry, index) => entry !== entries[index])) update(key, localized);
   }
-  // API list/batch records can carry diagnostics alongside successful entries.
   for (const key of ["items", "deliveries"]) {
     const entries = original[key];
     if (!Array.isArray(entries)) continue;
@@ -54,18 +72,31 @@ export function localizeApiResponse<T>(value: T): T {
   return result as T;
 }
 
-function translate(message: string, depth: number): string {
+function translate(message: string, depth: number): string | null {
   if (depth > 4) return message;
   const exact = exactMessages.get(message);
   if (exact) return exact;
-  for (const { pattern, target } of templates) {
+  for (const { pattern, greedyPattern, target, diagnosticArguments } of templates) {
     const match = pattern.exec(message);
     if (!match) continue;
+    const greedyMatch = greedyPattern.exec(message);
+    if (match.some((value, index) => value !== greedyMatch?.[index])) return null;
     let index = 0;
-    return target.replace(placeholder, () => translate(match[++index], depth + 1));
+    let ambiguous = false;
+    const localized = target.replace(placeholder, () => {
+      const value = match[++index];
+      if (!diagnosticArguments.has(index - 1)) return value;
+      const translated = translate(value, depth + 1);
+      if (translated === null) ambiguous = true;
+      return translated ?? value;
+    });
+    return ambiguous ? null : localized;
   }
-  for (const [source, target] of prefixes) {
-    if (message.startsWith(source)) return target + translate(message.slice(source.length), depth + 1);
+  for (const [source, target, options] of prefixes) {
+    if (!message.startsWith(source)) continue;
+    const suffix = message.slice(source.length);
+    const localized = options?.suffix === "diagnostic" ? translate(suffix, depth + 1) : suffix;
+    return localized === null ? null : target + localized;
   }
   return message;
 }

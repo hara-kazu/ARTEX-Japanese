@@ -209,7 +209,6 @@ func (s *Server) seedFindingRetester() error {
 	if _, err = tx.Exec(`SELECT pg_advisory_xact_lock(7337741010)`); err != nil {
 		return err
 	}
-	// Translate only untouched legacy metadata; keep user-authored names and descriptions.
 	if _, err = tx.Exec(`UPDATE agents SET
 	name=CASE WHEN name=$2 THEN $3 ELSE name END,
 	description=CASE WHEN description=$4 THEN $5 ELSE description END

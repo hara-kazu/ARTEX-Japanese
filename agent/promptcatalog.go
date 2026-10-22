@@ -67,7 +67,7 @@ const pentestDefaultTmpl = `あなたは、許可を受けたペネトレーシ�
 // agents — they have no per-key in-code default. It is seeded into agent_prompts
 // when a custom agent is created (so the editor isn't blank) and used as the
 // render fallback in RunChat when the DB prompt is somehow missing.
-const DefaultAssistantPrompt = `あなたは役に立つ AI アシスタントです。ユーザーの質問には簡潔で正確な日本語で回答し、必要に応じて利用可能なツールで作業を完了してください。依頼されたことを行い、情報を捏造しないでください。`
+const DefaultAssistantPrompt = `あなたは役に立つ AI アシスタントです。ユーザーの質問には簡潔で正確な日本語で回答し、必要に応じて利用可能なツールで作業を完了してください。ユーザーが依頼したことだけを行い、情報を捏造しないでください。`
 
 // ReporterDefaultPrompt is the seeded prompt for the "报告撰写"(reporter) custom
 // agent — triggered when report_finding fires. It gathers the finding's full
@@ -77,7 +77,7 @@ const ReporterDefaultPrompt = `あなたは、許可を受けたペネトレー�
 
 ━━ 起動時のコンテキスト ━━
 worker が report_finding を呼び出して脆弱性を登録するたびに、システムは【ツール呼び出しをきっかけとする】コンテキストを渡してあなたを起動します。内容は次のとおりです：
-- **タスク id**（task_id。コンテキストの「【タスク #<id> …】」などのタスク番号表記を参照）
+- **タスク id**（task_id。コンテキストの「タスク: #<id>」を参照）
 - report_finding の**入力パラメーター**（vulnclass / severity / summary / evidence など）
 - report_finding の**戻り値**："finding recorded: <id>" の形式です。この **<id> は探索ノード ID** で、get_task_node_detail と update_finding_report が使用する従来の識別子です。戻り値の JSON にある finding_id は、独立した脆弱性レコードの ID であり、get_finding_traffic が使用します。
 
@@ -104,7 +104,7 @@ worker が report_finding を呼び出して脆弱性を登録するたびに、
 - **実際の証拠だけに基づくこと**：レポートのすべての記述に、finding の証拠または work の実行過程に基づく裏付けが必要です。リクエスト、レスポンス、CVE、結論を**絶対に捏造しないでください**。証拠が不足する箇所は、正直に「未検証／追加確認が必要」と記載してください。
 - **修正に役立ち、検証できること**：再現手順は実行可能にし、修正案は実施できる内容にしてください。
 - **簡潔であること**：定型的な言い回しや無駄な文章、ひな形そのものの繰り返しは避けてください。
-- ユーザーに表示するレポート、要約、返答は、全体を通じて**日本語**で記述してください。ツール名、フィールド名、原文の証拠は変更しないでください。update_finding_report の呼び出しに成功したら終了し、どの脆弱性のレポートを作成したかを一、二文で伝えてください。`
+- 全体を通して**日本語**を使用してください。update_finding_report の呼び出しに成功したら終了し、どの脆弱性のレポートを作成したかを一、二文で伝えてください。`
 
 // BuiltinPromptSeeds returns each built-in agent's default EDITABLE prompt body
 // keyed by agent key. The server seeds these into agent_prompts on startup (only
@@ -112,17 +112,11 @@ worker が report_finding を呼び出して脆弱性を登録するたびに、
 // source while the same string stays as the in-code render fallback.
 func BuiltinPromptSeeds() map[string]string {
 	return map[string]string{
-		"goals":     goalsDefaultTmpl + defaultOutputLanguage,
-		"planner":   plannerDefaultTmpl + defaultOutputLanguage,
-		"mainagent": mainAgentDefaultTmpl + defaultOutputLanguage,
-		"worker":    workerDefaultTmpl + defaultOutputLanguage,
-		"auto":      autoDefaultTmpl + defaultOutputLanguage,
-		"pentest":   pentestDefaultTmpl + defaultOutputLanguage,
+		"goals":     goalsDefaultTmpl,
+		"planner":   plannerDefaultTmpl,
+		"mainagent": mainAgentDefaultTmpl,
+		"worker":    workerDefaultTmpl,
+		"auto":      autoDefaultTmpl,
+		"pentest":   pentestDefaultTmpl,
 	}
 }
-
-// Only new/reset defaults receive this editable rule; saved prompts remain authoritative.
-const defaultOutputLanguage = `
-
-━━ 出力言語 ━━
-ユーザーに表示する説明、要約、計画、検出結果とレポートの文章は日本語で記述してください。ツール名、JSON のキー、列挙値、識別子、コマンド、URL、コード、原文の証拠は変更しないでください。指定された出力形式を維持してください。`

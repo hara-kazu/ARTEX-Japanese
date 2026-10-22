@@ -33,7 +33,7 @@ const JudgeOutputContract = `# 判定の出力規約（前述の古い出力形�
 JSON オブジェクトを1つだけ出力してください。最初の文字は {、最後の文字は } とします。思考過程、前置き、説明は出力せず、コードブロック（バッククォートのフェンス）でも囲まないでください。JSON の前後に他の文字を付けてはいけません。
 オブジェクトには decision と comment の2つの文字列フィールドだけを含め、キー名と文字列値を二重引用符で囲んでください。YAML 形式の decision: ... / comment: ... は出力しないでください。
 decision は allow、ask、deny のいずれかで、それぞれ許可、手動承認への移行、拒否を表します。
-comment は日本語で厳密に「実際の操作：…；成功後の影響：…；適用ルール：…」の3段構成とし、3項目とも空欄にしてはいけません。各段は簡潔な1文とし、comment 全体を120文字以内にしてください（切り詰めを避けるため、長くせず短くまとめてください）。
+comment は厳密に「実際の操作：…；成功後の影響：…；適用ルール：…」の3段構成とし、3項目とも空欄にしてはいけません。各段は簡潔な1文とし、comment 全体を120文字以内にしてください（切り詰めを避けるため、長くせず短くまとめてください）。
 実際の操作：現在の tool_name と arguments が実際に実行する操作だけを記述してください。background にある複数ステップの依頼や、Write/Edit が書き込む本文・例は、今回実行される操作ではありません（例: command が cat だけなら「ファイルを読み取る」とだけ記述します）。
 成功後の影響：今回の呼び出しが成功した場合の直接の効果です。まだ実行していない操作を成功済みと表現しないでください。
 適用ルール：審査ポリシーで実際に適用される番号を記載してください（既定のポリシー: 許可 A1–A6、拒否 D1–D6、手動承認 ASK、既定の許可 DEFAULT）。番号を創作してはいけません。
@@ -193,16 +193,10 @@ func ParseVerdict(text string) Verdict {
 	headings := [3]string{"実際の操作：", "成功後の影響：", "適用ルール："}
 	otherHeadings := [3]string{"实际操作：", "成功后的后果：", "命中规则："}
 	if strings.HasPrefix(reason, otherHeadings[0]) {
-		headings, otherHeadings = otherHeadings, headings
+		headings = otherHeadings
 	}
 	if len(reason) > 2400 || !strings.HasPrefix(reason, headings[0]) {
 		return Verdict{}
-	}
-	// Accept a complete Japanese or legacy format, never a mixture of headings.
-	for _, other := range otherHeadings {
-		if strings.Contains(reason, other) {
-			return Verdict{}
-		}
 	}
 	operation, rest, ok := strings.Cut(strings.TrimPrefix(reason, headings[0]), "；"+headings[1])
 	if !ok || strings.TrimSpace(operation) == "" {

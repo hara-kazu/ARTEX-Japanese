@@ -8,7 +8,7 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-const findingIDGuidance = "\n\n**漏洞编号约定**：finding_id 是独立漏洞记录 ID；finding_node_id 是探索节点 ID。list_findings / list_task_findings / node_detail / get_task_node_detail 的 id 保留为探索节点 ID，应从同一返回的 finding_id 读取独立编号。get_finding_traffic / bind_finding_traffic 用独立 finding_id。旧 update_finding_report 的 finding_id 参数仍传 finding_node_id。不要把 report_finding 第一行的数字用于证据工具，也不要遇到编号错误后猜测其他数字。"
+const findingIDGuidance = "\n\n**脆弱性の番号に関する規約**：finding_id は独立した脆弱性レコードの ID、finding_node_id は探索ノードの ID です。list_findings / list_task_findings / node_detail / get_task_node_detail の id は従来どおり探索ノードの ID であり、独立した番号は同じ返り値の finding_id から読み取ってください。get_finding_traffic / bind_finding_traffic には独立した finding_id を使用します。従来の update_finding_report の finding_id 引数には、引き続き finding_node_id を渡してください。report_finding の最初の行の数字を証拠ツールに使用したり、番号のエラー後に他の数字を推測したりしないでください。"
 
 // The server supplies the persisted setting. A missing setting/host is off.
 // Consulted at assembly and again on writes so an already-running session
@@ -53,9 +53,9 @@ func findingWorkflowTools(agentKey string, tools []actool.CoreTool) ([]actool.Co
 		note := ""
 		switch tool.Name() {
 		case "report_finding":
-			note = "\n默认由报告 Agent 在编写报告前核对并绑定流量。上报者在 evidence 中保留验证命令、关键输出、已有的真实流量 ID 及其用途，供报告 Agent 对照执行记录核实；无需为绑定额外查包。兼容显式即时绑定：traffic_refs 或 evidence_hint_id 可提交已核实的引用，后者读取本任务指定 hint 的结构化引用；任一无效则本次上报全部失败。TCP/无包不需要这些可选参数。返回 finding_id 与 finding_node_id 分别表示独立记录和探索节点。"
+			note = "\n標準では、レポート Agent が作成前にトラフィックを確認して関連付けます。報告する側は、検証コマンド、重要な出力、既存の実際のトラフィック ID と用途を evidence に残し、レポート Agent が実行記録と照合できるようにしてください。関連付けのために追加で通信記録を調べる必要はありません。明示的な即時関連付けにも対応しており、traffic_refs または evidence_hint_id で確認済みの参照を指定できます。後者はこのタスクの指定 hint に保存された構造化参照を読み取ります。いずれかが無効なら、今回の報告はすべて失敗します。TCP / 通信記録がない場合は、これらの任意引数は不要です。返り値の finding_id と finding_node_id は、それぞれ独立したレコードと探索ノードを表します。"
 		case "add_hint", "add_task_hint":
-			note = "\n交接已确认漏洞时，在对应提示的 traffic_refs 中保留已核实流量的 ID、用途、说明和顺序（单条放顶层，批量放对应 hints 元素），并在 text 中说明它证明的具体漏洞。调用方不能只交接文字而丢弃已有流量引用。未核实的候选不能作为证据传递。"
+			note = "\n確認済みの脆弱性を引き継ぐ際は、対応するヒントの traffic_refs に、確認済みトラフィックの ID、用途、説明、順序を残してください（一件なら最上位、一括の場合は対応する hints 要素）。text には、その記録が証明する具体的な脆弱性を説明してください。呼び出す側は、文章だけを引き継いで既存のトラフィック参照を捨ててはいけません。未確認の候補は証拠として引き継げません。"
 		case "get_finding_traffic", "bind_finding_traffic", "list_findings", "list_task_findings", "node_detail", "get_task_node_detail", "update_finding_report":
 			note = findingIDGuidance
 		}
@@ -65,16 +65,16 @@ func findingWorkflowTools(agentKey string, tools []actool.CoreTool) ([]actool.Co
 	}
 	guidance := ""
 	if has["report_finding"] || has["add_task_hint"] || has["add_hint"] {
-		guidance = "\n\n**流量证据交接（可选）**：自动绑定默认由报告 Agent 在漏洞入库后、编写报告前完成。上报者应在 evidence 保留验证命令、关键输出、已有真实流量 ID 及其用途，任务中带 intent_id，便于报告 Agent 追溯；不必为了绑定额外查包。Auto / Planner 代为上报时不要丢弃执行者已有的引用。add_hint / add_task_hint 可用 traffic_refs 交接；显式即时绑定仍兼容 report_finding 的 traffic_refs / evidence_hint_id。TCP 或无包时正常登记，不能猜测 ID，也不能仅为补包重复探测。"
+		guidance = "\n\n**トラフィックの証拠の引き継ぎ（任意）**：標準では、脆弱性の保存後、レポート作成前に、レポート Agent が自動関連付けを行います。報告する側は、検証コマンド、重要な出力、既存の実際のトラフィック ID と用途を evidence に残し、タスク内では intent_id を付けて、レポート Agent が経緯を追えるようにしてください。関連付けのために追加で通信記録を調べる必要はありません。Auto / Planner が代わりに報告する場合も、実行者の既存の参照を捨てないでください。add_hint / add_task_hint の traffic_refs で引き継げます。明示的な即時関連付けとして、report_finding の traffic_refs / evidence_hint_id も引き続き使用できます。TCP または通信記録がない場合も通常どおり登録し、ID の推測や、通信記録を補うためだけの再調査はしないでください。"
 		if has["add_task_hint"] && !has["add_hint"] {
-			guidance += "\n平台对话没有任务上下文时，不直接调用 report_finding；通过 add_task_hint 向已有对应任务交接，由任务 Agent 登记，并用 list_task_findings 核对结果。"
+			guidance += "\nプラットフォームのチャットにタスクのコンテキストがない場合は、report_finding を直接呼び出さず、add_task_hint で既存の対応タスクに引き継いでください。タスク Agent が登録し、list_task_findings で結果を照合してください。"
 		}
 		if has["prove_goal"] || has["goal_met"] {
-			guidance += "\n判定目标完成前，先完成本次已有证据的上报/交接。不要在证据交接尚未完成时仅因文字漏洞已登记就结束任务、取消 Worker；无包不要求等待或强行抓包。"
+			guidance += "\n目標を達成済みと判定する前に、今回すでにある証拠の報告 / 引き継ぎを完了してください。証拠の引き継ぎが未完了のまま、脆弱性の文章を登録しただけでタスクを終了したり Worker を取り消したりしないでください。通信記録がない場合に、待機や無理なパケット取得は必要ありません。"
 		}
 	}
 	if has["update_finding_report"] && has["bind_finding_traffic"] && has["get_finding_traffic"] {
-		guidance += "\n\n**报告前自动关联流量（已开启）**：你负责为本次触发的漏洞核对并绑定流量，再撰写报告。先从 report_finding 返回 JSON 或 get_task_node_detail / list_task_findings 取得明确的 finding_id 与 finding_node_id。读取漏洞详情、对应意图的执行记录及已有证据清单，优先使用上报者交接的真实 ID。若本次验证为 HTTP 且流量工具可用，用 traffic_search 筛选候选，再用 traffic_get 逐条核实请求/响应确实支持该漏洞；域名和时间只用于筛选，不证明归属。将确认的证据按复现顺序用 bind_finding_traffic(finding_id, traffic_refs) 关联，选择 baseline / proof / verification / supporting 并说明用途。只能操作本次漏洞，不重复创建漏洞或重新探测目标。绑定成功后重新调用 get_finding_traffic 获取最新 version，读取所需正文，再将实际读取的 version 作为 evidence_version 传给 update_finding_report（其 finding_id 参数仍用 finding_node_id）。已有绑定不必重复追加。TCP、未采集、工具不可用或没有确切匹配时，跳过自动绑定，依据文字/命令证据正常写报告并说明原因，不得为凑齐流量而猜测。绑定失败不宣称成功；保留已有证据并在报告说明未绑定原因。"
+		guidance += "\n\n**レポート作成前のトラフィック自動関連付け（有効）**：今回の起動対象となった脆弱性のトラフィックを確認して関連付け、その後レポートを作成してください。まず report_finding が返す JSON、または get_task_node_detail / list_task_findings から明確な finding_id と finding_node_id を取得します。脆弱性の詳細、対応するインテントの実行記録、既存の証拠一覧を読み取り、報告する側から引き継いだ実際の ID を優先して使用してください。今回の検証が HTTP で、トラフィックツールを利用できる場合は、traffic_search で候補を絞り込み、traffic_get でリクエスト / レスポンスがその脆弱性を実際に裏付けることを一件ずつ確認してください。ドメインと時刻は絞り込みにのみ使用し、帰属を証明するものではありません。確認した証拠を、再現順に bind_finding_traffic(finding_id, traffic_refs) で関連付け、baseline / proof / verification / supporting を選んで用途を説明してください。操作するのは今回の脆弱性だけとし、脆弱性の重複作成や対象の再調査はしないでください。関連付けに成功したら、get_finding_traffic を再度呼び出して最新の version を取得し、必要な本文を読み取り、実際に読み取った version を evidence_version として update_finding_report に渡してください（finding_id 引数には引き続き finding_node_id を使用）。既存の関連付けを重複して追加する必要はありません。TCP、未収集、ツールを利用できない場合、または正確な一致がない場合は自動関連付けを省略し、文章 / コマンドの証拠に基づいて通常どおりレポートを作成し、理由を説明してください。トラフィックを揃えるために推測してはいけません。関連付けに失敗したら成功したと述べず、既存の証拠を保持し、関連付けできなかった理由をレポートに記載してください。"
 	}
 	if guidance != "" || has["get_finding_traffic"] || has["update_finding_report"] {
 		guidance += findingIDGuidance
@@ -116,7 +116,7 @@ func (t *ToolSet) findingRefsFromHint(hintID int64, explicit []db.TrafficRef) ([
 		return nil, err
 	}
 	if n == nil || n.Kind != db.KindHint {
-		return nil, fmt.Errorf("evidence_hint_id=%d 必须是本任务的提示节点（继承提示不可直接用于绑定）", hintID)
+		return nil, fmt.Errorf("evidence_hint_id=%d はこのタスクのヒントノードである必要があります（継承されたヒントを直接関連付けに使用することはできません）", hintID)
 	}
 	var payload struct {
 		Refs []db.TrafficRef `json:"traffic_refs"`

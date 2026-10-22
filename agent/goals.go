@@ -52,19 +52,19 @@ set_goals を呼び出して結果を登録してください。`
 // on released DBs and can't be edited away — same pattern as the trafficTool tail.
 const goalsScopeTail = `
 
-**额外职责：登记测试资产范围**
-除拆分目标外，你还要从「任务目标 / 任务描述」里识别出**明确给出的测试资产范围**，调用 add_task_scope 登记（本任务的授权边界，也是资产测试覆盖度的分母）。**最小范围原则：只登记用户明确点到的那一个目标，绝不擅自放大。**
-- 目标是 URL 或带主机名的地址（如 https://xxx.example.com/path、app.example.com）→ 取其**完整主机名**，kind=subdomain，value=完整主机名。
-  例：目标 https://a1b2c3.lab.example.net/path → kind=subdomain，value=a1b2c3.lab.example.net（**不是** example.net）。
-  **严禁**把带子域的主机名缩成根域名——看到 xxx.example.com 就登记整个 example.com 会把范围扩到用户目标之外，违背最小范围原则。
-- 仅当用户给的就是**裸根域名、且不含任何子域**（如直接写 example.com），或明确说“整个站点 / 所有子域 / 全域名” → 才用 kind=root_domain，value=example.com。
-- 纯 IP 或网段 → kind=ip / cidr，value=IP 或 CIDR。
-- **不要**登记公司范围（company）——任务刚建立、资产系统里通常还没有这家公司，登记不上，公司级范围交由后续 plan 阶段处理。
-其它规则：
-- 只登记**目标/描述里明确写出**的范围；严禁臆造或推断未提及的域名/IP。
-- reason 简述依据来自哪句话，便于审计。
-- 若目标/描述中没有任何明确资产范围，则**不要**调用 add_task_scope。
-先用 add_task_scope 登记范围（如有），再调用 set_goals 提交目标。`
+**追加の役割：テスト対象の資産範囲を登録する**
+目標の分解に加えて、「タスクの目標 / タスクの説明」から**明示されたテスト対象の資産範囲**を特定し、add_task_scope で登録してください（このタスクの許可範囲であり、資産のテストカバレッジの分母でもあります）。**最小範囲の原則：ユーザーが明示した対象だけを登録し、勝手に範囲を広げないでください。**
+- 対象が URL またはホスト名を含むアドレス（https://xxx.example.com/path、app.example.com など）の場合 → **完全なホスト名**を取り出し、kind=subdomain、value=完全なホスト名とします。
+  例：対象が https://a1b2c3.lab.example.net/path の場合 → kind=subdomain、value=a1b2c3.lab.example.net（example.net **ではありません**）。
+  サブドメインを含むホスト名をルートドメインに縮めることは**厳禁**です。xxx.example.com を見て example.com 全体を登録すると、ユーザーの対象を超えて範囲が広がり、最小範囲の原則に反します。
+- ユーザーが指定したのが**サブドメインを含まないルートドメインだけ**（example.com と直接記述した場合など）、または「サイト全体 / 全サブドメイン / ドメイン全体」と明示した場合に限り → kind=root_domain、value=example.com とします。
+- IP またはネットワークだけの場合 → kind=ip / cidr、value=IP または CIDR とします。
+- 企業の範囲（company）は登録**しないでください**。タスクの作成直後は、資産システムにその企業がまだ存在せず登録できないことが多いため、企業単位の範囲は後続の plan 段階で扱います。
+その他の規則：
+- **目標 / 説明に明示された**範囲だけを登録し、言及のないドメイン / IP を創作したり推測したりすることは厳禁です。
+- 監査できるように、reason には根拠となった文を簡潔に示してください。
+- 目標 / 説明に明確な資産範囲がなければ、add_task_scope を呼び出さ**ないでください**。
+範囲があれば先に add_task_scope で登録し、その後 set_goals で目標を登録してください。`
 
 // GoalSpec is one decomposed objective.
 type GoalSpec struct {
@@ -138,9 +138,9 @@ func DecomposeGoalsWithProvider(ctx context.Context, prov llm.Provider, dataDir,
 		tools = append(tools, tsx.addTaskScope())
 		sys += goalsScopeTail
 	}
-	userMsg := "任务目标：\n" + goalText
+	userMsg := "タスクの目標：\n" + goalText
 	if d := strings.TrimSpace(desc); d != "" {
-		userMsg += "\n\n任务描述（背景信息，可能含靶标范围/flag 数量/交战说明；仅供参考，不要臆造其中未提及的内容）：\n" + d
+		userMsg += "\n\nタスクの説明（背景情報。対象範囲 / flag の数 / 交戦に関する説明を含む場合があります。参考情報としてのみ使用し、言及されていない内容を創作しないでください）：\n" + d
 	}
 	// Use captureRun so every LLM step is emitted as an activity record (visible in
 	// the plan tab under the round-0 marker). Falls back gracefully when emit is nil.

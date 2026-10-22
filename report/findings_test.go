@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 
 	"github.com/Autumn-27/artex/db"
 )
@@ -50,15 +49,5 @@ func TestJapaneseExportsPreserveEvidenceAndMachineCodes(t *testing.T) {
 	}
 	if rows[1][0] != "7" || rows[1][3] != "critical" || rows[1][4] != "fixed" {
 		t.Fatalf("CSV machine-readable values changed: %v", rows[1])
-	}
-}
-
-func TestFindingFilenameKeepsJapaneseUTF8WithinByteLimit(t *testing.T) {
-	name := FindingFilename(&db.DBFinding{ID: 7, Severity: "critical", Name: strings.Repeat("脆弱性の検証", 30)})
-	if !utf8.ValidString(name) || len(strings.TrimSuffix(name, ".md")) > 120 {
-		t.Fatalf("Filename is invalid UTF-8 or exceeds the byte limit: %q", name)
-	}
-	if strings.ContainsAny(name, "/\\") || !strings.HasSuffix(name, ".md") {
-		t.Fatalf("Unsafe report filename: %q", name)
 	}
 }

@@ -207,7 +207,7 @@ function ToolEditor({
         {/* binding + switch */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="grid gap-1.5">
-            <Label className="text-muted-foreground text-xs">Agentの関連付け（このツールを渡す相手）</Label>
+            <Label className="text-muted-foreground text-xs">Agentの関連付け（このツールを渡す Agent を指定）</Label>
             <div className="flex flex-wrap gap-3">
               {agents.map((ag) => (
                 <label key={ag.key} className="flex items-center gap-2 text-sm">

@@ -112,11 +112,11 @@ func (g *Guard) applyIntercept(ctx context.Context, ev hook.Event) hook.Result {
 		// immediately without creating a pending record — avoids orphaned DB entries
 		// and makes execOne complete fast, reducing the race against drainSynthetic.
 		if ctx.Err() != nil {
-			return g.block(ev.ToolName, systemBlockMessage("工作已取消，平台安全管控阻止执行"), "")
+			return g.block(ev.ToolName, systemBlockMessage("作業がキャンセルされたため、プラットフォームの安全管理によって実行を阻止しました"), "")
 		}
 		convID := intercept.ConvIDFromContext(ctx)
 		if !g.interceptor.HandleAsk(ctx, convID, dec, ev.ToolName, ev.Input) {
-			return g.block(ev.ToolName, systemBlockMessage("人工审批未通过（用户拒绝或审批超时）"), "")
+			return g.block(ev.ToolName, systemBlockMessage("手動承認が得られませんでした（ユーザーによる拒否または承認のタイムアウト）"), "")
 		}
 		return hook.Result{}
 	}
@@ -136,8 +136,8 @@ func (g *Guard) applyIntercept(ctx context.Context, ev hook.Event) hook.Result {
 // Audit/history rows keep the raw reason (see Interceptor.Log); only the
 // model-facing tool_result carries this framing.
 func systemBlockMessage(reason string) string {
-	return "【ARTEX 平台管控·非目标防御】此调用被平台拦截。" +
-		"原因：" + reason + "。此操作被禁止。"
+	return "【ARTEX プラットフォームの管理措置・対象側の防御ではありません】この呼び出しはプラットフォームにより遮断されました。" +
+		"理由：" + reason + "。この操作は禁止されています。"
 }
 
 var reBlocked = regexp.MustCompile(`(?i)\b(403|forbidden|waf|blocked|rate.?limit|429|captcha|denied)\b`)

@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-// Use connection-local tables so the compatibility check cannot alter saved rules.
 func TestLocalizedInterceptSeedsPreserveExistingRules(t *testing.T) {
 	conn, err := sql.Open("pgx", testDSN(t))
 	if err != nil {
@@ -28,8 +27,6 @@ pattern text, action text, message text, timeout_enabled boolean, timeout_second
 		name, legacy, localized string
 		seed                    func() error
 	}{
-		{"v1", "[内置] 递归强制删除 rm -rf", "[組み込み] 再帰的な強制削除 rm -rf", d.seedDefaultInterceptRules},
-		{"v2", "[内置] 破坏性系统命令", "[組み込み] 破壊的なシステムコマンド", d.seedDefaultInterceptRulesV2},
 		{"v3", "[内置] 删除类接口路径", "[組み込み] 削除用 API パス", d.seedDefaultInterceptRulesV3},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

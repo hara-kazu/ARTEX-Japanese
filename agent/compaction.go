@@ -462,7 +462,7 @@ func buildCompressionInput(g *coldGraph, b block, nodeByID map[int64]*db.Node) s
 		memberSet[m] = true
 	}
 	var sb strings.Builder
-	sb.WriteString("【成员节点（要压缩的）】：\n")
+	sb.WriteString("【メンバーノード（圧縮対象）】：\n")
 	for _, m := range b.Members {
 		n := nodeByID[m]
 		kind := "fact"
@@ -485,18 +485,18 @@ func buildCompressionInput(g *coldGraph, b block, nodeByID map[int64]*db.Node) s
 	for _, m := range b.Members {
 		for _, to := range g.children[m] {
 			if memberSet[to] {
-				edgeLines = append(edgeLines, fmt.Sprintf("- #%d 产出/派生→ #%d", m, to))
+				edgeLines = append(edgeLines, fmt.Sprintf("- #%d が生成 / 派生→ #%d", m, to))
 			}
 		}
 	}
 	if len(edgeLines) > 0 {
-		sb.WriteString("\n【成员之间的血缘边（父→子）】：\n")
+		sb.WriteString("\n【メンバー間の派生関係の辺（親→子）】：\n")
 		sort.Strings(edgeLines)
 		sb.WriteString(strings.Join(edgeLines, "\n"))
 		sb.WriteByte('\n')
 	}
 	if len(b.Anchors) > 0 {
-		sb.WriteString("\n【共同父 / 上下文锚（不是成员，只用于理解这些结果从哪个意图探出）】：\n")
+		sb.WriteString("\n【共通の親 / コンテキストのアンカー（メンバーではなく、これらの結果がどのインテントの探索から得られたかを理解するためだけの情報）】：\n")
 		for _, a := range b.Anchors {
 			n := nodeByID[a]
 			state := ""
@@ -545,4 +545,4 @@ const compressionSystemPrompt = `【互いに関連する】探索ノードの�
 5. 入力にある内容を直接述べる：憶測や、入力にない判断を加えないでください。
 6. 内容に応じて長さを調整する：結論が少なければ短く、多くの異なる結論があれば十分に説明します。ただし、全入力 summary の合計よりも明確に短くしてください。
 
-日本語の body 本文のみを出力してください。`
+body 本文のみを出力してください。`

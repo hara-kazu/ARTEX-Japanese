@@ -40,11 +40,11 @@ func (s *Server) wireInterceptReviewer() {
 			}
 		}
 		if profileID == 0 {
-			return intercept.Decision{}, fmt.Errorf("未配置可用的裁判模型")
+			return intercept.Decision{}, fmt.Errorf("使用可能な審査モデルが設定されていません")
 		}
 		prov, _, ok := s.providerForProfile(profileID)
 		if !ok {
-			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("裁判模型 profile %d 不可用", profileID)
+			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("審査モデル profile %d を使用できません", profileID)
 		}
 		// Tag this call's usage as the "judge" lane so the config page can report
 		// how much the fallback approval has spent, separate from model profiles.
@@ -55,7 +55,7 @@ func (s *Server) wireInterceptReviewer() {
 		}
 		v := intercept.ParseVerdict(text)
 		if v.Action == "" {
-			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("模型裁决格式无效，必须包含裁决、实际操作、成功后的后果和命中规则")
+			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("モデルの判定形式が無効です。判定、実際の操作、成功後の影響、適用ルールを含める必要があります")
 		}
 		return intercept.Decision{Action: v.Action, Message: v.Reason, ProfileID: profileID}, nil
 	})

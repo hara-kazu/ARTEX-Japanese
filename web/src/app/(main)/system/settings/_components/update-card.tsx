@@ -139,7 +139,7 @@ export function UpdateCard() {
         "更新するとプログラムを再起動し、実行中のタスクが中断されます。\n" +
         (info.mode === "docker"
           ? "\n注意：コンテナー内の更新はプログラム本体のみで、イメージ内の playwright / nmap などのツールは更新しません。\n" +
-            "イメージごと更新する場合、日本語版のローカルイメージは再ビルドしてください。公開イメージは docker compose pull で更新します。"
+            "新しいバージョンが新しいツールを必要とする場合は、docker compose pull を使用してください。"
           : ""),
     );
     if (!ok) return;
@@ -268,10 +268,10 @@ export function UpdateCard() {
 
         {info?.mode === "docker" && info.has_update && (
           <p className="text-xs text-muted-foreground">
-            Docker 内の更新は本体のみで、playwright / nmap などのツールは更新しません。また、
+            Docker 内の更新はプログラム本体のみを置き換え、イメージ内の playwright / nmap などのツールは更新しません。また、
             <span className="font-mono"> docker compose up -d </span>
-            でコンテナーを再作成すると、イメージに含まれるバージョンに戻ります。日本語版のローカルイメージは、README の手順で再ビルドしてからコンテナーを再作成してください。
-            公開イメージを使う場合は、<span className="font-mono">docker compose pull artex &amp;&amp; docker compose up -d artex</span> で更新します。
+            でコンテナーを再作成すると、イメージに含まれるバージョンに戻ります。イメージも更新する場合は、次を実行してください：
+            <span className="font-mono"> docker compose pull artex &amp;&amp; docker compose up -d artex</span>。
           </p>
         )}
 

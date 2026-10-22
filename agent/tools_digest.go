@@ -134,7 +134,7 @@ func (t *ToolSet) expandDigest() actool.CoreTool {
 			_ = json.Unmarshal(raw, &in)
 			n, store, srcTaskID := t.resolveDigest(in.ID)
 			if n == nil {
-				return jsonResult(map[string]any{"error": fmt.Sprintf("#%d 不是 digest 节点（本任务或直接关联任务里都没找到）", in.ID)})
+				return jsonResult(map[string]any{"error": fmt.Sprintf("#%d は digest ノードではありません（このタスクにも直接関連するタスクにも見つかりませんでした）", in.ID)})
 			}
 			var p struct {
 				Body string `json:"body"`

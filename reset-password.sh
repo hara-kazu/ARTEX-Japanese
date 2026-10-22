@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
 # =============================================================================
-# ARTEX 管理员密码重置脚本
+# ARTEX 管理者パスワードのリセットスクリプト
 #
-# 登录用户名固定为 ARTEX；密码以 bcrypt 哈希存放在数据库 settings 表的
-# auth.password_hash 键。本脚本连上数据库后，用 pgcrypto 在库内生成 bcrypt 哈希
-# 并写回该键——与后端登录校验（golang.org/x/crypto/bcrypt）完全兼容。
+# ログインユーザー名は ARTEX 固定です。パスワードはデータベースの settings テーブルの
+# auth.password_hash キーに bcrypt ハッシュで保存します。このスクリプトは接続後、
+# pgcrypto で bcrypt ハッシュを生成して同じキーへ保存し、バックエンドの検証（golang.org/x/crypto/bcrypt）と完全に互換です。
 #
-# 两种部署：
-#   local （默认）—— 宿主机直接用 psql 连数据库。连接信息按以下优先级获取：
-#                    命令行参数 > --dsn/$ARTEX_PG_DSN > config.json 的 database.*
-#   docker        —— 通过 `docker compose exec`（或 `docker exec`）在 postgres
-#                    容器内执行 psql（compose 默认不对宿主暴露 5432，故走容器内）。
+# 2つの導入方法：
+#   local （標準）—— ホストから psql で直接接続します。接続情報の優先度：
+#                    コマンド引数 > --dsn/$ARTEX_PG_DSN > config.json の database.*
+#   docker        —— `docker compose exec`（または `docker exec`）で postgres
+#                    コンテナー内の psql を使用（compose は標準でホストに 5432 を公開しないため）。
 #
-# 用法示例：
-#   ./reset-password.sh                          # 本地，自动读 config.json/环境，交互输入新密码
-#   ./reset-password.sh -p 'NewPass!'            # 本地，直接给定新密码
+# 使用例：
+#   ./reset-password.sh                          # ローカル。config.json/環境変数を読み、新しいパスワードを対話入力
+#   ./reset-password.sh -p 'NewPass!'            # ローカル。新しいパスワードを直接指定
 #   ./reset-password.sh --dsn postgres://u:p@h:5432/artex
 #   ./reset-password.sh -H 127.0.0.1 -P 5433 -U autopentest -W pass -d artex
-#   ./reset-password.sh -m docker                # docker 部署（读 .env 的 POSTGRES_*）
-#   ./reset-password.sh -m docker -c pg容器名 --exec docker
+#   ./reset-password.sh -m docker                # docker で導入（.env の POSTGRES_* を参照）
+#   ./reset-password.sh -m docker -c pgコンテナー名 --exec docker
 #
-# 安全：新密码经环境变量 + psql \getenv 传入（不进入进程 argv），并用 :'var'
-# 自动转义（防 SQL 注入）；数据库密码经 PGPASSWORD 传递，同样不进 argv。
+# 安全性：新しいパスワードは環境変数 + psql \getenv で渡し（プロセスの argv には含めない）、:'var'
+# で自動エスケープ（SQL インジェクション対策）。データベースのパスワードも PGPASSWORD で渡し、argv には含めません。
 # =============================================================================
 set -euo pipefail
 
@@ -40,31 +40,7 @@ ASSUME_YES=0
 die() { echo "エラー：$*" >&2; exit 1; }
 info() { echo "· $*" >&2; }
 
-usage() {
-  cat <<'EOF'
-ARTEX 管理者パスワードのリセット
-
-使用方法：./reset-password.sh [オプション]
-  -m, --mode local|docker   接続方法（省略時は自動判定）
-  --dsn DSN                PostgreSQL の接続文字列
-  -H, --host HOST          データベースのホスト
-  -P, --port PORT          データベースのポート
-  -U, --user USER          データベースのユーザー
-  -W, --db-password PASS   データベースのパスワード
-  -d, --dbname NAME        データベース名
-  --sslmode MODE           PostgreSQL の SSL モード
-  --config PATH            設定ファイル（標準：config.json）
-  -c, --container NAME     Docker のサービス / コンテナー名
-  --exec compose|docker    Docker の実行方法
-  -p, --new-password PASS  新しいパスワード（省略時は非表示で対話入力）
-  -y, --yes                最終確認を省略
-  -h, --help               このヘルプを表示
-
-接続設定の優先度：コマンド引数 > ARTEX_PG_DSN > config.json。
-ログイン名は ARTEX 固定です。反映後のサービス再起動は不要です。
-EOF
-  exit 0
-}
+usage() { sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
 # ---- 参数解析 -------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
@@ -191,8 +167,8 @@ if [[ "$MODE" == "local" ]]; then
     PSQL_ARGS=("$DSN")
     target="$DSN"
   else
-    [[ -n "$USER"   ]] || die "データベースユーザー（-U）または有効な config.json / DSN が必要です"
-    [[ -n "$DBNAME" ]] || die "データベース名（-d）または有効な config.json / DSN が必要です"
+    [[ -n "$USER"   ]] || die "データベースユーザー（-U）または有効な config.json/DSN が必要です"
+    [[ -n "$DBNAME" ]] || die "データベース名（-d）または有効な config.json/DSN が必要です"
     HOST="${HOST:-127.0.0.1}"; PORT="${PORT:-5432}"; SSLMODE="${SSLMODE:-disable}"
     PSQL_ARGS=(-h "$HOST" -p "$PORT" -U "$USER" -d "$DBNAME")
     [[ -n "$SSLMODE" ]] && export PGSSLMODE="$SSLMODE"
@@ -212,7 +188,7 @@ if [[ "$MODE" == "local" ]]; then
 
 else
   # ---- docker ----
-  command -v docker >/dev/null 2>&1 || die "Docker が見つかりません"
+  command -v docker >/dev/null 2>&1 || die "docker が見つかりません"
   CONTAINER="${CONTAINER:-postgres}"
 
   # 选择 exec 方式：优先 docker compose exec（服务名），否则 docker exec（容器名）

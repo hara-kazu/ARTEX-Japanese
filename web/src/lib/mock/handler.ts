@@ -2224,7 +2224,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   if (path === "/settings/web-search/test") return { ok: true, count: 5, backend: D.settings.web_search_backend };
   if (path === "/settings/python/detect") return { python_interpreter: "/usr/bin/python3" };
   if (path === "/chat")
-    return { reply: "（demo）提案を高優先度のインテントとして追加しました。work agent が順次実行します。", mode: "hint" };
+    return { reply: "（demo）提案を高優先度のインテントとして追加しました。work agent ができるだけ早く実行します。", mode: "hint" };
   if (path === "/gc") return { removed: 0 };
 
   // ── 工具执行历史 ──

@@ -31,17 +31,17 @@ func (t *runTrace) done(id string) {
 }
 
 var reasonHint = map[harness.TerminalReason]string{
-	harness.ReasonCompleted:         "模型正常结束了本轮，但没有留下文字总结；事实和资产以本轮工具调用记录为准",
-	harness.ReasonMaxTurns:          "达到步数上限(MaxTurns)：SDK 已执行收尾并写回事实和资产，意图会标记为 exhausted，供规划者换方向继续，而不是作为失败处理",
-	harness.ReasonTimeout:           "达到单次运行的墙钟预算(MaxDuration)：到点会打断在跑的工具并就地进收尾，把已识别的事实和资产写回，意图会标记为 exhausted",
-	harness.ReasonModelError:        "模型或 API 调用失败（网络、鉴权、限流、供应商 5xx 等），重试用尽后意图标记为 blocked——传输层故障导致这条意图基本没真正探成；查其执行过程（get_worker_trace）后再决定重派或换法",
-	harness.ReasonBlockingLimit:     "上下文长度达到硬上限，请求在发出前被拦截；应收窄意图粒度或压缩工具返回",
-	harness.ReasonPromptTooLong:     "提示词过长且上下文压缩重试已经用尽，无法继续执行",
-	harness.ReasonImageError:        "当前模型不支持本轮多模态内容；请切换支持视觉的模型或避免工具返回图片",
-	harness.ReasonStopHookPrevented: "Stop 钩子阻止本轮结束，随后未能继续；请检查任务 Guard 规则是否过严",
-	harness.ReasonHookStopped:       "工具或钩子主动停止继续执行，例如越界目标或禁用命令；请检查最后一条 tool_result 的拦截说明",
-	harness.ReasonAbortedStreaming:  "运行在模型输出流式生成阶段被取消",
-	harness.ReasonAbortedTools:      "运行在工具执行阶段被取消",
+	harness.ReasonCompleted:         "モデルは今回のターンを正常終了しましたが、要約文を残していません。事実と資産は今回のツール呼び出し記録を参照してください",
+	harness.ReasonMaxTurns:          "ステップ数の上限(MaxTurns)に達しました。SDK は終了処理を実行し、事実と資産を書き戻しました。インテントは失敗として扱わず exhausted とし、計画エージェントが方向を変えて続行できるようにします",
+	harness.ReasonTimeout:           "単一実行の実時間の予算(MaxDuration)に達しました。期限に達すると実行中のツールを中断してその場で終了処理に入り、特定済みの事実と資産を書き戻して、インテントを exhausted にします",
+	harness.ReasonModelError:        "モデルまたは API の呼び出しに失敗しました（ネットワーク、認証、レート制限、プロバイダーの 5xx など）。再試行を使い切るとインテントは blocked になります。転送層の障害によって、このインテントの探索はほとんど実行できていません。実行過程（get_worker_trace）を確認してから、再割り当てするか手段を変えるか判断してください",
+	harness.ReasonBlockingLimit:     "コンテキスト長のハード上限に達したため、リクエストは送信前に止められました。インテントの範囲を狭めるか、ツールの返り値を圧縮してください",
+	harness.ReasonPromptTooLong:     "プロンプトが長すぎ、コンテキスト圧縮の再試行も使い切ったため、続行できません",
+	harness.ReasonImageError:        "現在のモデルは今回のマルチモーダル内容に対応していません。画像に対応したモデルに切り替えるか、ツールが画像を返さないようにしてください",
+	harness.ReasonStopHookPrevented: "Stop フックが今回のターンの終了を止め、その後続行できませんでした。タスクの Guard ルールが厳しすぎないか確認してください",
+	harness.ReasonHookStopped:       "範囲外の対象や禁止コマンドなどを理由に、ツールまたはフックが明示的に実行を停止しました。最後の tool_result のブロック理由を確認してください",
+	harness.ReasonAbortedStreaming:  "モデルの出力のストリーミング生成中に実行が取り消されました",
+	harness.ReasonAbortedTools:      "ツールの実行中に処理が取り消されました",
 }
 
 // terminalText renders a terminal event with no final text into a compact summary
@@ -59,61 +59,61 @@ func terminalText(ctx context.Context, term *harness.Terminal, tr *runTrace) (st
 	if aborted {
 		_, short, _, ok := AbortReason(ctx)
 		if !ok {
-			short = "未能取得取消原因"
+			short = "取り消し理由を取得できませんでした"
 		}
-		stage := "执行过程中"
+		stage := "実行中"
 		switch reason {
 		case harness.ReasonAbortedStreaming:
-			stage = "模型输出阶段"
+			stage = "モデルの出力段階"
 		case harness.ReasonAbortedTools:
-			stage = "工具执行阶段"
+			stage = "ツールの実行段階"
 		}
-		sum = "（运行被中断：" + short + "；停在" + stage + progressSuffix(term, tr) + "，未完成）"
+		sum = "（実行が中断されました：" + short + "；停止した段階：" + stage + progressSuffix(term, tr) + "、未完了）"
 	} else if reason == harness.ReasonMaxTurns || reason == harness.ReasonTimeout {
-		sum = "（达到运行预算上限(" + string(reason) + ")，已收尾写回事实" + progressSuffix(term, tr) + "；本次无文字总结）"
+		sum = "（実行予算の上限に達しました(" + string(reason) + ")。終了処理で事実を書き戻しました" + progressSuffix(term, tr) + "；今回は要約文がありません）"
 	} else {
 		hint := terminalReasonHint(reason)
-		sum = "（无文字总结，终态 " + terminalReasonLabel(reason) + "：" + firstLine(hint, 80) + "）"
+		sum = "（要約文なし、最終状態 " + terminalReasonLabel(reason) + "：" + firstLine(hint, 80) + "）"
 	}
 
 	var b strings.Builder
 	b.WriteString(sum)
 	b.WriteString("\n\n")
 	displayReason := terminalReasonLabel(reason)
-	fmt.Fprintf(&b, "- **终态**: `%s` - %s\n", displayReason, terminalReasonHint(reason))
+	fmt.Fprintf(&b, "- **最終状態**: `%s` - %s\n", displayReason, terminalReasonHint(reason))
 	if aborted {
 		code, _, why, ok := AbortReason(ctx)
 		if ok {
-			fmt.Fprintf(&b, "- **中断原因** (`%s`): %s\n", code, why)
+			fmt.Fprintf(&b, "- **中断理由** (`%s`): %s\n", code, why)
 		} else {
-			b.WriteString("- **中断原因**: 无法取得；取消方可能没有通过 context.WithCancelCause 附加具名原因\n")
+			b.WriteString("- **中断理由**: 取得できません。取り消し側が context.WithCancelCause で名前付きの理由を付けていない可能性があります\n")
 		}
 	}
 	if term.Err != nil {
-		fmt.Fprintf(&b, "- **底层错误**: `%v`\n", term.Err)
+		fmt.Fprintf(&b, "- **下位層のエラー**: `%v`\n", term.Err)
 	}
 	if aborted && strings.TrimSpace(term.Text) != "" {
-		b.WriteString("- **取消前已生成的部分输出**:\n\n")
+		b.WriteString("- **取り消し前に生成された部分的な出力**:\n\n")
 		b.WriteString(term.Text)
 		b.WriteString("\n\n")
 	}
 	if term.Turns > 0 {
-		fmt.Fprintf(&b, "- **已执行**: %d 轮模型回合\n", term.Turns)
+		fmt.Fprintf(&b, "- **実行済み**: モデルのターン%d回\n", term.Turns)
 	}
 	if !tr.startedAt.IsZero() {
-		fmt.Fprintf(&b, "- **本次运行耗时**: %s\n", roundDur(time.Since(tr.startedAt)))
+		fmt.Fprintf(&b, "- **今回の実行時間**: %s\n", roundDur(time.Since(tr.startedAt)))
 	}
 	if u := term.Usage; u.InputTokens+u.OutputTokens+u.CacheReadTokens+u.CacheWriteTokens > 0 {
-		fmt.Fprintf(&b, "- **累计 token**: 输入 %d / 输出 %d / 缓存读 %d / 缓存写 %d\n",
+		fmt.Fprintf(&b, "- **累計 token**: 入力 %d / 出力 %d / キャッシュ読み取り %d / キャッシュ書き込み %d\n",
 			u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
 	}
 	if tr.name == "" {
-		b.WriteString("- **工具调用**: 本次运行还没有发出工具调用就结束了\n")
+		b.WriteString("- **ツール呼び出し**: 今回の実行はツールを呼び出す前に終了しました\n")
 	} else if tr.pending {
-		fmt.Fprintf(&b, "- **中断时正在执行的工具**: `%s`（已运行 %s，**未返回结果**）\n\n  ```json\n  %s\n  ```\n",
+		fmt.Fprintf(&b, "- **中断時に実行中だったツール**: `%s`（実行時間 %s、**結果未応答**）\n\n  ```json\n  %s\n  ```\n",
 			tr.name, roundDur(time.Since(tr.at)), firstLine(tr.input, 300))
 	} else {
-		fmt.Fprintf(&b, "- **中断前最后一个工具**: `%s`（已正常返回）\n", tr.name)
+		fmt.Fprintf(&b, "- **中断前の最後のツール**: `%s`（正常に応答済み）\n", tr.name)
 	}
 	return sum, b.String()
 }
@@ -130,15 +130,15 @@ func terminalReasonHint(reason harness.TerminalReason) string {
 		return hint
 	}
 	if reason == "" {
-		return "运行的 context 已取消，但底层没有产生 Terminal 事件"
+		return "実行の context は取り消されましたが、下位層で Terminal イベントが生成されていません"
 	}
-	return "未知终态；harness 可能新增了 TerminalReason，请补充 reasonHint"
+	return "不明な最終状態です。harness に TerminalReason が追加された可能性があります。reasonHint を補ってください"
 }
 
 func progressSuffix(term *harness.Terminal, tr *runTrace) string {
 	var parts []string
 	if term.Turns > 0 {
-		parts = append(parts, fmt.Sprintf("%d 轮", term.Turns))
+		parts = append(parts, fmt.Sprintf("%d回", term.Turns))
 	}
 	if !tr.startedAt.IsZero() {
 		parts = append(parts, roundDur(time.Since(tr.startedAt)))
@@ -146,7 +146,7 @@ func progressSuffix(term *harness.Terminal, tr *runTrace) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return "，已运行 " + strings.Join(parts, " / ")
+	return "、実行済み " + strings.Join(parts, " / ")
 }
 
 func roundDur(d time.Duration) string {

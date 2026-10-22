@@ -103,7 +103,7 @@ func markdownBody(m Message, maxBytes int) (string, int) {
 
 	footer := ""
 	if m.HomeURL != "" {
-		footer = fmt.Sprintf("\n[ARTEX ですべて表示](%s)\n", m.HomeURL)
+		footer = fmt.Sprintf("\n[プラットフォームですべて表示](%s)\n", m.HomeURL)
 	}
 	kept := packItemCount(m.Items, maxBytes, markdownReservedBytes, footer, byteSize, func(it Item, idx int) string {
 		var b strings.Builder

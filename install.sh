@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ARTEX のインストール脚本：① 全部 Docker  ② 本地编译运行
+# ARTEX インストールスクリプト：① すべて Docker  ② ローカルでビルドして実行
 set -euo pipefail
 cd "$(cd "$(dirname "$0")" && pwd)"
 
@@ -13,20 +13,20 @@ rand(){ head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24; }
 # ── docker 环境检测 / 自动安装 ───────────────────
 ensure_docker(){
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    ok "Docker と Docker Compose を検出しました"; return
+    ok "docker と docker compose を検出しました"; return
   fi
-  warn "Docker / Docker Compose が見つかりません"
+  warn "docker / docker compose が見つかりません"
   case "$(uname -s)" in
     Linux)
       if [ "$(ask 'Docker を自動インストールしますか？ (y/n)' y)" = y ]; then
         curl -fsSL https://get.docker.com | sh
         sudo usermod -aG docker "$USER" || true
-        ok "Docker をインストールしました（sudo なしで使用するには再ログインしてください）"
+        ok "Docker をインストールしました（ユーザーグループの変更後、sudo なしで使用するには再ログインが必要です）"
       else
-        die "Docker をインストールして再試行してください"
+        die "docker をインストールして再試行してください"
       fi ;;
     Darwin) die "macOS では Docker Desktop をインストールしてください：https://www.docker.com/products/docker-desktop/" ;;
-    *)      die "Docker をインストールして再試行してください" ;;
+    *)      die "docker をインストールして再試行してください" ;;
   esac
 }
 
@@ -36,8 +36,8 @@ install_docker(){
   if [ ! -f .env ]; then
     cp .env.example .env 2>/dev/null || true
     local pw key
-    pw="$(ask 'Postgres のパスワード（Enter で自動生成）' "$(rand)")"
-    key="$(ask 'ANTHROPIC_API_KEY（空欄にして後で画面から設定可能）' '')"
+    pw="$(ask 'Postgres のパスワード（エンターでランダム生成）' "$(rand)")"
+    key="$(ask 'ANTHROPIC_API_KEY（空欄にして後で UI から設定可能）' '')"
     sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${pw}|" .env
     sed -i.bak "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=${key}|" .env
     rm -f .env.bak
@@ -56,11 +56,11 @@ install_docker(){
 install_local(){
   echo "データベースの導入方法："
   echo "  1) 既存の PostgreSQL に接続"
-  echo "  2) Docker で PostgreSQL を起動（Docker が必要）"
+  echo "  2) Docker で PostgreSQL を起動（docker が必要）"
   case "$(ask '選択' 1)" in
     2)
       ensure_docker
-      local pw; pw="$(ask 'Postgres のパスワード（Enter で自動生成）' "$(rand)")"
+      local pw; pw="$(ask 'Postgres のパスワード（エンターでランダム生成）' "$(rand)")"
       docker run -d --name artex-pg -p 5432:5432 \
         -e POSTGRES_USER=artex -e POSTGRES_PASSWORD="$pw" -e POSTGRES_DB=artex \
         -v artex-pg:/var/lib/postgresql/data postgres:16-alpine
@@ -90,7 +90,7 @@ JSON
   ok "config.json を作成しました"
 
   # go 环境检查
-  command -v go >/dev/null 2>&1 || die "Go がありません。Go 1.26.3 以降をインストールしてください：https://go.dev/dl/"
+  command -v go >/dev/null 2>&1 || die "Go がありません。Go 1.26 以降をインストールしてください：https://go.dev/dl/"
   ok "Go: $(go version)"
 
   # 内嵌前端需要 node 出静态产物
@@ -113,7 +113,7 @@ JSON
 echo "=============================="
 echo "  ARTEX のインストール"
 echo "  1) Docker で導入"
-echo "  2) ローカルで実行（Go でビルド・日本語版）"
+echo "  2) ローカルで実行（go でビルド）"
 echo "=============================="
 case "$(ask '選択' 1)" in
   1) install_docker ;;

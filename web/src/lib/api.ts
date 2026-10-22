@@ -3,7 +3,7 @@
 // a few fields the backend serializes differently (e.g. created_at as a unix int)
 // are passed through and formatted at the call site.
 
-import { localizeApiError, localizeApiResponse } from "@/lib/api-errors";
+import { localizeApiError, localizeApiErrorBody, localizeApiResponse } from "@/lib/api-errors";
 import type { ChatMention } from "@/lib/chat-mentions";
 import { MOCK } from "@/lib/mock/enabled";
 import { mockHandle } from "@/lib/mock/handler";
@@ -177,7 +177,7 @@ function mockReport(_task?: string): string {
 
 ## 概要
 - 範囲：acme.com（www / admin / api / shop / vpn サブドメインを含む）
-- 確認済みの検出結果：8件（高3 · 中3 · 低2）
+- 確認済みの検出結果：6件（高3 · 中3 · 低2）
 - エンジンモード：exploring
 
 ## 主な検出結果
@@ -907,8 +907,8 @@ export const api = {
       body: fd,
     });
     if (!r.ok) {
-      const body = await r.json().catch(() => ({}));
-      throw new Error(localizeApiError(body?.error || `アップロードに失敗しました：${r.status}`));
+      const body = await r.text();
+      throw new Error(`アップロードに失敗しました: ${r.status} ${localizeApiErrorBody(body)}`);
     }
     return r.json() as Promise<{ attachments: ChatAttachment[] }>;
   },
@@ -1257,8 +1257,7 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!r.ok) {
-      const body = await r.json().catch(() => ({}));
-      throw new Error(localizeApiError(body?.error || `設定の取得に失敗しました：${r.status}`));
+      throw new Error(localizeApiErrorBody(await r.text()));
     }
     return r.json();
   },
@@ -1274,8 +1273,7 @@ export const api = {
       body: JSON.stringify({ enabled_tools: enabledTools }),
     });
     if (!r.ok) {
-      const body = await r.json().catch(() => ({}));
-      throw new Error(localizeApiError(body?.error || `設定の保存に失敗しました：${r.status}`));
+      throw new Error(localizeApiErrorBody(await r.text()));
     }
   },
 

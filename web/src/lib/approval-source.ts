@@ -6,7 +6,6 @@ type ApprovalSourceInput = {
 
 const modelReasonPrefix = /^\[(?:模型|モデル)\]\s*/;
 
-/** Legacy approvals encode the source in their reason instead of decision_source. */
 export function approvalDecisionSource(row: ApprovalSourceInput) {
   if (row.decision_source) return row.decision_source;
   if (row.rule_id) return "rule";

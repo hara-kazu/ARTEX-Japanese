@@ -175,7 +175,7 @@ func (s *Server) delegateToTask(ctx context.Context, in json.RawMessage, pick fu
 
 func (s *Server) toolListTasks() actool.CoreTool {
 	return roTool("list_tasks",
-		"すべてのタスクの id・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーション agentが全体の状況、停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、指定がない場合はグローバルのアクティブ設定に従います。",
+		"すべてのタスクの id・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーション agentが全体の状況、停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、(アクティブ設定) はグローバルのアクティブ設定に従うことを表します。",
 		objSchema(map[string]any{}),
 		func(context.Context, json.RawMessage) (actool.Result, error) {
 			lastAct, _ := s.m.PG().LastActivityAll()
@@ -205,11 +205,11 @@ func (s *Server) toolListTasks() actool.CoreTool {
 				}
 				llmState := t.llmStateSnapshot()
 				if llmState.ProfileID == nil {
-					row["llm_profile"] = "(激活配置)"
+					row["llm_profile"] = "(アクティブ設定)"
 				} else if n, ok := profName[*llmState.ProfileID]; ok {
 					row["llm_profile"] = n
 				} else {
-					row["llm_profile"] = fmt.Sprintf("#%d(已删除)", *llmState.ProfileID)
+					row["llm_profile"] = fmt.Sprintf("#%d(削除済み)", *llmState.ProfileID)
 				}
 				out = append(out, row)
 			}
@@ -689,11 +689,11 @@ func (s *Server) reseedWorkerPrompt() {
 // 写成「启用自动绑定才读」,默认关闭配置下 reporter 就不会传 evidence_version,
 // SetFindingReportVersionByNodeID 便按 legacy 语义写 -1,漏洞详情与 Markdown 导出
 // 从此常驻「证据已变更，报告待更新」,而 UI 上没有任何入口能把它清掉。
-const reporterToolCallMessage = "上面刚有一个漏洞被 report_finding 登记。请读取返回 JSON 的 finding_id（独立漏洞记录 ID）与 finding_node_id（探索节点 ID），" +
-	"先用 get_finding_traffic(finding_id) 读取当前证据清单及其 version（空清单是正常情况，照常写报告）；" +
-	"若运行指引启用自动绑定，在读取前先核实并关联本次漏洞的流量。节点详情使用 finding_node_id。" +
-	"最后调用 update_finding_report(finding_id=finding_node_id, report, evidence_version=实际读取版本) 保存，" +
-	"evidence_version 必须传，否则报告会被永久标记为待更新。不要混用两种编号。"
+const reporterToolCallMessage = "上記で report_finding により脆弱性が1件登録されました。戻り値の JSON から finding_id（独立した脆弱性レコード ID）と finding_node_id（探索ノード ID）を読み取り、" +
+	"まず get_finding_traffic(finding_id) で現在の証拠一覧とその version を読み取ってください（空の一覧も正常です。そのままレポートを作成してください）。" +
+	"実行時の指針で自動関連付けが有効になっている場合は、読み取る前に今回の脆弱性のトラフィックを確認して関連付けてください。ノードの詳細には finding_node_id を使ってください。" +
+	"最後に update_finding_report(finding_id=finding_node_id, report, evidence_version=実際に読み取ったバージョン) を呼び出して保存してください。" +
+	"evidence_version は必ず渡してください。渡さないと、レポートに更新待ちの表示が残り続けます。2種類の番号を混同しないでください。"
 
 // 旧版触发消息(0.3.8 及更早)。只有仍与它逐字相同的记录才会被迁移覆盖，用户改过的保持原样。
 const reporterToolCallMessageV1 = "上面刚有一个漏洞被 report_finding 登记。请从触发上下文里取出 finding_id" +
@@ -733,15 +733,12 @@ func (s *Server) upgradeReporterTriggerMessage() {
 // 触发器 —— 每登记一个漏洞就唤起它写详细报告。一次性(settings flag 守卫)：用户删掉后不再重建。
 // 依赖：orchestration 工具已在本函数上方 SeedTool 入库，故绑定得上。
 func (s *Server) seedReporterAgent() {
-	// Translate only untouched legacy metadata, leaving custom labels and prompts intact.
-	if _, err := s.m.pg.Exec(`UPDATE agents SET
+	_, _ = s.m.pg.Exec(`UPDATE agents SET
 	name=CASE WHEN name=$2 THEN $3 ELSE name END,
 	description=CASE WHEN description=$4 THEN $5 ELSE description END
 	WHERE key=$1 AND (name=$2 OR description=$4)`, "reporter", "报告撰写", "レポートの作成",
 		"漏洞详细报告撰写：发现漏洞时自动触发，查取证据与执行过程后写 Markdown 报告并回写。",
-		"脆弱性が見つかると自動で起動し、証拠と実行過程を調べて詳細な Markdown レポートを作成・保存します。"); err != nil {
-		log.Printf("[reporter] metadata localization failed: %v", err)
-	}
+		"脆弱性が見つかると自動で起動し、証拠と実行過程を調べて詳細な Markdown レポートを作成・保存します。")
 	const flag = "reporter_agent_seed_v1"
 	if v, _, _ := s.m.pg.GetSetting(flag); v == "true" {
 		return

@@ -16,5 +16,5 @@ go run ./cmd/artex -addr :8787 -proxy 127.0.0.1:8788 &
 # 前端热更新（Vite/Next dev server，/api 反代到 :8787）。
 ( cd web && npm run dev ) &
 
-echo "[dev] バックエンド :8787 / プロキシ :8788 / フロントエンド http://localhost:3000（Ctrl-C で終了）"
+echo "[dev] バックエンド :8787 / プロキシ :8788 / フロントエンド http://localhost:5173（Ctrl-C で終了）"
 wait

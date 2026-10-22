@@ -44,7 +44,6 @@ export function mentionSearch(query: string) {
 }
 
 export function mentionToken(item: ChatMention) {
-  // Keep the server's existing token format so stored messages remain compatible.
   const kind = mentionKinds.find((entry) => entry.kind === item.kind)?.tokenLabel ?? "资产";
   const label = item.label
     .replace(/[[\]]/g, (char) => (char === "[" ? "（" : "）"))

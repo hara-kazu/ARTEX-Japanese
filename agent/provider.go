@@ -427,12 +427,12 @@ func quotaAwareHTTPClient(proxy, sessionHeaderKey string) (*http.Client, error) 
 func logTestConnection(c Config, capt *llmrec.Capture) {
 	attempts := capt.Attempts()
 	if len(attempts) == 0 {
-		log.Printf("[llm-test] %s / %s @ %s — 未发出任何 HTTP 请求(配置解析或建连即失败)",
+		log.Printf("[llm-test] %s / %s @ %s — HTTP リクエストを送信していません（設定の解析または接続の確立時に失敗）",
 			c.Provider(), c.Model, c.BaseURL)
 		return
 	}
 	for i, a := range attempts {
-		log.Printf("[llm-test] %s / %s @ %s — 尝试 %d/%d HTTP %d\n响应体: %s",
+		log.Printf("[llm-test] %s / %s @ %s — 試行 %d/%d HTTP %d\n応答本文: %s",
 			c.Provider(), c.Model, c.BaseURL, i+1, len(attempts), a.Status, clipBody(a.Body))
 	}
 }
@@ -442,11 +442,11 @@ func logTestConnection(c Config, capt *llmrec.Capture) {
 func clipBody(s string) string {
 	s = strings.TrimSpace(s)
 	if s == "" {
-		return "(空)"
+		return "（空）"
 	}
 	const max = 4096
 	if len(s) > max {
-		return s[:max] + fmt.Sprintf("…(截断,共 %d 字节)", len(s))
+		return s[:max] + fmt.Sprintf("…（切り詰め済み、合計%dバイト）", len(s))
 	}
 	return s
 }
@@ -480,7 +480,7 @@ func TestConnection(ctx context.Context, c Config) (time.Duration, string, error
 	// EscalateMaxTokens 保持 false:不因截断而抬额重试,避免 resume 循环空烧。
 	reply, err := agentcore.Run(ctx, agentcore.Options{
 		Provider:       prov,
-		SystemPrompt:   []string{"你是连接测试。直接输出两个字符 OK 即可，不要思考、不要解释、不要别的。"},
+		SystemPrompt:   []string{"接続テストです。OK の二文字だけを直接出力し、思考、説明、その他の内容は出力しないでください。"},
 		PermissionMode: acperm.ModeBypass,
 		MaxTurns:       1,
 		MaxTokens:      8192,
@@ -495,7 +495,7 @@ func TestConnection(ctx context.Context, c Config) (time.Duration, string, error
 	// 测试却报成功——正是本项要消除的落差。没有可见正文一律判失败。
 	reply = strings.TrimSpace(reply)
 	if reply == "" {
-		return lat, "", fmt.Errorf("模型无回复内容（请求已通，但未返回任何文本）")
+		return lat, "", fmt.Errorf("モデルの応答内容がありません（リクエストは成功しましたが、テキストが返されませんでした）")
 	}
 	return lat, reply, nil
 }

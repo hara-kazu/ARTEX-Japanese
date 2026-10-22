@@ -111,7 +111,7 @@ func telegramHTML(m Message) (string, int) {
 		// Telegram 的上限是**字符数**，所以打包也按字符计量（runeSize）。
 		footer := ""
 		if m.HomeURL != "" {
-			footer = fmt.Sprintf("\n\n<a href=\"%s\">ARTEX ですべて表示</a>", telegramEscapeAttr(m.HomeURL))
+			footer = fmt.Sprintf("\n\n<a href=\"%s\">プラットフォームですべて表示</a>", telegramEscapeAttr(m.HomeURL))
 		}
 		kept := packItemCount(m.Items, telegramTextLimit, telegramReservedRunes, footer, runeSize, func(it Item, idx int) string {
 			return telegramBatchLine(it, idx+1)

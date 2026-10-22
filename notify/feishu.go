@@ -133,7 +133,7 @@ func feishuCard(m Message) (map[string]any, int) {
 			elements = append(elements, feishuMarkdownDiv(feishuBatchLine(it, i+1)))
 		}
 		if m.HomeURL != "" {
-			elements = append(elements, feishuButton("ARTEX ですべて表示", m.HomeURL))
+			elements = append(elements, feishuButton("プラットフォームですべて表示", m.HomeURL))
 		}
 	} else if len(m.Items) > 0 {
 		kept = 1

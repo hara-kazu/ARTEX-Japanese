@@ -30,18 +30,18 @@ die() { printf '\033[31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 usage() {
   cat <<'EOF'
 使用方法：
-  ./build.sh                         現在の OS / アーキテクチャ向けにビルド
+  ./build.sh                         現在のシステム / アーキテクチャ向けにビルド
   ./build.sh --target linux/amd64   指定した1つの対象向けにビルド
   ./build.sh --release               対応するすべての対象をビルドしてパッケージ化
 
 オプション：
-  --release              Linux / macOS / Windows の対応ターゲットをビルドして zip を生成
+  --release              Linux、macOS、Windows の amd64/arm64 ターゲットをビルドして zip を生成
   --target OS/ARCH       単一ターゲットを指定（例：windows/amd64）
-  --upx                  UPX で圧縮（一部 Linux 環境との互換性に影響する場合あり）
-  --no-compress          UPX を使わず、Go linker の最適化と zip 圧縮のみ使用
+  --upx                  UPX で実行ファイルを強制的に圧縮（一部 Linux 環境との互換性に影響する場合あり）
+  --no-compress          UPX を使わず、Go linker による削減と zip 圧縮のみ使用
   --help                 ヘルプを表示
 
-複数ターゲットは ARTEX_TARGETS で指定できます。例：
+複数ターゲットの一覧は ARTEX_TARGETS で上書きできます。例：
   ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 EOF
 }
@@ -87,7 +87,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-command -v go >/dev/null 2>&1 || die "Go がありません（Go 1.26.3 以降が必要です）"
+command -v go >/dev/null 2>&1 || die "Go がありません（Go 1.26 以降が必要です）"
 
 ARTEX_GOSUMDB="${ARTEX_GOSUMDB:-sum.golang.org}"
 if [ -z "${ARTEX_BUILD_VERSION:-}" ]; then
@@ -114,7 +114,7 @@ fi
 if [ "${ARTEX_SKIP_FRONTEND:-0}" = "1" ]; then
   [ -d server/webui/dist ] || die "ARTEX_SKIP_FRONTEND=1 ですが server/webui/dist がありません"
 else
-  command -v npm >/dev/null 2>&1 || die "npm がありません（静的ビルドには Node.js / npm が必要です）"
+  command -v npm >/dev/null 2>&1 || die "npm がありません（フロントエンドの静的ビルドには Node.js/npm が必要です）"
   command -v rsync >/dev/null 2>&1 || die "rsync が見つかりません"
   info "フロントエンドの静的ファイルをビルド"
   if [ "${ARTEX_SKIP_NPM_CI:-0}" != "1" ]; then
@@ -142,7 +142,7 @@ compress_binary() {
     if [ "$ARTEX_COMPRESS" = "required" ]; then
       die "ARTEX_COMPRESS=required ですが upx がありません"
     fi
-    warn "upx がないため、linker の最適化結果を使用します：$binary"
+    warn "upx がないため、linker による圧縮結果を保持します：$binary"
     return 0
   fi
 
@@ -199,7 +199,7 @@ build_target() {
   goarch="${target##*/}"
   case "$goos" in
     linux|darwin|windows) ;;
-    *) die "未対応の OS：$goos（linux / darwin / windows に対応）" ;;
+    *) die "未対応のシステム：$goos（linux / darwin / windows に対応）" ;;
   esac
 
   binary_name="artex"

@@ -37,7 +37,7 @@ const banner = `
 // printBanner writes the startup banner + version/runtime info to stdout.
 func printBanner(addr string) {
 	fmt.Print(banner)
-	fmt.Println("  AI 自律型ペネトレーションテストシステム（日本語版）")
+	fmt.Println("  AI 自律型ペネトレーションテストシステム")
 	fmt.Printf("  バージョン %s  ·  %s/%s  ·  %s  ·  待ち受け %s\n\n",
 		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr)
 }
@@ -52,9 +52,9 @@ func main() {
 
 func run() int {
 	var (
-		addr    = flag.String("addr", ":8787", "HTTP の待ち受けアドレス")
-		dataDir = flag.String("data", filepath.Join(config.BaseDir(), "data"), "ローカルデータのディレクトリ（標準：実行ファイルと同じ場所の data/）")
-		proxy   = flag.String("proxy", "127.0.0.1:8788", "通信記録プロキシの待ち受けアドレス（空欄で無効）")
+		addr    = flag.String("addr", ":8787", "HTTP listen address")
+		dataDir = flag.String("data", filepath.Join(config.BaseDir(), "data"), "data directory for SQLite stores (default: data/ next to the executable)")
+		proxy   = flag.String("proxy", "127.0.0.1:8788", "traffic recording proxy address (empty to disable)")
 	)
 	flag.Parse()
 
@@ -111,7 +111,7 @@ func run() int {
 	if abs, err := filepath.Abs(skillDir); err == nil {
 		skillDir = abs
 	}
-	log.Printf("[config] スキルのディレクトリ: %s", skillDir)
+	log.Printf("[config] skill のディレクトリ: %s", skillDir)
 	srv := server.New(ctx, mgr, skillDir, *dataDir, config.BaseDir())
 	httpSrv := &http.Server{
 		Addr:              *addr,

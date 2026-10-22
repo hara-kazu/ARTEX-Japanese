@@ -45,7 +45,7 @@ if "!code!"=="%RESTART_CODE%" (
 	goto loop
 )
 
-echo [artex] 異常終了 ^(code=!code!^) 。!delay!秒後に再起動 1>&2
+echo [artex] 異常終了 ^(code=!code!^) 。!delay!s 後に再起動 1>&2
 rem timeout 在被重定向的控制台里会失败，用 ping 兜底（延时 N 秒需要 N+1 次）。
 set /a pings=!delay!+1
 ping -n !pings! 127.0.0.1 >nul 2>&1

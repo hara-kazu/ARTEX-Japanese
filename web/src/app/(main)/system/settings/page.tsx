@@ -369,7 +369,7 @@ export default function SystemSettingsPage() {
               有効にすると、各タスクの<b>操作の制約</b>（タスク概要の「操作の制約」で管理する allow / deny 項目）をAgentのシステムプロンプトに追加し、探索範囲を制限します（例：「現在のポートのみテスト」「総当たりは禁止」）。
               <br />
               追加する対象は個別に設定できます： <b>計画エージェント（planner）</b>と <b>実行エージェント（worker）</b>
-              。初期状態では両方有効です。次の読み取り時に反映され、再構築は不要です。無効にすると、そのAgentには制約を渡しません。
+              。初期状態では両方有効です。次の読み取り時に反映され、Agent の再構築は不要です。無効にすると、そのAgentには制約を渡しません。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">

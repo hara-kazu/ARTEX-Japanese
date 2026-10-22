@@ -14,21 +14,21 @@ ask(){  local p="$1" d="${2:-}" a; read -rp "$p${d:+ [$d]}: " a; echo "${a:-$d}"
 
 # ── 可选：同步仓库到最新代码（compose/脚本/本地编译源码都靠它更新）───────
 sync_repo(){
-  [ -d .git ] && command -v git >/dev/null 2>&1 || { warn "Git の作業コピーではないため、git pull をスキップします"; return; }
+  [ -d .git ] && command -v git >/dev/null 2>&1 || { warn "git の作業コピーではないため、git pull をスキップします"; return; }
   [ "$(ask '最新のソースを取得しますか（git pull --ff-only）？ (y/n)' y)" = y ] || return
   if ! git pull --ff-only; then
-    warn "git pull を fast-forward できません（ローカルの変更または分岐あり）。手動で解決してください。今回は現在のソースを使用します"
+    warn "git pull を早送りできません（ローカルの変更またはブランチの分岐あり）。手動で解決して再試行してください。今回は現在のソースを使用します"
   fi
 }
 
 # ── ① Docker 更新 ───────────────────────────────
 update_docker(){
   command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 \
-    || die "Docker / Docker Compose がありません。先に ./install.sh で導入してください"
+    || die "docker / docker compose がありません。先に ./install.sh で導入してください"
   [ -f .env ] || die ".env がありません。先に ./install.sh で初回の導入を行ってください"
 
   # 可选：升级到指定版本 tag（不填则沿用 .env 中的 ARTEX_TAG，缺省为 latest）
-  local tag; tag="$(ask '対象イメージのタグ（Enter で .env / latest を使用）' '')"
+  local tag; tag="$(ask '対象イメージの tag（エンターで .env / latest を使用）' '')"
   if [ -n "$tag" ]; then
     if grep -q '^ARTEX_TAG=' .env; then
       sed -i.bak "s|^ARTEX_TAG=.*|ARTEX_TAG=${tag}|" .env && rm -f .env.bak
@@ -43,7 +43,7 @@ update_docker(){
   # up 时若 pg 没起会自动拉起，已在跑的则原样保留、不重建。
   info "新しいイメージを取得します（artex のみ）…"
   docker compose pull artex
-  info "再作成して起動します（スキーマは artex の起動時に更新）…"
+  info "再作成して起動します（artex の再起動時に schema を自動移行）…"
   docker compose up -d artex
   ok "更新完了 → http://localhost:8787"
   info "ログを表示：docker compose logs -f artex"
@@ -52,7 +52,7 @@ update_docker(){
 
 # ── ② 本地编译更新 ──────────────────────────────
 update_local(){
-  command -v go >/dev/null 2>&1 || die "Go 1.26.3 以降が見つかりません：https://go.dev/dl/"
+  command -v go >/dev/null 2>&1 || die "Go が見つかりません（>=1.26）：https://go.dev/dl/"
   [ -f config.json ] || warn "config.json がありません。初回の導入には ./install.sh を使用してください"
   ok "Go: $(go version)"
 
@@ -67,13 +67,13 @@ update_local(){
     CGO_ENABLED=0 go build -o artex ./cmd/artex
   fi
   ok "ビルド完了 → ./artex"
-  warn "実行中の artex を再起動して反映してください（スキーマは起動時に更新）"
+  warn "実行中の artex プロセスを再起動して反映してください（再起動時に schema を自動移行）"
 }
 
 echo "=============================="
 echo "  ARTEX の更新"
 echo "  1) Docker 更新（イメージを取得して再作成）"
-echo "  2) ローカル更新（Go で再ビルド）"
+echo "  2) ローカル更新（go で再ビルド）"
 echo "=============================="
 case "$(ask '選択' 1)" in
   1) sync_repo; update_docker ;;
