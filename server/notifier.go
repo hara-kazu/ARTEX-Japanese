@@ -281,7 +281,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 			// 不该消耗重试预算（领取时已经乐观 +1 了，那里会减回去）。
 			if err := n.pg.DeferDeliveries(ctx, deliveryIDs(rest),
 				fmt.Sprintf("このメッセージはチャネルの長さ上限に達したため、先頭の %d 件のみ配信しました。残りは次のバッチで配信します", delivered)); err != nil {
-				log.Printf("[notify] 分割した続きの配信をキューへ追加できませんでした channel=%s ids=%v: %v", channel.Kind(), deliveryIDs(rest), err)
+				log.Printf("[notify] 分割した続きの配信のキューへの追加に失敗しました channel=%s ids=%v: %v", channel.Kind(), deliveryIDs(rest), err)
 			}
 		}
 		return
@@ -523,7 +523,7 @@ func parseSnapshot(dl *db.NotificationDelivery) (notify.Snapshot, error) {
 		return snap, fmt.Errorf("配信%dのイベントスナップショットが空です", dl.ID)
 	}
 	if err := json.Unmarshal(dl.Snapshot, &snap); err != nil {
-		return snap, fmt.Errorf("配信%dのイベントスナップショットを解析できません：%w", dl.ID, err)
+		return snap, fmt.Errorf("配信%dのイベントスナップショットの解析に失敗しました：%w", dl.ID, err)
 	}
 	if snap.Kind == "" {
 		// 事件类型以事件行为准，快照里那份可能由旧版本写过。

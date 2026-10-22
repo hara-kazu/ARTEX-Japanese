@@ -557,7 +557,7 @@ func (s *Server) unbindGoalMetDefault() {
 		return
 	}
 	if err := s.m.pg.RemoveAgentFromTool("planner", "goal_met"); err != nil {
-		log.Printf("[tools] goal_met から planner の関連付けを解除できませんでした: %v", err)
+		log.Printf("[tools] goal_met と planner の関連付け解除に失敗しました: %v", err)
 		return
 	}
 	_ = s.m.pg.SetSetting(flag, "true")
@@ -587,7 +587,7 @@ func (s *Server) reseedGoalsPrompt() {
 		return
 	}
 	if _, err := s.m.pg.ResetPromptToDefault(a.ID, tmpl); err != nil {
-		log.Printf("[prompts] goals のプロンプトを新しい既定値に更新できませんでした: %v", err)
+		log.Printf("[prompts] goals のプロンプトの新しい既定値への更新に失敗しました: %v", err)
 		return
 	}
 	log.Printf("[prompts] goals のプロンプトに新しい既定バージョンを追加しました(操作の制約を抽出する手順を追加、一度のみ)")
@@ -617,7 +617,7 @@ func (s *Server) reseedMainAgentPrompt() {
 		return
 	}
 	if _, err := s.m.pg.ResetPromptToDefault(a.ID, tmpl); err != nil {
-		log.Printf("[prompts] mainagent のプロンプトを新しい既定値に更新できませんでした: %v", err)
+		log.Printf("[prompts] mainagent のプロンプトの新しい既定値への更新に失敗しました: %v", err)
 		return
 	}
 	log.Printf("[prompts] mainagent のプロンプトに新しい既定バージョンを追加しました(目標達成後に目標の作成を問い返す指示を追加、一度のみ)")
@@ -648,7 +648,7 @@ func (s *Server) reseedPlannerPrompt() {
 		return
 	}
 	if _, err := s.m.pg.ResetPromptToDefault(a.ID, tmpl); err != nil {
-		log.Printf("[prompts] planner のプロンプトを新しい既定値に更新できませんでした: %v", err)
+		log.Printf("[prompts] planner のプロンプトの新しい既定値への更新に失敗しました: %v", err)
 		return
 	}
 	log.Printf("[prompts] planner のプロンプトに新しい既定バージョンを追加しました(簡潔な構成への整理+抑制を重複排除へ限定+深さの優先+否定の再確認回数の上限、一度のみ)")
@@ -678,7 +678,7 @@ func (s *Server) reseedWorkerPrompt() {
 		return
 	}
 	if _, err := s.m.pg.ResetPromptToDefault(a.ID, tmpl); err != nil {
-		log.Printf("[prompts] worker のプロンプトを新しい既定値に更新できませんでした: %v", err)
+		log.Printf("[prompts] worker のプロンプトの新しい既定値への更新に失敗しました: %v", err)
 		return
 	}
 	log.Printf("[prompts] worker のプロンプトに新しい既定バージョンを追加しました(コンテキスト確認の部分を list_assets/list_findings に絞り、list_facts/node_detail/asset_neighbors を削除、一度のみ)")
@@ -869,7 +869,7 @@ func (s *Server) seedWorkerReadToolsUnbind() {
 		"list_facts", "list_companies", "list_worker_traces",
 	} {
 		if err := s.m.pg.RemoveAgentFromTool("worker", k); err != nil {
-			log.Printf("[worker] %s を worker から関連付け解除できませんでした: %v", k, err)
+			log.Printf("[worker] %s と worker の関連付け解除に失敗しました: %v", k, err)
 			return // 出错则不落 flag，下次启动重试
 		}
 	}

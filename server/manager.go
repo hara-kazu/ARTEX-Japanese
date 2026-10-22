@@ -436,7 +436,7 @@ func NewManager(dir, proxyAddr string) (*Manager, error) {
 	}
 	if m.traffic != nil {
 		if err := m.traffic.SetUpstreamProxy(m.globalProxy); err != nil {
-			log.Printf("[proxy] グローバルプロキシ %q が無効なため、無視しました: %v", m.globalProxy, err)
+			log.Printf("[proxy] グローバルプロキシ %q が不正なため、無視しました: %v", m.globalProxy, err)
 		}
 	}
 	m.enrich = enrich.New(m.assets, m.ProxyAddr, 4)

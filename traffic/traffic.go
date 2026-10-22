@@ -278,7 +278,7 @@ func (t *Traffic) initIndex() error {
 	}
 	t.incrementalVacuum = mode == autoVacuumIncremental
 	if !t.incrementalVacuum {
-		log.Printf("[traffic] インデックスデータベースの増分回収が無効です（auto_vacuum=%d）：トラフィックを削除しても index.sqlite は縮小しません。切り替えるには一度ストレージを圧縮する必要があります", mode)
+		log.Printf("[traffic] インデックスデータベースの増分回収が有効になっていません（auto_vacuum=%d）：トラフィックを削除しても index.sqlite は縮小しません。切り替えるには一度ストレージを圧縮する必要があります", mode)
 	}
 	if _, err := conn.ExecContext(ctx, indexSchema); err != nil {
 		return err
