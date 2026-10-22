@@ -946,7 +946,7 @@ const ConversationItem = React.memo(function ConversationItem({
               </>
             )}
             <span className="shrink-0">
-              {new Date(conv.created_at).toLocaleDateString("ja-JP", {
+              {new Date(conv.created_at).toLocaleDateString("zh-CN", {
                 month: "numeric",
                 day: "numeric",
                 hour: "2-digit",
@@ -1211,7 +1211,7 @@ export default function ChatPage() {
     if (agentFilter !== null) keys.add(agentFilter);
     return [...keys]
       .map((key) => ({ key, name: agentByKey.get(key)?.name || key, count: counts.get(key) ?? 0 }))
-      .sort((a, b) => a.name.localeCompare(b.name, "ja-JP"));
+      .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
   }, [convs, chatAgents, agentByKey, agentFilter]);
   const conversationCountLabel =
     agentFilter === null ? `合計 ${convs.length} 件` : `${filteredConversations.length} / ${convs.length} 件`;

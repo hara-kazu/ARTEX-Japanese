@@ -101,7 +101,7 @@ JSON
     info "フロントエンドを埋め込んだ実行ファイルをビルドします…"
     CGO_ENABLED=0 go build -tags embedui -trimpath -o artex ./cmd/artex
   else
-    warn "npm がありません。フロントエンドを含まないバックエンドをビルドします（別途 npm run dev が必要）"
+    warn "npm がありません。**フロントエンドを含まない**バックエンドをビルドします（別途 npm run dev が必要）"
     CGO_ENABLED=0 go build -o artex ./cmd/artex
   fi
   ok "ビルド完了 → ./artex"
