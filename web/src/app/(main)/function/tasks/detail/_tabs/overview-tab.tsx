@@ -466,7 +466,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <Input
               className="h-7 min-w-56 flex-1 text-sm"
-              placeholder="目標を追加。例：「管理者アカウントへの不正アクセスを検証する」"
+              placeholder="目標を追加。例：「管理者アカウントへの不正アクセスを実現する」"
               value={goalText}
               onChange={(e) => setGoalText(e.target.value)}
               onKeyDown={(e) => {
@@ -801,7 +801,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               </div>
             </>
           ) : (
-            <p className="text-muted-foreground text-sm">LLM 使用量はありません（未実行、または記録の書き込み中です）。</p>
+            <p className="text-muted-foreground text-sm">LLM 使用量はありません（タスクでの呼び出しがまだない、または記録の書き込み中です）。</p>
           )}
         </CardContent>
       </Card>

@@ -27,7 +27,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import { localizeApiError } from "@/lib/api-errors";
 import type { LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -214,7 +213,7 @@ function PoolSheet({
                 </div>
                 {inChain.length < 2 && (
                   <p className="text-muted-foreground text-xs">
-                    現在、利用可能な設定は {inChain.length} 個です。API Keyを設定し、切り替え対象に含めた設定が2個以上必要です。
+                    現在、利用可能な設定は {inChain.length} 個です。切り替えは動作しません。API Keyを設定し、切り替え対象に含めた設定が2個以上必要です。
                   </p>
                 )}
                 {chain.map((m) => {
@@ -372,7 +371,7 @@ function ProfileSheet({
         setModelsOpen(true);
         toast.success(`読み込みました： ${r.models.length} 個のモデル`);
       } else {
-        toast.error(`モデルの読み込みに失敗しました：${localizeApiError(r.error ?? "モデルを取得できませんでした")}`);
+        toast.error(`モデルの読み込みに失敗しました：${r.error ?? "モデルを取得できませんでした"}`);
       }
     } catch (e) {
       toast.error(`モデルの読み込みエラー：${(e as Error).message}`);
@@ -404,7 +403,7 @@ function ProfileSheet({
         toast.success(`接続成功 · ${r.latency_ms ?? "?"}ms · ${r.model ?? model}`, {
           description: r.reply ? `応答：${r.reply}` : undefined,
         });
-      else toast.error(`接続に失敗しました：${localizeApiError(r.error ?? "不明")}`);
+      else toast.error(`接続に失敗しました：${r.error ?? "不明"}`);
     } catch (e) {
       toast.error(`テストエラー：${(e as Error).message}`);
     } finally {
@@ -647,7 +646,7 @@ function ProfileSheet({
               <div className="grid gap-0.5">
                 <Label className="text-sm">切り替え対象から除外</Label>
                 <p className="text-muted-foreground text-xs">
-                  有効にするとフェイルオーバー先から除外します（Agent / タスクから明示的に指定することは可能）。特定のAgent専用の高額な設定などに適しています。
+                  有効にするとフェイルオーバー先から除外します（Agent / タスクから明示的に指定することは可能）。特定のAgent専用とし、他の設定が失敗した際に消費されたくない高額な設定などに適しています。
                 </p>
               </div>
               <Switch checked={poolExclude} onCheckedChange={setPoolExclude} aria-label="切り替え対象から除外" />

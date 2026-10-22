@@ -1,73 +1,9 @@
 package db
 
 import (
-	"database/sql"
 	"regexp"
 	"testing"
 )
-
-func TestLocalizedInterceptSeedsPreserveExistingRules(t *testing.T) {
-	conn, err := sql.Open("pgx", testDSN(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-	if err := conn.Ping(); err != nil {
-		t.Skipf("postgres unavailable (%v)", err)
-	}
-	conn.SetMaxOpenConns(1)
-	conn.SetMaxIdleConns(1)
-	d := &DB{conn}
-	if _, err := d.Exec(`CREATE TEMP TABLE settings (key text PRIMARY KEY, value text, updated_at timestamptz DEFAULT now());
-CREATE TEMP TABLE intercept_rules (name text, enabled boolean, priority integer, match_target text, match_type text,
-pattern text, action text, message text, timeout_enabled boolean, timeout_seconds integer, timeout_action text)`); err != nil {
-		t.Fatal(err)
-	}
-	for _, tc := range []struct {
-		name, legacy, localized string
-		seed                    func() error
-	}{
-		{"v3", "[内置] 删除类接口路径", "[組み込み] 削除用 API パス", d.seedDefaultInterceptRulesV3},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			for _, existingName := range []string{"", tc.legacy, tc.localized} {
-				if _, err := d.Exec(`TRUNCATE settings, intercept_rules`); err != nil {
-					t.Fatal(err)
-				}
-				if existingName != "" {
-					if _, err := d.Exec(`INSERT INTO intercept_rules(name,enabled,pattern,action,message) VALUES ($1,false,'custom-pattern','allow','user-edited')`, existingName); err != nil {
-						t.Fatal(err)
-					}
-				}
-				if err := tc.seed(); err != nil {
-					t.Fatal(err)
-				}
-				var count int
-				if err := d.QueryRow(`SELECT count(*) FROM intercept_rules WHERE name IN ($1,$2)`, tc.legacy, tc.localized).Scan(&count); err != nil || count != 1 {
-					t.Fatalf("existing %q: count=%d err=%v", existingName, count, err)
-				}
-				if existingName != "" {
-					var enabled bool
-					var pattern, action, message string
-					if err := d.QueryRow(`SELECT enabled,pattern,action,message FROM intercept_rules WHERE name=$1`, existingName).Scan(&enabled, &pattern, &action, &message); err != nil {
-						t.Fatal(err)
-					}
-					if enabled || pattern != "custom-pattern" || action != "allow" || message != "user-edited" {
-						t.Fatalf("saved rule was changed: enabled=%v pattern=%q action=%q message=%q", enabled, pattern, action, message)
-					}
-				} else {
-					var name string
-					if err := d.QueryRow(`SELECT name FROM intercept_rules WHERE name IN ($1,$2)`, tc.legacy, tc.localized).Scan(&name); err != nil {
-						t.Fatal(err)
-					}
-					if name != tc.localized {
-						t.Fatalf("new rule used legacy name %q", name)
-					}
-				}
-			}
-		})
-	}
-}
 
 // 内置「删除类接口路径」规则匹配的是整个 tool_input JSON 串，因此用例直接以
 // JSON 形态给出，与 Interceptor 实际拿到的 subject 一致。

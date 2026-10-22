@@ -26,7 +26,6 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
-import { approvalDecisionSource as source, stripModelReasonPrefix } from "@/lib/approval-source";
 import type {
   InterceptApprovalFilter,
   InterceptApprovalRow,
@@ -46,6 +45,12 @@ function fmtTime(value?: string) {
     minute: "2-digit",
     second: "2-digit",
   });
+}
+
+function source(row: InterceptApprovalRow) {
+  if (row.decision_source) return row.decision_source;
+  if (row.rule_id) return "rule";
+  return row.reason?.startsWith("[模型]") ? "model" : "unknown";
 }
 
 function originLabel(row: InterceptApprovalRow) {
@@ -104,7 +109,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MatchCell({ row, showReason = true }: { row: InterceptApprovalRow; showReason?: boolean }) {
-  const reason = stripModelReasonPrefix(row.reason);
+  const reason = row.reason?.replace(/^\[模型\]\s*/, "");
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {source(row) === "model" ? (
@@ -365,7 +370,7 @@ export function ApprovalDetail({
             <MatchCell row={current} showReason={false} />
           </div>
           <p className="whitespace-pre-wrap break-words text-sm leading-7 [overflow-wrap:anywhere]">
-            {stripModelReasonPrefix(current.reason) || "承認理由の記録なし"}
+            {current.reason?.replace(/^\[模型\]\s*/, "") || "承認理由の記録なし"}
           </p>
           {audit?.decision_reason ? <p className="text-sm">{audit.decision_reason}</p> : null}
           {audit?.effective_action ? <p className="text-sm">最終的な動作：{actionLabels[audit.effective_action]}</p> : null}
@@ -479,7 +484,7 @@ export function ApprovalDetail({
               ) : null}
               <CodeBlock
                 label={`${initialLabel}：${actionLabels[audit.initial_action] ?? audit.initial_action}`}
-                text={stripModelReasonPrefix(audit.initial_reason) ?? ""}
+                text={audit.initial_reason.replace(/^\[模型\]\s*/, "")}
               />
               <CodeBlock
                 label="実行の出力"
@@ -497,7 +502,7 @@ export function ApprovalDetail({
               ) : null}
               <dl className="grid gap-2 text-muted-foreground text-xs [overflow-wrap:anywhere]">
                 <div>ツール呼び出し ID：{audit.tool_use_id || "記録なし"}</div>
-                <div>パラメーターの要約 SHA-256：{audit.input_digest}</div>
+                <div>パラメーターのダイジェスト SHA-256：{audit.input_digest}</div>
                 <div>審査設定のフィンガープリント SHA-256：{audit.config_digest || "記録なし"}</div>
                 {audit.model_input_digest ? <div>モデル審査入力の SHA-256：{audit.model_input_digest}</div> : null}
                 {audit.execution_ended_at ? <div>結果の記録日時：{fmtTime(audit.execution_ended_at)}</div> : null}
@@ -584,7 +589,7 @@ function ApprovalTable({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`承認 #${row.id} を${open ? "折りたたむ" : "展開"}`}
+                    aria-label={`${open ? "折りたたむ：" : "展開："}承認 #${row.id}`}
                     aria-expanded={open}
                     aria-controls={open ? panelID : undefined}
                     onClick={(e) => {

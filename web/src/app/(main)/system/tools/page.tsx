@@ -679,7 +679,7 @@ function CustomToolDialog({
       >
         <SheetHeader className="px-4">
           <SheetTitle>{isNew ? "カスタムツールを作成" : `編集 ${tool?.key}`}</SheetTitle>
-          <SheetDescription>shell は bash 環境の宣言です（名前と説明で bash から利用可能と伝えます）。command / script / http は実行仕様が必要です。</SheetDescription>
+          <SheetDescription>shell は bash 環境の宣言です（名前と説明のみで bash から利用可能と伝えます）。command / script / http は実行仕様が必要です。</SheetDescription>
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">

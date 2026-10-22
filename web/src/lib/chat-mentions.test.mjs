@@ -1,6 +1,6 @@
-import { activeMention, mentionSearch, mentionToken, selectedMentions } from "./chat-mentions.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { activeMention, mentionSearch, mentionToken, selectedMentions } from "./chat-mentions.ts";
 
 test("mention trigger supports Chinese and cursor placement without hijacking email", () => {
   assert.equal(activeMention("user@example.com", 16), null);
@@ -11,11 +11,11 @@ test("mention trigger supports Chinese and cursor placement without hijacking em
 
 test("categories, Chinese aliases, IP and keyword search", () => {
   assert.equal(mentionSearch("").categories.length, 9);
-  assert.equal(mentionSearch("漏").categories[0].kind, "finding");
-  assert.equal(mentionSearch("漏洞").kind, "finding");
-  assert.equal(mentionSearch("漏洞SQL注入").query, "SQL注入");
+  assert.equal(mentionSearch("脆").categories[0].kind, "finding");
+  assert.equal(mentionSearch("脆弱性").kind, "finding");
+  assert.equal(mentionSearch("脆弱性SQL注入").query, "SQL注入");
   assert.equal(mentionSearch("ip 192.0.2.1").kind, "ip");
-  assert.equal(mentionSearch("接口 GET /api").query, "GET /api");
+  assert.equal(mentionSearch("API GET /api").query, "GET /api");
   assert.equal(mentionSearch("acme.com").kind, "");
 });
 
@@ -28,13 +28,4 @@ test("tokens roundtrip labels and removing one reference preserves its neighbors
   assert.equal(selected[0].label, "脆弱性 #12 · 标题（1） 描述");
   const next = value.slice(0, selected[0].start) + value.slice(selected[0].start + selected[0].token.length);
   assert.equal(selectedMentions(next)[0].token, second);
-});
-
-test("Japanese mention search preserves the server token format", () => {
-  assert.equal(mentionSearch("脆弱性 SQL Injection").kind, "finding");
-  assert.equal(mentionSearch("資産 example.com").query, "example.com");
-  assert.equal(mentionSearch("サブ").categories[0].kind, "subdomain");
-  const token = mentionToken({ kind: "finding", id: 42, label: "認可の検証" });
-  assert.equal(token, "@[漏洞#42 認可の検証]");
-  assert.equal(selectedMentions(token)[0].label, "脆弱性 #42 · 認可の検証");
 });

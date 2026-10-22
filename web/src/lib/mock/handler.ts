@@ -2,7 +2,6 @@
 // 未命中的一律返回安全默认（[] / {} / {ok:true}），保证任何页面都不崩。
 // 只在 NEXT_PUBLIC_MOCK=1 时经由 api.ts 的 http() 短路进入这里。
 
-import { approvalDecisionSource } from "../approval-source";
 import {
   classifyCompanyScopeLine,
   companyScopeRuleError,
@@ -67,18 +66,18 @@ interface MockBindingSeed {
 // 每条漏洞预置的流量证据(finding id → 绑定的抓包)。选取与漏洞语义对应的请求,
 // 让 demo 详情页的「关联流量」区块看起来真实。
 const mockFindingTrafficSeeds: Record<string, MockBindingSeed[]> = {
-  "f-1": [{ traffic_id: "x-2", role: "proof", note: "q のpayloadに対し、MSSQL のエラーが返る。" }],
+  "f-1": [{ traffic_id: "x-2", role: "proof", note: "q パラメーターのインジェクション payload に対し、MSSQL のエラーが返る。" }],
   "f-2": [
     { traffic_id: "x-8", role: "baseline", note: "自分の注文 id=1001 を正常時の比較対象に使用。" },
-    { traffic_id: "x-9", role: "proof", note: "id=1002 に変更し、他人の注文を取得。" },
+    { traffic_id: "x-9", role: "proof", note: "id=1002 に変更し、権限を逸脱して他人の注文を取得。" },
   ],
   "f-12": [
-    { traffic_id: "x-15", role: "proof", note: "Fastjson @type の JNDI payloadで接続を確認。" },
+    { traffic_id: "x-15", role: "proof", note: "Fastjson @type の JNDI payloadでコールバックを発生させる。" },
     { traffic_id: "x-16", role: "verification", note: "2回目のリクエストでコマンド実行を確認。" },
   ],
   "f-15": [
     { traffic_id: "x-17", role: "baseline", note: "Jenkins Script Console に認証なしで到達可能。" },
-    { traffic_id: "x-18", role: "proof", note: "scriptText の Groovy 実行で SYSTEM を取得。" },
+    { traffic_id: "x-18", role: "proof", note: "scriptText の Groovy コマンドを実行し、SYSTEM が返る。" },
   ],
   "f-17": [{ traffic_id: "x-19", role: "proof", note: "psexec で svc_deploy として DC01 にログイン。" }],
 };
@@ -2433,7 +2432,8 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     if (status && !["pending", "allowed", "denied", "timeout"].includes(status)) throw new Error("無効な承認状態");
     if (decisionSource && !["model", "rule", "unknown"].includes(decisionSource)) throw new Error("無効な判定元");
     const filtered = mockInterceptHistory.filter((row) => {
-      const source = approvalDecisionSource(row);
+      const source =
+        row.decision_source || (row.rule_id ? "rule" : row.reason?.startsWith("[模型]") ? "model" : "unknown");
       return (
         (seg[1] !== "task" || row.task_id === decodeURIComponent(seg[2])) &&
         (!status || row.status === status) &&

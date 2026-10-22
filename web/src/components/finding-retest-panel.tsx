@@ -25,7 +25,7 @@ const statusLabels = {
   failed: "再テスト失敗",
   stopped: "停止済み",
 };
-const verdictLabels = { reproduced: "再現可能", fixed: "修正済み", inconclusive: "確認不可" };
+const verdictLabels = { reproduced: "引き続き再現可能", fixed: "修正済み", inconclusive: "確認不可" };
 
 function active(r: FindingRetest) {
   return r.status === "pending" || r.status === "running";

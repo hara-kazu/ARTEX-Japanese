@@ -101,23 +101,23 @@ func ParseScopeInput(input ScopeInput) (ParsedScope, error) {
 			return rule, err
 		}
 		if rule.Kind != kind {
-			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("%q 不是有效的 %s 范围", raw, kind)
+			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("%q は有効な %s の範囲ではありません", raw, kind)
 		}
 		return rule, nil
 	case "icp":
 		value := NormalizeICP(raw)
 		if value == "" {
-			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("ICP 不能为空")
+			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("ICP は必須です")
 		}
 		return ParsedScope{Kind: kind, Value: value, Raw: raw}, nil
 	case "keyword":
 		value := normalizeKeyword(raw)
 		if value == "" {
-			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("企业关键词不能为空")
+			return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("企業キーワードを入力してください")
 		}
 		return ParsedScope{Kind: kind, Value: value, Raw: raw}, nil
 	default:
-		return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("不支持的范围类型: %s", kind)
+		return ParsedScope{Kind: kind, Raw: raw}, fmt.Errorf("未対応の範囲の種類：%s", kind)
 	}
 }
 
@@ -139,12 +139,12 @@ func ParseAutoScopeLine(line string) (ParsedScope, error) {
 	if slash := strings.LastIndexByte(raw, '/'); slash > 0 {
 		address := strings.TrimSpace(raw[:slash])
 		if net.ParseIP(address) != nil || looksLikeIPAddress(address) {
-			return ParsedScope{Raw: raw}, fmt.Errorf("无效 CIDR: %s", raw)
+			return ParsedScope{Raw: raw}, fmt.Errorf("無効な CIDR：%s", raw)
 		}
 	}
 
 	if looksLikeIPAddress(raw) {
-		return ParsedScope{Raw: raw}, fmt.Errorf("无效 IP: %s", raw)
+		return ParsedScope{Raw: raw}, fmt.Errorf("無効な IP：%s", raw)
 	}
 
 	looksLikeDomain := strings.Contains(raw, "://") ||
@@ -166,7 +166,7 @@ func ParseAutoScopeLine(line string) (ParsedScope, error) {
 func scopeHostname(raw string) (string, error) {
 	candidate := strings.TrimSpace(raw)
 	if candidate == "" {
-		return "", fmt.Errorf("主机名为空")
+		return "", fmt.Errorf("ホスト名が空です")
 	}
 	if strings.HasPrefix(candidate, "//") {
 		candidate = "http:" + candidate
@@ -176,13 +176,13 @@ func scopeHostname(raw string) (string, error) {
 	parsed, err := url.Parse(candidate)
 	if err != nil || parsed.Host == "" {
 		if err == nil {
-			err = fmt.Errorf("缺少主机名")
+			err = fmt.Errorf("ホスト名がありません")
 		}
 		return "", err
 	}
 	host := strings.TrimSuffix(strings.TrimSpace(parsed.Hostname()), ".")
 	if host == "" {
-		return "", fmt.Errorf("主机名为空")
+		return "", fmt.Errorf("ホスト名が空です")
 	}
 	if ip := net.ParseIP(host); ip != nil {
 		return ip.String(), nil
@@ -193,19 +193,19 @@ func scopeHostname(raw string) (string, error) {
 	}
 	host = strings.ToLower(host)
 	if len(host) > 253 {
-		return "", fmt.Errorf("域名超过 253 个字符")
+		return "", fmt.Errorf("ドメインが253文字を超えています")
 	}
 	labels := strings.Split(host, ".")
 	if len(labels) < 2 {
-		return "", fmt.Errorf("域名至少需要两个标签")
+		return "", fmt.Errorf("ドメインには2つ以上のラベルが必要です")
 	}
 	for _, label := range labels {
 		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
-			return "", fmt.Errorf("域名标签无效")
+			return "", fmt.Errorf("ドメインのラベルが無効です")
 		}
 		for _, r := range label {
 			if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-') {
-				return "", fmt.Errorf("域名包含无效字符")
+				return "", fmt.Errorf("ドメインに無効な文字が含まれています")
 			}
 		}
 	}
@@ -225,10 +225,10 @@ func ParseScopeLine(line string) (ParsedScope, error) {
 	if _, ipnet, err := net.ParseCIDR(raw); err == nil {
 		ones, bits := ipnet.Mask.Size()
 		if bits == 32 && ones < 16 {
-			return r, fmt.Errorf("网段过宽(IPv4 需 >= /16): %s", raw)
+			return r, fmt.Errorf("ネットワークが広すぎます（IPv4 は /16 以上）：%s", raw)
 		}
 		if bits == 128 && ones < 32 {
-			return r, fmt.Errorf("网段过宽(IPv6 需 >= /32): %s", raw)
+			return r, fmt.Errorf("ネットワークが広すぎます（IPv6 は /32 以上）：%s", raw)
 		}
 		r.Kind, r.Net = "cidr", ipnet.String()
 		return r, nil
@@ -245,7 +245,7 @@ func ParseScopeLine(line string) (ParsedScope, error) {
 	}
 	host, err := scopeHostname(raw)
 	if err != nil {
-		return r, fmt.Errorf("无法识别为有效域名/IP/CIDR: %s", raw)
+		return r, fmt.Errorf("有効なドメイン / IP/CIDR と判定できません：%s", raw)
 	}
 	if ip := net.ParseIP(host); ip != nil {
 		r.Kind = "ip"
@@ -257,15 +257,15 @@ func ParseScopeLine(line string) (ParsedScope, error) {
 		return r, nil
 	}
 	if looksLikeIPAddress(host) {
-		return r, fmt.Errorf("无效 IP: %s", raw)
+		return r, fmt.Errorf("無効な IP：%s", raw)
 	}
 	if strings.Contains(raw, "-") && strings.Count(raw, ".") >= 6 {
-		return r, fmt.Errorf("IP 段请用 CIDR 表示(如 1.2.3.0/24): %s", raw)
+		return r, fmt.Errorf("IP 範囲は CIDR で指定してください（例：1.2.3.0/24）：%s", raw)
 	}
 	// Domain (registrable). Reject bare TLDs / public suffixes.
 	d := DomainKey(host)
 	if suf, icann := publicsuffix.PublicSuffix(d); icann && suf == d {
-		return r, fmt.Errorf("不能用裸 TLD 作为范围: %s", raw)
+		return r, fmt.Errorf("TLD のみでは範囲を指定できません：%s", raw)
 	}
 	r.Kind, r.Domain = "domain", d
 	return r, nil

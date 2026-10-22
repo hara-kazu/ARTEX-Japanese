@@ -275,7 +275,7 @@ export default function SystemSettingsPage() {
               トラフィックのキャプチャ
             </CardTitle>
             <CardDescription>
-              有効にすると、全Agentの HTTP トラフィックを記録プロキシ経由で保存し、traffic_search / traffic_get ツールとプロキシ設定をAgentに渡します（プロンプトにプロキシの説明を含む）。
+              有効にすると、全Agentの HTTP トラフィックを記録プロキシ経由ですべて保存し、traffic_search / traffic_get ツールとプロキシ設定をAgentに渡します（プロンプトにプロキシの説明を含む）。
               <br />
               無効（デフォルト）の場合はトラフィックを記録しません。Agentにはプロキシ設定とトラフィックツールを
               <b>渡さず</b>、プロンプトにもプロキシの説明を<b>含めません</b>。切り替えると即時にAgentを再構築して反映します。
@@ -408,7 +408,7 @@ export default function SystemSettingsPage() {
               検証中の機能のため、初期状態では無効です。Agentの動作や安定性に影響する可能性があります。影響を確認したうえで有効にしてください。
               <br />
               <b>noa のコンテキスト圧縮</b>：モデルが長い対話履歴を自発的に圧縮します（norma v0.4.0）。有効にすると、4種類のAgent（
-              <b>計画 / 実行 / メイン Agent / チャット</b>）は、組み込みの圧縮処理に代えて noa にコンテキスト管理を任せます。圧縮前の原文はタスクの作業ディレクトリへ保存し、後から確認できます。変更は次回開始する実行から反映され、Agent の再作成は不要です。無効にすると、組み込みの圧縮処理へ戻ります。
+              <b>計画 / 実行 / メイン Agent / チャット</b>）は、組み込みの圧縮処理に代えて noa にコンテキスト管理を任せます。圧縮前の原文はタスクの作業ディレクトリへ保存し、後から確認できます。変更は次回開始する実行から反映され、Agent の再作成は不要です。無効にすると、直ちに組み込みの圧縮処理へ戻ります。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-4">
@@ -675,7 +675,7 @@ export default function SystemSettingsPage() {
             <CardDescription>
               チャット画面とタスク詳細のメイン Agentで共通の設定です。選択すると即時反映し、保存は不要です。
               <br />
-              この設定は<b>このブラウザーのみ</b>に保存され、アカウント間では同期しません。ブラウザーの変更やサイトデータの消去後は再設定してください。
+              この設定は<b>このブラウザーのみ</b>に保存され、アカウントを通じた同期は行いません。ブラウザーの変更やサイトデータの消去後は再設定してください。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-4">

@@ -128,7 +128,7 @@ func (s *Server) findingTrafficAccess(w http.ResponseWriter, r *http.Request, wr
 			return 0, false
 		}
 		if write && inherited {
-			writeErr(w, 403, "继承漏洞只读，请在来源任务中修改")
+			writeErr(w, 403, "継承した脆弱性は読み取り専用です。元のタスクで変更してください")
 			return 0, false
 		}
 	}
@@ -171,7 +171,7 @@ func (s *Server) bindFindingTraffic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(body.Refs) == 0 {
-		writeErr(w, 400, "请选择流量")
+		writeErr(w, 400, "トラフィックを選択してください")
 		return
 	}
 	out, err := s.evidenceStore().Bind(r.Context(), id, body.Refs)
@@ -194,14 +194,14 @@ func (s *Server) editFindingTraffic(w http.ResponseWriter, r *http.Request) {
 		Order   []string `json:"binding_ids"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&body); err != nil || body.Version == nil {
-		writeErr(w, 400, "version 和有效请求体必填")
+		writeErr(w, 400, "version と有効なリクエスト本文が必要です")
 		return
 	}
 	var order []int64
 	bindingID := int64(0)
 	if r.Method == http.MethodPut {
 		if body.Order == nil {
-			writeErr(w, 400, "binding_ids 必填")
+			writeErr(w, 400, "binding_ids は必須です")
 			return
 		}
 		order = []int64{}
@@ -240,7 +240,7 @@ type evidencePreview struct {
 
 func readEvidencePreview(store *evidence.Store, snapshot db.TrafficEvidenceSnapshot, side string, offset, length int64) (out evidencePreview, err error) {
 	if offset < 0 || length < 0 {
-		return out, errors.New("offset / length 不能为负数")
+		return out, errors.New("offset / length は0以上にしてください")
 	}
 	if length == 0 || length > 8192 {
 		length = 8192
@@ -251,7 +251,7 @@ func readEvidencePreview(store *evidence.Store, snapshot db.TrafficEvidenceSnaps
 	}
 	defer f.Close()
 	if offset > total {
-		return out, errors.New("offset 超出正文长度")
+		return out, errors.New("offset が本文の長さを超えています")
 	}
 	if _, err = f.Seek(offset, io.SeekStart); err != nil {
 		return out, err
@@ -366,7 +366,7 @@ func (s *Server) getFindingTrafficBody(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) toolGetFindingTraffic() actool.CoreTool {
-	return roTool("get_finding_traffic", "脆弱性に関連付けた実際のトラフィック証拠を読み取ります。キャプチャ設定の有効・無効には依存しません。finding_id には report_finding の JSON が返す独立した脆弱性レコード ID を指定します（先頭行の探索ノード ID ではありません）。まず binding_id を省略して一覧と version を取得します。一覧が空でも正常です。TCP など HTTP 以外の脆弱性や未取得の場合は、文章やコマンドの証拠からレポートを作成でき、関連付けは必須ではありません。関連付けがあれば binding_id・side（request/response）・offset を指定して本文を分割取得します。レポート作成時は、読み取った version を update_finding_report の evidence_version に渡してください。update_finding_report の finding_id には、引き続き探索ノード ID を使用します。",
+	return roTool("get_finding_traffic", "脆弱性に関連付けた実際のトラフィック証拠を読み取ります。キャプチャ設定の有効・無効には依存しません。finding_id には report_finding の JSON が返す独立した脆弱性レコード ID を指定します（先頭行の探索ノード ID ではありません）。まず binding_id を省略して一覧と version を取得します。一覧が空でも正常です。TCP など HTTP 以外の脆弱性や未取得の場合は、文章やコマンドの証拠からレポートを作成でき、関連付けは必須ではありません。関連付けがあれば binding_id・side（request/response）・offset を指定して本文を分割取得します。レポート作成時は、読み取った version を update_finding_report の evidence_version に渡してください。後者の finding_id には、引き続き探索ノード ID を使用します。",
 		objSchema(map[string]any{"finding_id": strParam("独立した脆弱性レコードの ID"), "binding_id": strParam("一覧内の関連付け ID。省略すると一覧を返します"), "side": strParam("request または response（既定: response）"), "offset": map[string]any{"type": "integer"}, "length": map[string]any{"type": "integer"}}, "finding_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			var a struct {

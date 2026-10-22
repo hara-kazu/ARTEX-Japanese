@@ -878,7 +878,7 @@ export default function FindingsPage() {
                 ["low", "低"],
               ] as const
             ).map(([val, label]) => (
-              <ToggleGroupItem key={val} value={val} aria-label={`重大度：${label}`}>
+              <ToggleGroupItem key={val} value={val} aria-label={`重大度${label}で絞り込む`}>
                 {label}
               </ToggleGroupItem>
             ))}
@@ -1159,7 +1159,7 @@ export default function FindingsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>脆弱性をさらに検証</DialogTitle>
+            <DialogTitle>脆弱性をさらに悪用</DialogTitle>
             <DialogDescription className="break-words">
               元のタスク #{deepenFinding?.task_id} に優先度10の Worker インテントを作成し、この脆弱性を追加検証します：
               {deepenFinding?.name || deepenFinding?.vulnclass || deepenFinding?.summary}
@@ -1167,7 +1167,7 @@ export default function FindingsPage() {
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="finding-deepen-description">検証内容</FieldLabel>
+              <FieldLabel htmlFor="finding-deepen-description">悪用の説明</FieldLabel>
               <Textarea
                 id="finding-deepen-description"
                 value={deepenDescription}

@@ -94,7 +94,7 @@ func NewClient(proxy string) *http.Client {
 		Timeout:   30 * time.Minute, // 下载整包，不能按请求级超时卡死
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
-				return fmt.Errorf("重定向次数过多")
+				return fmt.Errorf("リダイレクトが多すぎます")
 			}
 			if err := checkURL(req.URL); err != nil {
 				return err
@@ -108,10 +108,10 @@ func NewClient(proxy string) *http.Client {
 // checkURL 强制 https + 域名白名单。
 func checkURL(u *url.URL) error {
 	if u.Scheme != "https" {
-		return fmt.Errorf("拒绝非 HTTPS 地址: %s", u.Scheme+"://"+u.Host)
+		return fmt.Errorf("HTTPS 以外のアドレスを拒否しました：%s", u.Scheme+"://"+u.Host)
 	}
 	if !allowedHosts[strings.ToLower(u.Hostname())] {
-		return fmt.Errorf("拒绝非 GitHub 域名: %s", u.Hostname())
+		return fmt.Errorf("GitHub 以外のドメインを拒否しました：%s", u.Hostname())
 	}
 	return nil
 }
@@ -131,29 +131,29 @@ func FetchLatest(ctx context.Context, c *http.Client) (*Release, error) {
 
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("访问 GitHub 失败（可在系统设置里配置全局代理）: %w", err)
+		return nil, fmt.Errorf("GitHub に接続できません（システム設定で全体のプロキシを設定可能）：%w", err)
 	}
 	defer resp.Body.Close()
 
 	switch {
 	case resp.StatusCode == http.StatusUnauthorized:
-		return nil, fmt.Errorf("GitHub 认证失败，请检查后端环境变量 %s", GitHubTokenEnv)
+		return nil, fmt.Errorf("GitHub 認証に失敗しました。バックエンドの環境変数 %s を確認してください", GitHubTokenEnv)
 	case resp.StatusCode == http.StatusForbidden:
-		return nil, fmt.Errorf("GitHub 拒绝访问：请检查令牌的仓库 Contents 读取权限或 API 限额")
+		return nil, fmt.Errorf("GitHub がアクセスを拒否しました。トークンのリポジトリ Contents 読み取り権限または API 上限を確認してください")
 	case resp.StatusCode == http.StatusTooManyRequests:
-		return nil, fmt.Errorf("GitHub 接口限流，请稍后再试")
+		return nil, fmt.Errorf("GitHub インターフェースのレート制限です。しばらくしてから再試行してください")
 	case resp.StatusCode == http.StatusNotFound:
-		return nil, fmt.Errorf("仓库 %s 不可访问或尚未发布正式版本；私有仓库请在后端设置 %s（需 Contents 读取权限）", Repo, GitHubTokenEnv)
+		return nil, fmt.Errorf("リポジトリ %s にアクセスできないか、正式リリースがありません。非公開の場合はバックエンドに %s を設定してください（Contents 読み取り権限が必要）", Repo, GitHubTokenEnv)
 	case resp.StatusCode != http.StatusOK:
-		return nil, fmt.Errorf("GitHub 返回 %d", resp.StatusCode)
+		return nil, fmt.Errorf("GitHub の応答：%d", resp.StatusCode)
 	}
 
 	var rel Release
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return nil, fmt.Errorf("解析 Release 失败: %w", err)
+		return nil, fmt.Errorf("Release を解析できません：%w", err)
 	}
 	if strings.TrimSpace(rel.TagName) == "" {
-		return nil, fmt.Errorf("Release 缺少 tag")
+		return nil, fmt.Errorf("Release に tag がありません")
 	}
 	return &rel, nil
 }

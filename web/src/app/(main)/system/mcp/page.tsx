@@ -221,7 +221,7 @@ export default function MCPPage() {
     const on = (visibility[serverId] ?? []).includes(agentId);
     try {
       await api.toggleVisibility(agentId, "mcp", serverId, !on);
-      toast.success(on ? `「${agentName}」への公開を解除しました` : `「${agentName}」に公開しました`);
+      toast.success(`${on ? "公開を解除しました：" : "公開を許可しました："}「${agentName}」`);
       load();
     } catch (e) {
       toast.error("操作に失敗しました：" + (e as Error).message);

@@ -37,7 +37,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
-import { localizeApiError } from "@/lib/api-errors";
 import type { LLMProfile, Task } from "@/lib/types";
 
 import { AssetsTab } from "./_tabs/assets-tab";
@@ -131,7 +130,7 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
         activeProfileID ? Number(activeProfileID) : undefined,
       );
       if (result.switch_event) {
-        toast.info(localizeApiError(result.switch_event.summary), { id: `task-${task.id}-llm-${result.switch_event.seq}` });
+        toast.info(result.switch_event.summary, { id: `task-${task.id}-llm-${result.switch_event.seq}` });
       } else {
         toast.success(
           result.reopened_intents > 0
@@ -322,7 +321,7 @@ function TaskDetailInner() {
   const canArchive = archiveLifecycleEligible && !task.archive_blocked_by_task_id;
   let archiveDisabledReason = task.queued ? "待機中のタスクは、先に一時停止してください" : "実行中のタスクは、先に一時停止してください";
   if (archiveLifecycleEligible && task.archive_blocked_by_task_id) {
-    archiveDisabledReason = `タスクは未アーカイブのタスク #${task.archive_blocked_by_task_id} に直接継承されています。先に依存先のタスクをアーカイブしてください`;
+    archiveDisabledReason = `タスクは未アーカイブのタスク #${task.archive_blocked_by_task_id} に直接継承されています。先にこのタスクに依存するタスクをアーカイブしてください`;
   }
   const engineMode = paused ? "paused" : (task.engine_mode ?? "idle");
   let controlVariant: "default" | "secondary" | "outline" = "outline";

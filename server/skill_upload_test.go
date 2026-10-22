@@ -189,7 +189,7 @@ func TestUploadSkillUnsupportedMethod(t *testing.T) {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
 	msg, _ := out["error"].(string)
-	if !strings.Contains(msg, "Deflate64") || !strings.Contains(msg, "不支持的压缩方式") {
+	if !strings.Contains(msg, "Deflate64") || !strings.Contains(msg, "未対応の圧縮方式") {
 		t.Fatalf("error = %q, want a Chinese message naming Deflate64", msg)
 	}
 }
@@ -210,7 +210,7 @@ func TestUploadSkillEncrypted(t *testing.T) {
 	if rr.Code != 400 {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
-	if msg, _ := out["error"].(string); !strings.Contains(msg, "已加密") {
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "暗号化されています") {
 		t.Fatalf("error = %q, want 加密 hint", msg)
 	}
 }
@@ -226,7 +226,7 @@ func TestUploadSkillRejectsTraversal(t *testing.T) {
 	if rr.Code != 400 {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
-	if msg, _ := out["error"].(string); !strings.Contains(msg, "非法路径") {
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "無効なパス") {
 		t.Fatalf("error = %q, want 非法路径", msg)
 	}
 	if entries, _ := os.ReadDir(dir); len(entries) != 0 {

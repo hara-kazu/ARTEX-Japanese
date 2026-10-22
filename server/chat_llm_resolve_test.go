@@ -30,7 +30,7 @@ func TestChatUnavailableReasonDistinguishesStates(t *testing.T) {
 		_ = m.pg.DeleteProfile(p.ID)
 	}
 
-	if reason := s.chatUnavailableReason(); !strings.Contains(reason, "尚未配置") {
+	if reason := s.chatUnavailableReason(); !strings.Contains(reason, "未設定") {
 		t.Fatalf("no-profile reason=%q, want 尚未配置", reason)
 	}
 
@@ -44,7 +44,7 @@ func TestChatUnavailableReasonDistinguishesStates(t *testing.T) {
 	})
 
 	// Profile exists but is not activated.
-	if reason := s.chatUnavailableReason(); !strings.Contains(reason, "没有已激活") {
+	if reason := s.chatUnavailableReason(); !strings.Contains(reason, "有効な LLM 設定がありません") {
 		t.Fatalf("inactive reason=%q, want 没有已激活", reason)
 	}
 
@@ -52,7 +52,7 @@ func TestChatUnavailableReasonDistinguishesStates(t *testing.T) {
 	if err := m.pg.SetActiveProfile(id); err != nil {
 		t.Fatal(err)
 	}
-	if reason := s.chatUnavailableReason(); strings.Contains(reason, "尚未配置") || strings.Contains(reason, "没有已激活") {
+	if reason := s.chatUnavailableReason(); strings.Contains(reason, "未設定") || strings.Contains(reason, "有効な LLM 設定がありません") {
 		t.Fatalf("active reason=%q should not report missing/inactive", reason)
 	}
 }

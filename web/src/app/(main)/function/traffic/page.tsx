@@ -804,7 +804,8 @@ export default function TrafficPage() {
               )}
               {deleteMode === "filter" && (
                 <>
-                  host に <span className="font-mono font-semibold">{hostQ}</span> を含むすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）を完全に削除します。この操作は取り消せません。
+                  host に <span className="font-mono font-semibold">{hostQ}</span>{" "}
+                  を含むすべてのトラフィック記録（リクエスト / レスポンスの原文を含む）を完全に削除します。この操作は取り消せません。
                 </>
               )}
             </AlertDialogDescription>

@@ -51,7 +51,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSideQuestions } from "@/hooks/use-side-questions";
 import { api, sseUrl } from "@/lib/api";
-import { localizeApiError } from "@/lib/api-errors";
 import { shouldSubmitOnKey, useChatSendMode } from "@/lib/chat-send-mode";
 import { MOCK } from "@/lib/mock/enabled";
 import { isBtwCommand } from "@/lib/side-questions";
@@ -987,11 +986,11 @@ export function SessionsTab({ taskId }: { taskId: string }) {
             llmToastSeqRef.current.add(a.seq);
             const transition = a.metadata?.llm_transition;
             if (transition?.mode === "exhausted" || a.is_error) {
-              toast.error(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
+              toast.error(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
             } else if (transition?.mode === "automatic") {
-              toast.success(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
+              toast.success(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
             } else {
-              toast.info(localizeApiError(a.summary), { id: `task-${taskId}-llm-${a.seq}` });
+              toast.info(a.summary, { id: `task-${taskId}-llm-${a.seq}` });
             }
             void api
               .taskLLMResolution(taskId)
@@ -1539,7 +1538,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
         patchIntentState(intentId, result.state);
         setWorkerMessage("");
         setWorkerMessageRequestId("");
-        toast.success(`Worker #${intentId} にメッセージを送信し、実行を再開しました`);
+        toast.success(`Worker #${intentId} にメッセージを送信し、直ちに実行を再開しました`);
       })
       .catch((error) => {
         toast.error(`送信に失敗しました：${(error as Error).message || "しばらくしてから再試行してください"}`);

@@ -219,7 +219,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
     applyVis(
       on ? mcpVisible.filter((x) => x !== id) : [...mcpVisible, id],
       skillVisible,
-      `MCP「${name}」の公開を${on ? "解除しました" : "許可しました"}`,
+      `${on ? "公開を解除しました：" : "公開を有効にしました："} MCP「${name}」`,
     );
   }
   function toggleSkill(name: string) {
@@ -227,7 +227,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
     applyVis(
       mcpVisible,
       on ? skillVisible.filter((x) => x !== name) : [...skillVisible, name],
-      `Skill「${name}」の公開を${on ? "解除しました" : "許可しました"}`,
+      `${on ? "公開を解除しました：" : "公開を有効にしました："} Skill「${name}」`,
     );
   }
   async function toggleTool(t: Tool) {
@@ -242,7 +242,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         agents: nextAgents,
         enabled: t.enabled,
       });
-      toast.success(`ツール「${t.key}」${on ? "の関連付けを解除しました" : "を関連付けました"}`);
+      toast.success(`${on ? "関連付けを解除しました：" : "関連付けました："}ツール「${t.key}」`);
       onSaved?.(); // refresh the list so the card's 工具 count stays in sync
     } catch (e) {
       toast.error("ツールの関連付けの保存に失敗しました：" + (e as Error).message);
@@ -503,7 +503,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
       <TabsContent value="wrapup" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="grid gap-3">
           <p className="text-muted-foreground text-xs leading-relaxed">
-            このAgentが<b>タイムアウト</b>または<b>ステップ数の上限</b>で終了した場合、この終了処理用プロンプトで追加の処理を行います。検出済みで未保存の内容を書き戻し、最後に1文で要約します。空欄で組み込みの既定値を使用します。
+            このAgentが<b>タイムアウト</b>または<b>ステップ数の上限</b>で終了した場合、この終了処理用プロンプトで終了処理を1ラウンド実行します。検出済みで未保存の内容を書き戻し、最後に1文で要約します。空欄で組み込みの既定値を使用します。
           </p>
           <div className="flex items-center gap-2">
             <Label className="text-xs">終了処理用プロンプトの本文</Label>
@@ -547,7 +547,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
             <>
               <Separator className="my-2" />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                <b>タスクのタイムアウト時の終了処理</b>（上のper-runの終了処理とは<b>別の処理</b>）：<b>タスク全体</b>が期限に達して終了する直前に追加します。per-runの処理とは指示が逆の場合があります（planner の例：per-runは計画を続行、タスクの期限時は停止して最終判定）。空欄で組み込みの既定値を使用します。
+                <b>タスクのタイムアウト時の終了処理</b>（上のper-runの終了処理とは<b>別の処理</b>）：<b>タスク全体</b>が期限に達して終了する直前に追加します。per-runの処理とは指示が逆になることがよくあります（planner の例：per-runは計画を続行、タスクの期限時は停止して最終判定）。空欄で組み込みの既定値を使用します。
               </p>
               <div className="flex items-center gap-2">
                 <Label className="text-xs">タスクのタイムアウト時のプロンプト本文</Label>

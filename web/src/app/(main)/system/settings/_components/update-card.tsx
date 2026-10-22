@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { api, sseUrl } from "@/lib/api";
-import { localizeApiError } from "@/lib/api-errors";
 import type { UpdateCheck, UpdateProgress } from "@/lib/types";
 
 /** 等待新版本上线的最长时间。一次升级要经过三次进程启动（暂存 → 换装 → 新版），
@@ -55,7 +54,7 @@ export function UpdateCard() {
       .then((r) => {
         setInfo(r);
         if (!quiet) {
-          if (r.error) toast.error("更新の確認に失敗しました：" + localizeApiError(r.error));
+          if (r.error) toast.error("更新の確認に失敗しました：" + r.error);
           else if (r.has_update) toast.success(`新しいバージョンが見つかりました： ${r.latest}`);
           else if (r.comparable) toast.success("最新バージョンです");
         }
@@ -113,7 +112,7 @@ export function UpdateCard() {
         if (p.phase === "failed") {
           es.close();
           setBusy(false);
-          toast.error("更新に失敗しました：" + localizeApiError(p.error || p.message));
+          toast.error("更新に失敗しました：" + (p.error || p.message));
           return;
         }
         if (p.phase === "staged") {
@@ -231,19 +230,19 @@ export function UpdateCard() {
         {info?.boot_notice && (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-            {localizeApiError(info.boot_notice)}
+            {info.boot_notice}
           </p>
         )}
 
         {info?.error && (
           <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-            GitHub に接続できません：{localizeApiError(info.error)}
+            GitHub に接続できません：{info.error}
             {"　"}上で全体のプロキシを設定してから再試行してください。
           </p>
         )}
 
-        {info && !info.comparable && info.reason && <p className="text-xs text-muted-foreground">{localizeApiError(info.reason)}</p>}
+        {info && !info.comparable && info.reason && <p className="text-xs text-muted-foreground">{info.reason}</p>}
 
         {info?.has_update && info.asset_available === false && (
           <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
@@ -255,7 +254,7 @@ export function UpdateCard() {
         {info?.has_update && info.asset_available !== false && (
           <p className="text-xs text-muted-foreground">
             ダウンロード： <span className="font-mono">{info.asset}</span>
-            {info.size ? `（${humanSize(info.size)}）` : ""}。SHA256 の検証と動作確認後に置き換えます。失敗した場合は現在のバージョンを保持します。
+            {info.size ? `（${humanSize(info.size)}）` : ""}。SHA256 の検証とスモークテスト後に置き換えます。失敗した場合は現在のバージョンを保持します。
           </p>
         )}
 
@@ -279,7 +278,7 @@ export function UpdateCard() {
           <div className="space-y-1.5">
             <Progress value={pct} className={downloading ? undefined : "animate-pulse"} />
             <p className="text-xs text-muted-foreground">
-              {restarting ? "再起動して新しいバージョンを適用しています。お待ちください（ページは自動更新されます）…" : localizeApiError(progress?.message ?? "")}
+              {restarting ? "再起動して新しいバージョンを適用しています。お待ちください（ページは自動更新されます）…" : progress?.message}
             </p>
           </div>
         )}

@@ -245,7 +245,7 @@ function TaskTemplateManager({
                     id="task-template-name"
                     value={draft.name}
                     maxLength={120}
-                    placeholder="例：外部 Web のテスト"
+                    placeholder="例：外部 Web のペネトレーションテスト"
                     onChange={(event) => updateDraft("name", event.target.value)}
                   />
                 </Field>
@@ -295,7 +295,7 @@ function TaskTemplateManager({
                     onChange={(rules) => patchDraft({ interceptRules: rules })}
                   />
                   <FieldDescription>
-                    テンプレート適用時に設定します（新しいタスクにのみ適用し、全体のルールには保存しません）。
+                    テンプレート適用時に、これらのタスク単位のルール（ブロック/許可）を事前入力します（新しいタスクにのみ適用し、全体のルールには保存しません）。
                   </FieldDescription>
                 </Field>
               </FieldGroup>

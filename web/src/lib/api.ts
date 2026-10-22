@@ -3,7 +3,6 @@
 // a few fields the backend serializes differently (e.g. created_at as a unix int)
 // are passed through and formatted at the call site.
 
-import { localizeApiError, localizeApiErrorBody, localizeApiResponse } from "@/lib/api-errors";
 import type { ChatMention } from "@/lib/chat-mentions";
 import { MOCK } from "@/lib/mock/enabled";
 import { mockHandle } from "@/lib/mock/handler";
@@ -113,14 +112,7 @@ function getToken(): string | null {
 }
 
 export async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  if (MOCK) {
-    try {
-      return localizeApiResponse(await mockHandle<T>(init?.method ?? "GET", path, init?.body ?? null));
-    } catch (error) {
-      if (error instanceof Error) error.message = localizeApiError(error.message);
-      throw error;
-    }
-  }
+  if (MOCK) return mockHandle<T>(init?.method ?? "GET", path, init?.body ?? null);
   const token = getToken();
   const r = await fetch(`/api${path}`, {
     ...init,
@@ -149,10 +141,10 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // Keep the status-based fallback for empty or non-JSON error responses.
     }
-    throw new Error(localizeApiError(message));
+    throw new Error(message);
   }
   if (r.status === 204) return undefined as T;
-  return localizeApiResponse(await r.json()) as T;
+  return r.json();
 }
 
 // sseUrl builds a URL for Server-Sent Events streams.
@@ -191,7 +183,7 @@ function mockReport(_task?: string): string {
 - search API のクエリをパラメーター化し、出力をエンコード。
 - API にオブジェクト単位の認可を追加（IDOR）し、強力な JWT キーに変更。
 
-> （demo）画面のdemo用にmock データから生成したレポートです。`;
+> （demo）このレポートは mock データから生成され、画面のデモにのみ使用します。`;
 }
 
 export function sseUrl(path: string): string {
@@ -658,7 +650,7 @@ export const api = {
     );
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: "ダウンロードに失敗しました" }));
-      throw new Error(localizeApiError(error.error ?? "ダウンロードに失敗しました"));
+      throw new Error(error.error ?? "ダウンロードに失敗しました");
     }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -833,7 +825,8 @@ export const api = {
   // 渠道是多实例资源（同一类型可配多个机器人、各有过滤规则），因此独立成组，
   // 不塞进扁平的 settings 键值里。
   notifyMeta: () => get<NotificationMeta>(`/notify/meta`),
-  notifyChannels: () => get<{ channels: NotificationChannel[] }>(`/notify/channels`).then((r) => arr(r.channels)),
+  notifyChannels: () =>
+    get<{ channels: NotificationChannel[] }>(`/notify/channels`).then((r) => arr(r.channels)),
   notifyCreateChannel: (payload: {
     name: string;
     kind: string;
@@ -906,10 +899,7 @@ export const api = {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: fd,
     });
-    if (!r.ok) {
-      const body = await r.text();
-      throw new Error(`アップロードに失敗しました: ${r.status} ${localizeApiErrorBody(body)}`);
-    }
+    if (!r.ok) throw new Error(`アップロードに失敗しました: ${r.status} ${await r.text()}`);
     return r.json() as Promise<{ attachments: ChatAttachment[] }>;
   },
   stopChat: (taskId: string) => post<{ status: string }>(`/tasks/${taskId}/chat/stop`, {}),
@@ -1170,7 +1160,7 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(localizeApiError(body?.error || `アップロードに失敗しました（${r.status}）`));
+    if (!r.ok) throw new Error(body?.error || `アップロードに失敗しました（${r.status}）`);
     return body;
   },
   deleteSkill: (name: string) => del<{ deleted: string }>(`/skills/${name}`),
@@ -1256,9 +1246,7 @@ export const api = {
     const r = await fetch("/api/intercept/tool-config", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!r.ok) {
-      throw new Error(localizeApiErrorBody(await r.text()));
-    }
+    if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   interceptSetToolConfig: async (enabledTools: string[]): Promise<void> => {
@@ -1272,9 +1260,7 @@ export const api = {
       },
       body: JSON.stringify({ enabled_tools: enabledTools }),
     });
-    if (!r.ok) {
-      throw new Error(localizeApiErrorBody(await r.text()));
-    }
+    if (!r.ok) throw new Error(await r.text());
   },
 
   // ---- intercept LLM judge (模型兜底审批,全局配置) ----

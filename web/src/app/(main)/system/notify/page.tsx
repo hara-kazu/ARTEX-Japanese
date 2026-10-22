@@ -455,7 +455,7 @@ export default function NotifyPage() {
                 <Label htmlFor="n-name">チャンネル名</Label>
                 <Input
                   id="n-name"
-                  placeholder="緊急対応グループ / 日次報告グループ"
+                  placeholder="緊急対応グループ / 日常報告グループ"
                   value={form.name}
                   onChange={(e) => setF({ name: e.target.value })}
                 />

@@ -1617,7 +1617,7 @@ function ArchiveDeleteDialog({
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{archives.length}件のタスクアーカイブを完全に削除しますか？</AlertDialogTitle>
+          <AlertDialogTitle> {archives.length}件のタスクアーカイブを完全に削除しますか？</AlertDialogTitle>
           <AlertDialogDescription className="[overflow-wrap:anywhere]">
             約 {formatArchiveBytes(bytes)} のアーカイブと {rows.toLocaleString()} 件の関連データのスナップショットを完全に削除します。この操作は元に戻せません。
           </AlertDialogDescription>
@@ -1678,7 +1678,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
         let restored = false;
         states.forEach((state, index) => {
           if (state.status !== "rejected" || !(state.reason instanceof Error)) return;
-          if (!state.reason.message.includes("アーカイブが存在しません") && !state.reason.message.includes("归档不存在")) return;
+          if (!state.reason.message.includes("アーカイブが存在しません")) return;
           pendingRestoreIDs.current.delete(pending[index]);
           restored = true;
         });
@@ -3225,7 +3225,7 @@ function CreateTaskSheet({
               <Label htmlFor="name">名前（任意）</Label>
               <Input
                 id="name"
-                placeholder="識別しやすい名前。例：Acme 公式サイトのテスト"
+                placeholder="識別しやすい名前。例：Acme 公式サイトのペネトレーションテスト"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -3281,7 +3281,7 @@ function CreateTaskSheet({
               <Textarea
                 id="goal"
                 className="min-h-32"
-                placeholder="達成する目標。例：管理画面のアクセス権限やサーバーの権限を検証する"
+                placeholder="達成する目標。例：管理画面のアクセス権限やサーバーの権限を取得する"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
               />
@@ -3365,7 +3365,7 @@ function CreateTaskSheet({
                     onChange={(e) => setHeartbeatMin(e.target.value)}
                   />
                   <p className="text-muted-foreground text-xs">
-                    前回の計画終了 / タスク開始から指定時間が経ち、その間にトリガーがなかった場合、自動的に計画を実行します（停止の検知と実行中の worker の監督）。最小10分です。
+                    前回の計画終了 / タスク開始から指定時間が経ち、その間にトリガーがなかった場合、自動的に計画を実行します（処理が進まない場合への対処と実行中の worker の監督）。最小10分です。
                   </p>
                 </div>
                 <div className="grid gap-2">
@@ -3391,7 +3391,7 @@ function CreateTaskSheet({
                     資産カバレッジ機能
                   </label>
                   <p className="text-muted-foreground text-xs">
-                    初期状態では有効です。カバレッジを計算・表示し、状況図にテストの進捗を表示して範囲を蓄積します。無効にすると、カバレッジを計算・表示せず、状況図は資産のみ表示します。agentも範囲関連のツールを使用しません。「企業の資産範囲の関連付け」には影響しません。
+                    初期状態では有効です。カバレッジを計算・表示し、状況図にテストの進捗を表示してテスト範囲を自動的に蓄積します。無効にすると、カバレッジを計算・表示せず、状況図は資産のみ表示します。agentも範囲関連のツールを受け取らなくなります。「企業の資産範囲の関連付け」には影響しません。
                   </p>
                 </div>
               </CollapsibleContent>

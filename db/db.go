@@ -210,7 +210,7 @@ var builtinAgents = []builtinAgent{
 	// Auto:内置「平台操作」agent。不参与渗透编排循环,经对话页驱动,用工具操作平台。
 	{"auto", "Auto", "assistant", "プラットフォーム操作アシスタントです。ツールでタスク（作成 / 表示 / 一時停止 / ヒント）と資産を管理し、skill、カスタムツール、MCP を作成 / 変更します。", nil, false, nil},
 	// 渗透测试:内置「独立渗透」agent。经对话页驱动,一人从侦察到收尾走完整条渗透链,自己规划自己执行自己验证。默认开启交互式 shell。
-	{"pentest", "ペネトレーションテスト", "assistant", "独立したテスト agent です。調査、対象範囲の特定、詳細検証、終了処理までを、自ら計画・実行・反証して進めます。", nil, true, intp(0)},
+	{"pentest", "ペネトレーションテスト", "assistant", "独立したペネトレーションテスト agent：一人で偵察→攻撃対象となる箇所の特定→詳細な悪用→検証→終了処理までの全経路を進め、自ら計画・実行・対抗的な検証を行います。", nil, true, intp(0)},
 }
 
 // seedBuiltins inserts the fixed built-in agents and their variable catalog (idempotent).
@@ -511,12 +511,12 @@ func (d *DB) seedDefaultInterceptRules() error {
 			priority: 80,
 		},
 		{
-			name:     "[組み込み] 一括消去 / 削除用 API パス",
+			name:     "[組み込み] 一括消去 / 削除用インターフェース パス",
 			target:   "tool_input",
 			typ:      "regex",
 			pattern:  `(?i)/(?:clear|wipe|flush|purge|truncate|drop|destroy|factory[-_]reset|reset[-_]all)(?:[/?#"'\s]|$)`,
 			action:   "deny",
-			message:  "一括消去や破棄を行う API（/clear /wipe /flush /purge など）の呼び出しは禁止されています",
+			message:  "一括消去や破棄を行うインターフェース（/clear /wipe /flush /purge など）の呼び出しは禁止されています",
 			priority: 80,
 		},
 	}
@@ -602,16 +602,14 @@ func (d *DB) seedDefaultInterceptRulesV3() error {
 	if v, _, _ := d.GetSetting("intercept_default_rules_v3"); v == "done" {
 		return nil
 	}
-	const name = "[組み込み] 削除用 API パス"
-	const legacyName = "[内置] 删除类接口路径"
+	const name = "[組み込み] 削除用インターフェース パス"
 	if _, err := d.Exec(`
 INSERT INTO intercept_rules(name, enabled, priority, match_target, match_type, pattern, action, message, timeout_enabled, timeout_seconds, timeout_action)
 SELECT $1, true, 80, 'tool_input', 'regex', $2, 'deny', $3, false, 60, 'deny'
-WHERE NOT EXISTS (SELECT 1 FROM intercept_rules WHERE name IN ($1, $4))`,
+WHERE NOT EXISTS (SELECT 1 FROM intercept_rules WHERE name = $1)`,
 		name,
 		deleteEndpointPathPattern,
-		"削除用 API（/delete /remove /unlink /erase など）の呼び出しは、HTTP メソッドに関係なく禁止されています。多くのアプリでは GET/POST でも削除 API を実行でき、対象のデータが実際に削除されます",
-		legacyName,
+		"削除用インターフェース（/delete /remove /unlink /erase など）の呼び出しは、HTTP メソッドに関係なく禁止されています。多くのアプリでは GET/POST でも削除インターフェース を実行でき、対象のデータが実際に削除されます",
 	); err != nil {
 		return fmt.Errorf("rule %q: %w", name, err)
 	}

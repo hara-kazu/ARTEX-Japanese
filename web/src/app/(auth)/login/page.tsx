@@ -104,7 +104,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-10 py-24 lg:py-32">
           <div className="space-y-4 text-center">
             <h2 className="text-2xl font-medium tracking-tight">ログイン</h2>
-            <p className="mx-auto max-w-xl text-muted-foreground">パスワードを入力して ARTEX をご利用ください</p>
+            <p className="mx-auto max-w-xl text-muted-foreground">おかえりなさい。パスワードを入力して ARTEX をご利用ください</p>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="space-y-1.5">

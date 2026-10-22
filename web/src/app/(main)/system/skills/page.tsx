@@ -367,7 +367,7 @@ export default function SkillsPage() {
     } catch (e) {
       const msg = (e as Error).message;
       // offer overwrite when the skill already exists
-      if (!overwrite && (msg.includes("既に存在") || msg.includes("已存在"))) {
+      if (!overwrite && msg.includes("既に存在")) {
         if (window.confirm(`${msg}
 
 同名のSkillを上書きしますか？`)) {
@@ -545,7 +545,7 @@ export default function SkillsPage() {
     setDetailMcps(next);
     try {
       await api.updateSkillMeta(skillName, { mcps: next });
-      toast.success(mcpOn ? `「${mcpName}」を関連付けました` : `「${mcpName}」の関連付けを解除しました`);
+      toast.success(`${mcpOn ? "関連付けました：" : "関連付けを解除しました："}「${mcpName}」`);
       load();
     } catch (e) {
       // roll back on error
@@ -558,7 +558,7 @@ export default function SkillsPage() {
     const on = (visibility[skillName] ?? []).includes(agentId);
     try {
       await api.toggleSkillVisibility(agentId, skillName, !on);
-      toast.success(on ? `「${agentName}」への公開を解除しました` : `「${agentName}」に公開しました`);
+      toast.success(`${on ? "公開を解除しました：" : "公開を許可しました："}「${agentName}」`);
       const ids = await api.skillVisibility(skillName);
       setVisibility((v) => ({ ...v, [skillName]: ids }));
     } catch (e) {
