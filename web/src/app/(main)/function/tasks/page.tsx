@@ -152,7 +152,7 @@ const UPLOAD_MARKER = "【アップロードファイル（絶対パス）】";
 // first upload adds the header, later uploads append bullets under it.
 function appendUploads(desc: string, atts: ChatAttachment[]): string {
   const bullets = atts.map((a) => `- ${a.abs ?? a.path}（${fmtBytes(a.size)}）`).join("\n");
-  if (desc.includes(UPLOAD_MARKER)) {
+  if (desc.includes(UPLOAD_MARKER) || desc.includes("【上传文件（绝对路径）】")) {
     return `${desc.replace(/\s*$/, "")}\n${bullets}\n`;
   }
   const head = desc.trim() ? `${desc.replace(/\s*$/, "")}\n\n` : "";
