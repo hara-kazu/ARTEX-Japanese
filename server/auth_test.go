@@ -29,13 +29,13 @@ func TestAuthStatusFailsClosedWhenDataSourceUnavailable(t *testing.T) {
 	s.authStatus(w, httptest.NewRequest("GET", "/api/auth/status", nil))
 
 	if w.Code != 503 {
-		t.Fatalf("status=%d want 503 (读失败被当成未初始化会把用户送去 /setup 覆盖密码); body=%s", w.Code, w.Body.String())
+		t.Fatalf("status=%d want 503 (読み取り失敗を未初期化と扱うと、ユーザーを /setup に誘導してパスワードを上書きします); body=%s", w.Code, w.Body.String())
 	}
 	var payload struct {
 		Initialized *bool `json:"initialized"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &payload); err == nil && payload.Initialized != nil {
-		t.Fatalf("读失败时不应回答 initialized，得到 %v", *payload.Initialized)
+		t.Fatalf("読み取り失敗時は initialized と応答すべきではありませんが、%v でした", *payload.Initialized)
 	}
 }
 
@@ -55,10 +55,10 @@ func TestAuthInitFailsClosedWhenDataSourceUnavailable(t *testing.T) {
 	s.authInit(w, httptest.NewRequest("POST", "/api/auth/init", body))
 
 	if w.Code != 503 {
-		t.Fatalf("status=%d want 503 (读失败时放行会让未认证请求覆盖已有密码); body=%s", w.Code, w.Body.String())
+		t.Fatalf("status=%d want 503 (読み取り失敗時に許可すると、未認証のリクエストが既存パスワードを上書きします); body=%s", w.Code, w.Body.String())
 	}
 	if strings.Contains(w.Body.String(), "token") {
-		t.Fatalf("读失败时不应签发 token: %s", w.Body.String())
+		t.Fatalf("読み取り失敗時は token を発行すべきではありません: %s", w.Body.String())
 	}
 }
 
@@ -68,12 +68,12 @@ func TestValidatePassword(t *testing.T) {
 		wantErr  bool
 	}{
 		{"空", "", true},
-		{"七位", "1234567", true},
-		{"八位", "12345678", false},
-		{"八个汉字按字符数而非字节数计", "密码密码密码密码", false},
-		{"三个汉字够 9 字节但只有 3 个字符", "密码强", true},
-		{"72 字节", strings.Repeat("a", 72), false},
-		{"73 字节超出 bcrypt 上限", strings.Repeat("a", 73), true},
+		{"7文字", "1234567", true},
+		{"8文字", "12345678", false},
+		{"漢字8文字はバイト数ではなく文字数で数える", "密码密码密码密码", false},
+		{"漢字3文字は9バイトでも3文字しかない", "密码强", true},
+		{"72バイト", strings.Repeat("a", 72), false},
+		{"73バイトは bcrypt の上限を超える", strings.Repeat("a", 73), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := validatePassword(tc.pw); (got != "") != tc.wantErr {

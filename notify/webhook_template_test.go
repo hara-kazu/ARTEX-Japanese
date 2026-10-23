@@ -31,8 +31,8 @@ func TestTemplateContextHasNoMethods(t *testing.T) {
 			for i := 0; i < n; i++ {
 				names = append(names, typ.Method(i).Name)
 			}
-			t.Fatalf("%s 暴露了 %d 个方法（%s）：text/template 可以调用它们，"+
-				"等于把这些方法的能力开放给了模板作者", typ.Name(), n, strings.Join(names, ", "))
+			t.Fatalf("%s が %d 個のメソッド（%s）を公開しています：text/template はこれらを呼び出せるため、"+
+				"これらのメソッドの機能をテンプレートの作成者へ開放することになります", typ.Name(), n, strings.Join(names, ", "))
 		}
 	}
 }
@@ -49,8 +49,8 @@ func TestTemplateFuncsAreMinimal(t *testing.T) {
 	sort.Strings(got)
 	want := []string{"json", "jsons"}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("模板函数集合变了：得到 %v，期望 %v。新增函数前请确认它不会扩大能力面"+
-			"（不能读写文件、不能发起网络请求、不能执行命令）", got, want)
+		t.Fatalf("テンプレート関数の集合が変わりました：実際の値 %v、期待値 %v。関数を追加する前に、利用できる機能が増えないことを確認してください"+
+			"（ファイルの読み書き、ネットワークリクエスト、コマンド実行はできません）", got, want)
 	}
 }
 
@@ -59,12 +59,12 @@ func TestTemplateFuncsAreMinimal(t *testing.T) {
 func TestTemplateCannotReachUnknownData(t *testing.T) {
 	_, err := renderWebhookBody(`{"x": {{.Environment}}, "y": {{.Env}}}`, singleMsg())
 	if err == nil {
-		t.Fatal("访问不存在的字段应报错")
+		t.Fatal("存在しないフィールドへのアクセスはエラーにすべきです")
 	}
 	// エラーにテンプレートコンテキスト内の実際の内容（脆弱性のタイトル/要約）が現れてはならない。
 	for _, leak := range []string{"SQL注入", "参数 id"} {
 		if strings.Contains(err.Error(), leak) {
-			t.Errorf("模板错误泄露了消息内容 %q: %v", leak, err)
+			t.Errorf("テンプレートのエラーからメッセージの内容 %q が漏れています: %v", leak, err)
 		}
 	}
 }
@@ -77,12 +77,12 @@ func TestTemplateRenderFailsPermanently(t *testing.T) {
 		"body_template": `{{.Items.`,
 	}
 	if err := (webhookChannel{}).Validate(cfg); err == nil {
-		t.Fatal("模板语法错误应在保存时就被拦下")
+		t.Fatal("テンプレートの構文エラーは保存時に拒否すべきです")
 	}
 	// 検証を回避して直接配信しても、繰り返し再試行せず永続的な失敗と判定する必要がある。
 	_, err := (webhookChannel{}).Send(context.Background(), cfg, singleMsg())
 	if err == nil || !IsPermanent(err) {
-		t.Fatalf("坏模板应判永久失败，得到 %v", err)
+		t.Fatalf("不正なテンプレートは恒久的な失敗と判定すべきですが、%v でした", err)
 	}
 }
 
@@ -92,15 +92,15 @@ func TestTemplateCanOnlyProduceJSON(t *testing.T) {
 	// 正しいテンプレートは通る。
 	ok := map[string]any{"url": "https://example.com/hook", "body_template": `{"t":{{json .Title}}}`}
 	if err := (webhookChannel{}).Validate(ok); err != nil {
-		t.Fatalf("合法模板应通过校验: %v", err)
+		t.Fatalf("正しいテンプレートは検証に合格すべきです: %v", err)
 	}
 	// JSON 以外を描画したら、必ず拒否する（そのまま送信しない）。
 	bad := map[string]any{"url": "http://127.0.0.1:1/hook", "body_template": `not json {{.Count}}`}
 	_, err := (webhookChannel{}).Send(context.Background(), bad, singleMsg())
 	if err == nil || !IsPermanent(err) {
-		t.Fatalf("渲染出非 JSON 应判永久失败，得到 %v", err)
+		t.Fatalf("JSON 以外を生成した場合は恒久的な失敗と判定すべきですが、%v でした", err)
 	}
 	if !strings.Contains(err.Error(), "有効な JSON") {
-		t.Errorf("错误信息应说明是 JSON 问题，得到 %v", err)
+		t.Errorf("エラーメッセージには JSON の問題と示すべきですが、%v でした", err)
 	}
 }

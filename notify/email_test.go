@@ -51,7 +51,7 @@ func (f *fakeSMTP) hostPort(t *testing.T) (string, int) {
 	t.Helper()
 	addr, ok := f.ln.Addr().(*net.TCPAddr)
 	if !ok {
-		t.Fatal("非 TCP 监听地址")
+		t.Fatal("TCP の待ち受けアドレスではありません")
 	}
 	return "127.0.0.1", addr.Port
 }
@@ -157,28 +157,28 @@ func TestEmailSendDeliversFullMessage(t *testing.T) {
 	cfg := emailCfg(t, f, map[string]any{"username": "artex", "password": "pw"})
 
 	if _, err := (emailChannel{}).Send(context.Background(), cfg, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("配信に失敗しました: %v", err)
 	}
 	// エンベロープ段階を通過すること：送信者、2つの受信者、DATA。
 	for _, want := range []string{"MAIL FROM:<artex@example.com>", "RCPT TO:<a@example.com>", "RCPT TO:<b@example.com>", "DATA", "AUTH", "QUIT"} {
 		if !f.sawCommand(want) {
-			t.Errorf("SMTP 会话里缺少 %q，实际命令：%v", want, f.commands)
+			t.Errorf("SMTP セッションに %q がありません。実際のコマンド: %v", want, f.commands)
 		}
 	}
 	// 本文は base64 の HTML で、実際の脆弱性の内容を含むこと（エンコード後も識別可能）。
 	body := f.body()
 	if body == "" {
-		t.Fatal("DATA 阶段没有收到正文")
+		t.Fatal("DATA 段階で本文を受信していません")
 	}
 	if !strings.Contains(body, "Content-Type: text/html") {
-		t.Errorf("缺少 Content-Type 头:\n%s", body)
+		t.Errorf("Content-Type ヘッダーがありません:\n%s", body)
 	}
 	if !strings.Contains(body, "base64") {
-		t.Errorf("正文未按 base64 编码（长 HTML 行会破坏 SMTP 的 1000 字节行长限制）:\n%s", body)
+		t.Errorf("本文が base64 でエンコードされていません（長い HTML 行は SMTP の 1000 バイトの行長制限に違反します）:\n%s", body)
 	}
 	// 複数の受信者がすべて To ヘッダーに現れること。
 	if !strings.Contains(body, "a@example.com, b@example.com") {
-		t.Errorf("To 头未包含全部收件人:\n%s", body)
+		t.Errorf("To ヘッダーにすべての宛先が含まれていません:\n%s", body)
 	}
 }
 
@@ -187,10 +187,10 @@ func TestEmailSendWithoutAuth(t *testing.T) {
 	f := newFakeSMTP(t)
 	cfg := emailCfg(t, f, nil)
 	if _, err := (emailChannel{}).Send(context.Background(), cfg, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("配信に失敗しました: %v", err)
 	}
 	if f.sawCommand("AUTH") {
-		t.Errorf("未配账号却发了 AUTH: %v", f.commands)
+		t.Errorf("アカウントが未設定なのに AUTH を送信しました: %v", f.commands)
 	}
 }
 
@@ -203,11 +203,11 @@ func TestEmailSendClassifiesSMTPReplies(t *testing.T) {
 		mailReply string
 		permanent bool
 	}{
-		{"收件人被 550 永久拒绝", "550 5.1.1 User unknown", "250 OK", true},
-		{"收件人遇 450 灰名单", "450 4.7.1 Greylisting in action", "250 OK", false},
-		{"收件人遇 452 邮箱满", "452 4.2.2 Mailbox full", "250 OK", false},
-		{"发件人被 553 永久拒绝", "250 OK", "553 5.1.3 Bad address", true},
-		{"发件人遇 451 临时错误", "250 OK", "451 4.3.0 Temporary failure", false},
+		{"受信者が 550 で恒久的に拒否される", "550 5.1.1 User unknown", "250 OK", true},
+		{"受信者が 450 のグレーリストに該当", "450 4.7.1 Greylisting in action", "250 OK", false},
+		{"受信者が 452 のメールボックス容量超過に該当", "452 4.2.2 Mailbox full", "250 OK", false},
+		{"送信者が 553 で恒久的に拒否される", "250 OK", "553 5.1.3 Bad address", true},
+		{"送信者が 451 の一時エラーに該当", "250 OK", "451 4.3.0 Temporary failure", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -216,14 +216,14 @@ func TestEmailSendClassifiesSMTPReplies(t *testing.T) {
 			f.mailReply = tc.mailReply
 			_, err := (emailChannel{}).Send(context.Background(), emailCfg(t, f, nil), singleMsg())
 			if err == nil {
-				t.Fatal("应报错")
+				t.Fatal("エラーを返すべきです")
 			}
 			if got := IsPermanent(err); got != tc.permanent {
-				t.Fatalf("permanent 判定错误：期望 %v 得到 %v (%v)", tc.permanent, got, err)
+				t.Fatalf("permanent 判定が正しくありません: 期待値 %v、実際の値 %v (%v)", tc.permanent, got, err)
 			}
 			// サーバーの原文を保持すること。そうしないとユーザーはサーバー管理者に問い合わせるべきか、アドレスを変えるべきか分からない。
 			if !strings.Contains(err.Error(), strings.Fields(tc.rcptReply)[0]) && !strings.Contains(err.Error(), strings.Fields(tc.mailReply)[0]) {
-				t.Errorf("错误里应保留服务器的应答码: %v", err)
+				t.Errorf("エラーにはサーバーの応答コードを保持するべきです: %v", err)
 			}
 		})
 	}
@@ -246,11 +246,11 @@ func TestEmailSendRefusesPlaintextCredentials(t *testing.T) {
 	}
 	_, err := (emailChannel{}).Send(context.Background(), cfg, singleMsg())
 	if err == nil {
-		t.Skip("本机 DNS 解析到了本地服务器，跳过（不影响其它用例）")
+		t.Skip("このマシンの DNS がローカルサーバーのアドレスを解決したため、スキップします（他のテストケースには影響しません）")
 	}
 	// 接続できない場合も認証情報送信を拒否された場合も、このアサーションは成功とする。要点はパスワードを黙って送信しては**ならない**こと。
 	if !IsPermanent(err) && !strings.Contains(err.Error(), "接続") {
-		t.Logf("错误：%v（非 localhost 下未能连上属预期）", err)
+		t.Logf("エラー: %v（localhost 以外で接続できないのは想定どおりです）", err)
 	}
 }
 
@@ -261,16 +261,16 @@ func TestEmailValidateReportsMissingFields(t *testing.T) {
 		name string
 		cfg  map[string]any
 	}{
-		{"缺 host", map[string]any{"port": float64(25), "from": "a@b.c", "to": []any{"d@e.f"}}},
-		{"缺 port", map[string]any{"host": "smtp.example.com"}},
-		{"port 越界", map[string]any{"host": "h", "port": float64(70000), "from": "a@b.c", "to": []any{"d@e.f"}}},
-		{"缺 from", map[string]any{"host": "h", "port": float64(25), "to": []any{"d@e.f"}}},
-		{"缺 to", map[string]any{"host": "h", "port": float64(25), "from": "a@b.c"}},
+		{"host がない", map[string]any{"port": float64(25), "from": "a@b.c", "to": []any{"d@e.f"}}},
+		{"port がない", map[string]any{"host": "smtp.example.com"}},
+		{"port が範囲外", map[string]any{"host": "h", "port": float64(70000), "from": "a@b.c", "to": []any{"d@e.f"}}},
+		{"from がない", map[string]any{"host": "h", "port": float64(25), "to": []any{"d@e.f"}}},
+		{"to がない", map[string]any{"host": "h", "port": float64(25), "from": "a@b.c"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := (emailChannel{}).Validate(tc.cfg); err == nil {
-				t.Fatalf("应校验失败: %v", tc.cfg)
+				t.Fatalf("検証に失敗するべきです: %v", tc.cfg)
 			}
 		})
 	}
@@ -287,16 +287,16 @@ func TestEmailConfigTolerance(t *testing.T) {
 		"tls":  "true",  // 文字列形式のブール値
 	}
 	if err := (emailChannel{}).Validate(cfg); err != nil {
-		t.Fatalf("应容忍字符串形式的数值: %v", err)
+		t.Fatalf("文字列形式の数値を許容するべきです: %v", err)
 	}
 	if got := cfgInt(cfg, "port"); got != 587 {
-		t.Errorf("cfgInt 未解析字符串端口，得到 %d", got)
+		t.Errorf("cfgInt が文字列のポートを解析していません。実際の値: %d", got)
 	}
 	if !cfgBool(cfg, "tls") {
-		t.Error("cfgBool 未解析字符串 \"true\"")
+		t.Error("cfgBool が文字列 \"true\" を解析していません")
 	}
 	if to := cfgStrings(cfg, "to"); len(to) != 1 || to[0] != "d@e.f" {
-		t.Errorf("cfgStrings 未兼容单字符串，得到 %v", to)
+		t.Errorf("cfgStrings が単一の文字列に対応していません。実際の値: %v", to)
 	}
 }
 
@@ -306,19 +306,19 @@ func TestFilterValidateRejectsTypo(t *testing.T) {
 	good := []string{"", "low", "medium", "high", "critical"}
 	for _, s := range good {
 		if err := (Filter{MinSeverity: s}).Validate(); err != nil {
-			t.Errorf("合法门槛 %q 被拒: %v", s, err)
+			t.Errorf("有効なしきい値 %q が拒否されました: %v", s, err)
 		}
 	}
 	// これらは実際に起こり得る誤記で、すべて拒否する必要がある。
 	for _, s := range []string{"hgih", "HIGH", "严重", "high ", "crit"} {
 		err := (Filter{MinSeverity: s}).Validate()
 		if err == nil {
-			t.Errorf("非法门槛 %q 应被拒绝（否则过滤器静默失效、变成全推）", s)
+			t.Errorf("無効なしきい値 %q は拒否されるべきです（そうしないとフィルターが通知なく機能しなくなり、すべて通知されます）", s)
 			continue
 		}
 		// エラーメッセージはユーザーが正しく修正できるものであること。
 		if !strings.Contains(err.Error(), "low") || !strings.Contains(err.Error(), "critical") {
-			t.Errorf("错误信息应列出可选值，得到 %q", err.Error())
+			t.Errorf("エラー情報には選択可能な値を列挙するべきです。実際の値: %q", err.Error())
 		}
 	}
 }
@@ -329,7 +329,7 @@ func TestFilterValidateIsWriteTimeOnly(t *testing.T) {
 	raw := []byte(`{"min_severity":"hgih"}`)
 	f := ParseFilter(raw) // エラーにしない
 	if f.MinSeverity != "hgih" {
-		t.Fatalf("读取路径应原样保留，得到 %q", f.MinSeverity)
+		t.Fatalf("読み取り時はパスをそのまま保持するべきです。実際の値: %q", f.MinSeverity)
 	}
 	// さらに、このチャネルがイベントを判定できること（panic せず、ブロックしない）。
 	_ = Match(f, Snapshot{Kind: EventFindingCreated, Severity: "critical"})

@@ -33,16 +33,16 @@ func TestDoJSONClassifiesHTTPStatus(t *testing.T) {
 		status    int
 		permanent bool
 	}{
-		{"200 成功不算错误", 200, false},
-		{"429 限流可重试", 429, false},
-		{"408 请求超时可重试", 408, false},
-		{"500 服务端错误可重试", 500, false},
-		{"502 网关错误可重试", 502, false},
-		{"503 服务不可用可重试", 503, false},
-		{"400 参数错误永久失败", 400, true},
-		{"401 鉴权失败永久失败", 401, true},
-		{"403 禁止访问永久失败", 403, true},
-		{"404 地址不存在永久失败", 404, true},
+		{"200 の成功はエラーとしない", 200, false},
+		{"429 のレート制限は再試行可能", 429, false},
+		{"408 のリクエストタイムアウトは再試行可能", 408, false},
+		{"500 のサーバーエラーは再試行可能", 500, false},
+		{"502 のゲートウェイエラーは再試行可能", 502, false},
+		{"503 のサービス利用不可は再試行可能", 503, false},
+		{"400 の引数エラーは恒久的失敗", 400, true},
+		{"401 の認証エラーは恒久的失敗", 401, true},
+		{"403 のアクセス禁止は恒久的失敗", 403, true},
+		{"404 のアドレス不存在は恒久的失敗", 404, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -50,22 +50,22 @@ func TestDoJSONClassifiesHTTPStatus(t *testing.T) {
 			_, err := doJSON(context.Background(), "GET", srv.URL, nil, nil)
 			if tc.status < 300 {
 				if err != nil {
-					t.Fatalf("2xx 不应报错: %v", err)
+					t.Fatalf("2xx はエラーを返すべきではありません: %v", err)
 				}
 				return
 			}
 			if err == nil {
-				t.Fatal("非 2xx 应报错")
+				t.Fatal("2xx 以外はエラーを返すべきです")
 			}
 			if got := IsPermanent(err); got != tc.permanent {
-				t.Fatalf("HTTP %d 的 permanent 判定错误：期望 %v 得到 %v (%v)",
+				t.Fatalf("HTTP %d の permanent 判定が正しくありません: 期待値 %v、実際の値 %v (%v)",
 					tc.status, tc.permanent, got, err)
 			}
 			// エラーにステータスコードが現れる必要がある。ないとユーザーは自分の誤設定か相手の障害か判断できない。
 			// Go の英語の StatusText ではなく数値を検証する：本パッケージの文言は中国語であり、
 			// （プロジェクトの他の部分と同じ）、数値こそが言語に依存せず安定して検証できる部分である。
 			if !strings.Contains(err.Error(), strconv.Itoa(tc.status)) {
-				t.Errorf("错误信息应带上 HTTP 状态码 %d，得到 %v", tc.status, err)
+				t.Errorf("エラー情報には HTTP 状態コード %d を含めるべきです。実際の値: %v", tc.status, err)
 			}
 		})
 	}
@@ -77,10 +77,10 @@ func TestDoJSONIncludesResponseSnippet(t *testing.T) {
 	srv := replyServer(t, 400, `{"error":"invalid webhook token"}`)
 	_, err := doJSON(context.Background(), "GET", srv.URL, nil, nil)
 	if err == nil {
-		t.Fatal("应报错")
+		t.Fatal("エラーを返すべきです")
 	}
 	if !strings.Contains(err.Error(), "invalid webhook token") {
-		t.Errorf("错误信息应带回对端的说明，得到 %v", err)
+		t.Errorf("エラー情報には接続先の説明を含めるべきです。実際の値: %v", err)
 	}
 }
 
@@ -92,15 +92,15 @@ func TestDoJSONSnippetIsSingleLineAndBounded(t *testing.T) {
 	srv := replyServer(t, 500, "line1\nline2\r\n\tline3 "+long)
 	_, err := doJSON(context.Background(), "GET", srv.URL, nil, nil)
 	if err == nil {
-		t.Fatal("应报错")
+		t.Fatal("エラーを返すべきです")
 	}
 	msg := err.Error()
 	if strings.ContainsAny(msg, "\r\n\t") {
-		t.Errorf("错误信息应压成单行，得到 %q", msg)
+		t.Errorf("エラー情報は 1 行にまとめるべきです。実際の値: %q", msg)
 	}
 	// snippet の上限は 200 文字 + 固定の接頭辞で、全体は元の応答よりはるかに小さくなければならない。
 	if len(msg) > 400 {
-		t.Errorf("错误信息过长（%d 字节），应被 snippet 截断: %q", len(msg), msg)
+		t.Errorf("エラー情報が長すぎます（%d バイト）。snippet で切り詰めるべきです: %q", len(msg), msg)
 	}
 }
 
@@ -111,9 +111,9 @@ func TestDoJSONRejectsOversizedResponse(t *testing.T) {
 	srv := replyServer(t, 400, huge)
 	_, err := doJSON(context.Background(), "GET", srv.URL, nil, nil)
 	if err == nil {
-		t.Fatal("应报错")
+		t.Fatal("エラーを返すべきです")
 	}
 	if len(err.Error()) > 400 {
-		t.Errorf("超大响应应被限长读取并截断，错误信息长度 %d", len(err.Error()))
+		t.Errorf("過大な応答は読み取りサイズを制限して切り詰めるべきです。エラー情報の長さ: %d", len(err.Error()))
 	}
 }

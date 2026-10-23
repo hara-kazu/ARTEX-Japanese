@@ -256,10 +256,10 @@ func TestCompanyICPAttribution(t *testing.T) {
 	t.Cleanup(func() {
 		// エラーを握り潰さない：削除失敗は後続ケースを汚染するため、今回の実行で明らかにすること。
 		if _, err := d.Exec(`DELETE FROM assets WHERE task_ids @> ARRAY[$1]::bigint[]`, suffix); err != nil {
-			t.Errorf("清理测试资产失败: %v", err)
+			t.Errorf("テスト資産のクリーンアップに失敗しました: %v", err)
 		}
 		if _, err := d.Exec(`DELETE FROM companies WHERE id=$1`, companyID); err != nil {
-			t.Errorf("清理测试公司失败: %v", err)
+			t.Errorf("テスト企業のクリーンアップに失敗しました: %v", err)
 		}
 	})
 

@@ -31,7 +31,7 @@ func fakeBin(t *testing.T, path, marker string, exitCode int) {
 	t.Helper()
 	script := "#!/bin/sh\necho " + marker + "\nexit " + itoa(exitCode) + "\n"
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
-		t.Fatalf("写入假二进制 %s: %v", path, err)
+		t.Fatalf("模擬バイナリ %s の書き込み: %v", path, err)
 	}
 }
 
@@ -48,10 +48,10 @@ func stage(t *testing.T, p Paths, marker string, exitCode int) {
 	fakeBin(t, p.New, marker, exitCode)
 	sum, err := fileSHA256(p.New)
 	if err != nil {
-		t.Fatalf("计算校验和: %v", err)
+		t.Fatalf("チェックサムの計算: %v", err)
 	}
 	if err := os.WriteFile(p.Sum, []byte(sum), 0o644); err != nil {
-		t.Fatalf("写入校验和: %v", err)
+		t.Fatalf("チェックサムの書き込み: %v", err)
 	}
 }
 
@@ -59,7 +59,7 @@ func readAll(t *testing.T, path string) string {
 	t.Helper()
 	b, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("读取 %s: %v", path, err)
+		t.Fatalf("%s の読み取り: %v", path, err)
 	}
 	return string(b)
 }
@@ -67,7 +67,7 @@ func readAll(t *testing.T, path string) string {
 func requireUnix(t *testing.T) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
-		t.Skip("假二进制用的是 sh 脚本，Windows 上跑不了")
+		t.Skip("模擬バイナリは sh スクリプトのため、Windows 上では実行できません")
 	}
 }
 
@@ -94,11 +94,11 @@ func TestCompareVersions(t *testing.T) {
 	for _, c := range cases {
 		got, ok := CompareVersions(c.a, c.b)
 		if ok != c.comparable {
-			t.Errorf("CompareVersions(%q,%q) comparable=%v, 期望 %v", c.a, c.b, ok, c.comparable)
+			t.Errorf("CompareVersions(%q,%q) comparable=%v, 期待値 %v", c.a, c.b, ok, c.comparable)
 			continue
 		}
 		if ok && got != c.want {
-			t.Errorf("CompareVersions(%q,%q)=%d, 期望 %d", c.a, c.b, got, c.want)
+			t.Errorf("CompareVersions(%q,%q)=%d, 期待値 %d", c.a, c.b, got, c.want)
 		}
 	}
 }
@@ -112,13 +112,13 @@ func TestResolvePathsNaming(t *testing.T) {
 	// （作業ディレクトリーは / の可能性がある）の置換が完全に無効になる。
 	for name, path := range map[string]string{"New": p.New, "Sum": p.Sum, "Old": p.Old, "Marker": p.Marker} {
 		if filepath.Dir(path) != p.Dir {
-			t.Errorf("%s 不在可执行文件目录下: %s (期望 %s)", name, path, p.Dir)
+			t.Errorf("%s が実行ファイルのディレクトリ内にありません: %s (期待値 %s)", name, path, p.Dir)
 		}
 	}
 	// Windows では .new/.old に .exe を残す必要があり、なければスモークテストと置換後の実行がどちらも失敗する。
 	if runtime.GOOS == "windows" {
 		if !strings.HasSuffix(p.New, ".exe") || !strings.HasSuffix(p.Old, ".exe") {
-			t.Errorf("Windows 上 .new/.old 必须以 .exe 结尾: new=%s old=%s", p.New, p.Old)
+			t.Errorf("Windows では .new/.old は .exe で終わる必要があります: new=%s old=%s", p.New, p.Old)
 		}
 	}
 }
@@ -131,7 +131,7 @@ func TestVerifyStagedRejectsTamperedBinary(t *testing.T) {
 	// チェックサムを書いた後にファイルを変更し、ダウンロードの破損 / すり替えを模擬する。
 	fakeBin(t, p.New, "tampered", 0)
 	if err := verifyStaged(p); err == nil {
-		t.Fatal("期望 SHA256 不匹配被拒绝，却通过了")
+		t.Fatal("SHA256 の不一致を拒否するはずが、通過しました")
 	}
 }
 
@@ -141,7 +141,7 @@ func TestVerifyStagedRejectsUnrunnableBinary(t *testing.T) {
 	stage(t, p, "broken", 1) // 実行できるが終了コードが 0 でない
 
 	if err := verifyStaged(p); err == nil {
-		t.Fatal("期望冒烟测试失败被拒绝，却通过了")
+		t.Fatal("スモークテストの失敗を拒否するはずが、通過しました")
 	}
 }
 
@@ -151,31 +151,31 @@ func TestApplyStagedHappyPath(t *testing.T) {
 	fakeBin(t, p.Current, "old", 0)
 	stage(t, p, "new", 0)
 	if err := writeMarker(p.Marker, marker{From: "0.3.7", To: "0.3.8"}); err != nil {
-		t.Fatalf("写标记: %v", err)
+		t.Fatalf("マーカーの書き込み: %v", err)
 	}
 
 	action, st := applyStaged(p)
 	if action != Restart {
-		t.Fatalf("期望 Restart，得到 %v", action)
+		t.Fatalf("Restart を期待しましたが、%v でした", action)
 	}
 	if !st.Pending {
-		t.Error("换装后状态应为 Pending")
+		t.Error("入れ替え後の状態は Pending であるべきです")
 	}
 	if !strings.Contains(readAll(t, p.Current), "new") {
-		t.Error("artex 应已被替换为新版本")
+		t.Error("artex は新しいバージョンに置き換わっているべきです")
 	}
 	if !strings.Contains(readAll(t, p.Old), "old") {
-		t.Error("旧版本应备份到 artex.old")
+		t.Error("旧バージョンは artex.old にバックアップされているべきです")
 	}
 	if _, err := os.Stat(p.New); !os.IsNotExist(err) {
-		t.Error("换装后 artex.new 应已消失")
+		t.Error("入れ替え後は artex.new が存在しないべきです")
 	}
 	if _, err := os.Stat(p.Sum); !os.IsNotExist(err) {
-		t.Error("换装后校验和文件应已清理")
+		t.Error("入れ替え後はチェックサムファイルが削除されているべきです")
 	}
 	// マーカーを残す必要がある。次回起動（新版が動く）でカウントし、必要ならロールバックするため。
 	if _, ok := readMarker(p.Marker); !ok {
-		t.Error("换装后升级标记应保留")
+		t.Error("入れ替え後も更新マーカーは保持されているべきです")
 	}
 }
 
@@ -188,16 +188,16 @@ func TestApplyStagedKeepsCurrentWhenVerifyFails(t *testing.T) {
 
 	action, st := applyStaged(p)
 	if action != Continue {
-		t.Fatalf("校验失败时期望 Continue，得到 %v", action)
+		t.Fatalf("検証失敗時は Continue を期待しましたが、%v でした", action)
 	}
 	if !st.FailedStage {
-		t.Error("状态应标记为 FailedStage")
+		t.Error("状態は FailedStage と記録すべきです")
 	}
 	if !strings.Contains(readAll(t, p.Current), "old") {
-		t.Fatal("校验失败时绝不能动当前版本")
+		t.Fatal("検証失敗時は現在のバージョンを絶対に変更してはいけません")
 	}
 	if _, err := os.Stat(p.New); !os.IsNotExist(err) {
-		t.Error("校验失败的暂存件应被清理，否则下次启动会再试一遍")
+		t.Error("検証に失敗した一時ファイルは削除すべきです。そうでなければ次の起動時に再試行されます")
 	}
 }
 
@@ -212,10 +212,10 @@ func TestSwapOverwritesPreviousBackup(t *testing.T) {
 		t.Fatalf("swap: %v", err)
 	}
 	if !strings.Contains(readAll(t, p.Current), "v3") {
-		t.Error("应换装到 v3")
+		t.Error("v3 に入れ替わっているべきです")
 	}
 	if !strings.Contains(readAll(t, p.Old), "v2") {
-		t.Error("备份应更新为刚被换下的 v2")
+		t.Error("バックアップは直前に入れ替えた v2 に更新されているべきです")
 	}
 }
 
@@ -230,14 +230,14 @@ func TestConfirmCountsAttemptsThenRollsBack(t *testing.T) {
 	for i := 1; i <= maxAttempts; i++ {
 		action, st := confirmOrRollback(p, m)
 		if action != Continue {
-			t.Fatalf("第 %d 次尝试期望 Continue，得到 %v", i, action)
+			t.Fatalf("%d 回目の試行で Continue を期待しましたが、%v でした", i, action)
 		}
 		if !st.Pending {
-			t.Errorf("第 %d 次尝试状态应为 Pending", i)
+			t.Errorf("%d 回目の試行の状態は Pending であるべきです", i)
 		}
 		got, ok := readMarker(p.Marker)
 		if !ok || got.Attempts != i {
-			t.Fatalf("第 %d 次尝试后 attempts=%d（ok=%v），期望 %d", i, got.Attempts, ok, i)
+			t.Fatalf("%d 回目の試行後は attempts=%d（ok=%v）でした。期待値 %d", i, got.Attempts, ok, i)
 		}
 		m = got
 	}
@@ -245,20 +245,20 @@ func TestConfirmCountsAttemptsThenRollsBack(t *testing.T) {
 	// もう1回クラッシュすると上限を超え、自動で旧版に戻す。
 	action, st := confirmOrRollback(p, m)
 	if action != Restart {
-		t.Fatalf("超过尝试上限时期望 Restart，得到 %v", action)
+		t.Fatalf("試行上限を超えた場合は Restart を期待しましたが、%v でした", action)
 	}
 	if !st.RolledBack {
-		t.Error("状态应标记为 RolledBack")
+		t.Error("状態は RolledBack と記録すべきです")
 	}
 	if !strings.Contains(readAll(t, p.Current), "good-old") {
-		t.Fatal("应已回滚到旧版本")
+		t.Fatal("旧バージョンにロールバック済みであるべきです")
 	}
 	if _, err := os.Stat(p.Marker); !os.IsNotExist(err) {
-		t.Error("回滚后标记应清除，否则会无限回滚")
+		t.Error("ロールバック後はマーカーを削除すべきです。そうでなければロールバックを繰り返します")
 	}
 	// 起動できないバージョンは調査用に残し、直接削除しない。
 	if _, err := os.Stat(p.Current + ".failed"); err != nil {
-		t.Error("失败的版本应保留为 .failed 供排查")
+		t.Error("失敗したバージョンは調査用に .failed として保持すべきです")
 	}
 }
 
@@ -280,10 +280,10 @@ func TestManualRollbackIsReversible(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(readAll(t, p.Current), "v1") {
-		t.Error("回滚后当前版本应是 v1")
+		t.Error("ロールバック後の現在のバージョンは v1 であるべきです")
 	}
 	if !strings.Contains(readAll(t, p.Old), "v2") {
-		t.Error("回滚后备份应变成 v2，这样还能再滚回去")
+		t.Error("ロールバック後のバックアップは v2 に変わり、再度戻せるべきです")
 	}
 }
 
@@ -301,20 +301,20 @@ func TestParseSums(t *testing.T) {
 
 	out := parseSums(raw)
 	if out["artex-0.3.8-linux-amd64.zip"] != linuxSum {
-		t.Errorf("linux 条目解析错误: %v", out)
+		t.Errorf("linux エントリーの解析エラー: %v", out)
 	}
 	// ダイジェストは小文字に統一し、照合時に大文字小文字によって不一致と誤判定しないようにする。
 	if got := out["artex-0.3.8-windows-amd64.zip"]; got != strings.ToLower(winSum) {
-		t.Errorf("windows 条目错误（* 前缀应剥离、摘要应转小写）: %q", got)
+		t.Errorf("windows エントリーのエラー（* の接頭辞を除去し、ダイジェストを小文字にするべきです）: %q", got)
 	}
 	if len(out) != 2 {
-		t.Errorf("应忽略空行、非摘要行和长度不对的行，得到 %v", out)
+		t.Errorf("空行、ダイジェスト以外の行、長さが不正な行は無視すべきですが、%v でした", out)
 	}
 }
 
 func TestExtractBinaryFindsNestedEntry(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("包内基名在 Windows 上是 artex.exe，此用例按 Unix 命名构造")
+		t.Skip("パッケージ内のベース名は Windows では artex.exe ですが、このケースは Unix の名前で構成しています")
 	}
 	dir := t.TempDir()
 	zipPath := filepath.Join(dir, "release.zip")
@@ -349,14 +349,14 @@ func TestExtractBinaryFindsNestedEntry(t *testing.T) {
 		t.Fatalf("extractBinary: %v", err)
 	}
 	if got := readAll(t, dst); !strings.Contains(got, "exit 0") {
-		t.Errorf("解压出来的不是 artex 可执行文件: %q", got)
+		t.Errorf("展開したファイルが artex の実行ファイルではありません: %q", got)
 	}
 	info, err := os.Stat(dst)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if info.Mode().Perm()&0o111 == 0 {
-		t.Error("解压出的二进制必须带执行位")
+		t.Error("展開したバイナリには実行属性が必要です")
 	}
 }
 
@@ -374,7 +374,7 @@ func TestExtractBinaryMissingEntry(t *testing.T) {
 	f.Close()
 
 	if err := extractBinary(zipPath, filepath.Join(dir, "out")); err == nil {
-		t.Fatal("包内没有可执行文件时应报错")
+		t.Fatal("パッケージに実行ファイルがない場合はエラーにすべきです")
 	}
 }
 
@@ -388,7 +388,7 @@ func TestCheckURLRejectsNonGitHub(t *testing.T) {
 	for _, raw := range bad {
 		u := mustParse(t, raw)
 		if err := checkURL(u); err == nil {
-			t.Errorf("checkURL(%q) 应当拒绝", raw)
+			t.Errorf("checkURL(%q) は拒否すべきです", raw)
 		}
 	}
 	good := []string{
@@ -399,7 +399,7 @@ func TestCheckURLRejectsNonGitHub(t *testing.T) {
 	for _, raw := range good {
 		u := mustParse(t, raw)
 		if err := checkURL(u); err != nil {
-			t.Errorf("checkURL(%q) 应当放行，却报错: %v", raw, err)
+			t.Errorf("checkURL(%q) は許可すべきですが、エラーになりました: %v", raw, err)
 		}
 	}
 }
@@ -419,7 +419,7 @@ func mustParse(t *testing.T, raw string) *url.URL {
 	t.Helper()
 	u, err := url.Parse(raw)
 	if err != nil {
-		t.Fatalf("解析 %q: %v", raw, err)
+		t.Fatalf("%q の解析: %v", raw, err)
 	}
 	return u
 }
@@ -436,15 +436,15 @@ func TestSettleClearsMarkerAndStopsRollback(t *testing.T) {
 	settle(p)
 
 	if _, err := os.Stat(p.Marker); !os.IsNotExist(err) {
-		t.Fatal("确认稳定后升级标记必须清除")
+		t.Fatal("安定動作の確認後は更新マーカーを削除する必要があります")
 	}
 	// マーカーが消えたため、その後の通常の再起動では回数を加算せず、誤ってロールバックも発生しない。
 	if _, ok := readMarker(p.Marker); ok {
-		t.Error("标记读取应失败")
+		t.Error("マーカーの読み取りは失敗すべきです")
 	}
 	// バックアップは残し、ユーザーが手動でロールバックできるようにする。
 	if _, err := os.Stat(p.Old); err != nil {
-		t.Error("确认稳定后仍应保留上一版本备份")
+		t.Error("安定動作の確認後も直前のバージョンのバックアップは保持すべきです")
 	}
 }
 
@@ -454,6 +454,6 @@ func TestSettleIsNoopWithoutMarker(t *testing.T) {
 	fakeBin(t, p.Current, "cur", 0)
 	settle(p) // 通常の起動経路。panic もファイルの変更も起こさないこと
 	if _, err := os.Stat(p.Current); err != nil {
-		t.Error("无标记时 settle 不应影响任何文件")
+		t.Error("マーカーがない場合、settle はどのファイルにも影響すべきではありません")
 	}
 }

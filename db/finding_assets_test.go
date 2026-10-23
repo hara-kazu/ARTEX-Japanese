@@ -129,7 +129,7 @@ func TestBuildFindingAssetTree(t *testing.T) {
 		t.Errorf("root totals: want 2/high1/low1, got %d/high%d/low%d", rootNode.Total, rootNode.High, rootNode.Low)
 	}
 	if rootNode.Self != 0 {
-		t.Errorf("root self: want 0 (只是祖先), got %d", rootNode.Self)
+		t.Errorf("root self: want 0 (祖先にすぎない), got %d", rootNode.Self)
 	}
 	if svcNode.Total != 2 || svcNode.Self != 1 {
 		t.Errorf("service total/self: want 2/1, got %d/%d", svcNode.Total, svcNode.Self)
@@ -196,11 +196,11 @@ func TestFindingAssetScopeFilter(t *testing.T) {
 		scope string
 		want  int
 	}{
-		{"整棵子树", assetKey(rootID), 1},      // ルートドメイン配下にはサブドメインの1件のみ
-		{"叶子节点", assetKey(subID), 1},       // サブドメイン自身
-		{"另一棵树", assetKey(otherID), 1},     // 相互に混在しない
-		{"未关联", FindingUnassignedAsset, 2}, // asset_ids が空のもの + 削除済み資産を指すもの
-		{"不存在的节点", "a:999000222", 0},       // 現在のフィルターに当該ノードがない → 空の結果とし、フィルターなしにはしない
+		{"サブツリー全体", assetKey(rootID), 1},      // ルートドメイン配下にはサブドメインの1件のみ
+		{"リーフノード", assetKey(subID), 1},       // サブドメイン自身
+		{"別のツリー", assetKey(otherID), 1},     // 相互に混在しない
+		{"未関連", FindingUnassignedAsset, 2}, // asset_ids が空のもの + 削除済み資産を指すもの
+		{"存在しないノード", "a:999000222", 0},       // 現在のフィルターに当該ノードがない → 空の結果とし、フィルターなしにはしない
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

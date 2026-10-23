@@ -39,7 +39,7 @@ func newTestChannel(t *testing.T, d *DB, kind, mode string, filter string) *Noti
 	}
 	id, err := d.SaveNotificationChannel(context.Background(), ch)
 	if err != nil {
-		t.Fatalf("建渠道失败: %v", err)
+		t.Fatalf("チャネルの作成に失敗しました: %v", err)
 	}
 	t.Cleanup(func() { d.Exec(`DELETE FROM notification_channels WHERE id=$1`, id) })
 	ch.ID = id
@@ -53,7 +53,7 @@ func addTestEvent(t *testing.T, d *DB, kind string, findingID int64, snap notify
 	snap.FindingID = findingID
 	id, err := d.AddNotificationEvent(context.Background(), kind, findingID, snap)
 	if err != nil {
-		t.Fatalf("写事件失败: %v", err)
+		t.Fatalf("イベントの書き込みに失敗しました: %v", err)
 	}
 	t.Cleanup(func() { d.Exec(`DELETE FROM notification_events WHERE id=$1`, id) })
 	return id
@@ -82,15 +82,15 @@ func TestNotificationAssetNamesResolvesAndPreservesOrder(t *testing.T) {
 	// 入力順は意図的にランダムとし、存在しない id も1つ含める。
 	got, err := d.NotificationAssetNames(ctx, []int64{svcID, 999999999, domID, ipID, svcID})
 	if err != nil {
-		t.Fatalf("解析资产名失败: %v", err)
+		t.Fatalf("資産名の解析に失敗しました: %v", err)
 	}
 	want := []string{"https://a.example.com/admin", "a.example.com", "10.1.2.3"}
 	if len(got) != len(want) {
-		t.Fatalf("资产名数量不符，期望 %v 得到 %v", want, got)
+		t.Fatalf("資産名の数が一致しません。期待値 %v、実際の値 %v", want, got)
 	}
 	for i := range want {
 		if got[i] != want[i] {
-			t.Fatalf("顺序/取值不符，期望 %v 得到 %v", want, got)
+			t.Fatalf("順序/値が一致しません。期待値 %v、実際の値 %v", want, got)
 		}
 	}
 }
@@ -125,18 +125,18 @@ func TestRecordNotificationEventTxUnwindsOnFailure(t *testing.T) {
 	// NOT VALID：以降に書き込む行のみ制約し、DB に既存の履歴イベントは検証しない
 	// （既存行が違反していると制約を追加できないため）。
 	if _, err := tx.ExecContext(ctx, `ALTER TABLE notification_events ADD CONSTRAINT notify_test_never CHECK (false) NOT VALID`); err != nil {
-		t.Fatalf("加临时约束失败: %v", err)
+		t.Fatalf("一時制約の追加に失敗しました: %v", err)
 	}
 	if RecordNotificationEventTx(ctx, tx, notify.EventFindingCreated, 1, notify.Snapshot{Severity: "high"}) {
-		t.Fatal("在必然失败的约束下仍报告写入成功")
+		t.Fatal("必ず失敗する制約の下で、書き込み成功が報告されました")
 	}
 	// 重要なアサーション：トランザクションが引き続き利用可能。
 	var one int
 	if err := tx.QueryRowContext(ctx, `SELECT 1`).Scan(&one); err != nil {
-		t.Fatalf("事务已被污染（保存点未生效）: %v", err)
+		t.Fatalf("トランザクションが汚染されています（セーブポイントが機能していません）: %v", err)
 	}
 	if err := tx.Rollback(); err != nil {
-		t.Fatalf("回滚失败: %v", err)
+		t.Fatalf("ロールバックに失敗しました: %v", err)
 	}
 	// DDL がロールバックで取り消されたことを確認し、後続ケースに問題を残さない。
 	var exists bool
@@ -144,7 +144,7 @@ func TestRecordNotificationEventTxUnwindsOnFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	if exists {
-		t.Fatal("临时约束未被回滚撤销，会污染后续用例")
+		t.Fatal("一時制約がロールバックで取り消されておらず、後続のテストケースを汚染します")
 	}
 }
 
@@ -161,7 +161,7 @@ func TestFanOutRoutesEventsByFilter(t *testing.T) {
 	criticalXSS := addTestEvent(t, d, notify.EventFindingCreated, 1003, notify.Snapshot{Severity: "critical", VulnClass: "XSS"})
 
 	if _, _, err := d.FanOutPendingEvents(ctx, 100); err != nil {
-		t.Fatalf("分派失败: %v", err)
+		t.Fatalf("振り分けに失敗しました: %v", err)
 	}
 
 	cases := []struct {
@@ -170,12 +170,12 @@ func TestFanOutRoutesEventsByFilter(t *testing.T) {
 		channel int64
 		want    bool
 	}{
-		{"全收渠道收到 high", highSQL, all.ID, true},
-		{"全收渠道收到 low", lowXSS, all.ID, true},
-		{"仅严重渠道跳过 high", highSQL, onlyCritical.ID, false},
-		{"仅严重渠道收到 critical", criticalXSS, onlyCritical.ID, true},
-		{"仅SQL渠道收到 SQL", highSQL, sqlOnly.ID, true},
-		{"仅SQL渠道跳过 XSS", lowXSS, sqlOnly.ID, false},
+		{"全件受信するチャネルで high を受信", highSQL, all.ID, true},
+		{"全件受信するチャネルで low を受信", lowXSS, all.ID, true},
+		{"重大のみのチャネルで high をスキップ", highSQL, onlyCritical.ID, false},
+		{"重大のみのチャネルで critical を受信", criticalXSS, onlyCritical.ID, true},
+		{"SQL のみのチャネルで SQL を受信", highSQL, sqlOnly.ID, true},
+		{"SQL のみのチャネルで XSS をスキップ", lowXSS, sqlOnly.ID, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestFanOutRoutesEventsByFilter(t *testing.T) {
 				t.Fatal(err)
 			}
 			if exists != tc.want {
-				t.Fatalf("投递是否存在: 期望 %v 得到 %v", tc.want, exists)
+				t.Fatalf("配信の存在有無: 期待値 %v、実際の値 %v", tc.want, exists)
 			}
 		})
 	}
@@ -196,7 +196,7 @@ func TestFanOutRoutesEventsByFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	if events != 0 || deliveries != 0 {
-		t.Fatalf("已分派的事件不应被再次处理，得到 events=%d deliveries=%d", events, deliveries)
+		t.Fatalf("振り分け済みのイベントは再処理されるべきではありません。実際の値: events=%d deliveries=%d", events, deliveries)
 	}
 }
 
@@ -214,14 +214,14 @@ func TestFanOutMarksEventsWithNoMatchingChannel(t *testing.T) {
 		t.Fatal(err)
 	}
 	if deliveries != 0 {
-		t.Fatalf("不该产生投递，得到 %d", deliveries)
+		t.Fatalf("配信は生成されるべきではありません。実際の件数: %d", deliveries)
 	}
 	var fanned bool
 	if err := d.QueryRowContext(ctx, `SELECT fanned_out FROM notification_events WHERE id=$1`, ev).Scan(&fanned); err != nil {
 		t.Fatal(err)
 	}
 	if !fanned {
-		t.Fatal("未命中渠道的事件也必须标记为已分派，否则会被无限重扫")
+		t.Fatal("どのチャネルにも一致しないイベントも振り分け済みにする必要があります。そうしないと無限に再走査されます")
 	}
 }
 
@@ -240,20 +240,20 @@ func TestClaimRealtimeDeliveriesHonorsLeaseAndMode(t *testing.T) {
 	// リアルタイム取得では realtime チャネルの1件のみ取得し、digest チャネルには触れないこと。
 	got, err := d.ClaimRealtimeDeliveries(ctx, realtime.ID, 10, time.Minute)
 	if err != nil {
-		t.Fatalf("领取失败: %v", err)
+		t.Fatalf("取得に失敗しました: %v", err)
 	}
 	if len(got) != 1 {
-		t.Fatalf("应领到 1 条，得到 %d", len(got))
+		t.Fatalf("1 件取得するべきです。実際の件数: %d", len(got))
 	}
 	if got[0].State != NotifyStateSending || got[0].Attempts != 1 {
-		t.Fatalf("领取后应为 sending 且 attempts=1，得到 state=%s attempts=%d", got[0].State, got[0].Attempts)
+		t.Fatalf("取得後は sending かつ attempts=1 であるべきです。実際の値: state=%s attempts=%d", got[0].State, got[0].Attempts)
 	}
 	// 結合読込した描画コンテキストが完全であること（チャネル設定 + イベントスナップショット + finding id）。
 	if got[0].Channel == nil || len(got[0].Channel.Config) == 0 {
-		t.Fatal("领取结果缺少渠道配置，渲染会失败")
+		t.Fatal("取得結果にチャネル設定がなく、描画に失敗します")
 	}
 	if got[0].FindingID != 3001 {
-		t.Fatalf("finding id 未从事件带出，得到 %d", got[0].FindingID)
+		t.Fatalf("finding id がイベントから引き継がれていません。実際の値: %d", got[0].FindingID)
 	}
 
 	// リース期限前なので、2回目の取得は空となること——これが「同じ行を2つの dispatcher が同時に配信しない」
@@ -263,7 +263,7 @@ func TestClaimRealtimeDeliveriesHonorsLeaseAndMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(again) != 0 {
-		t.Fatalf("租约期内不应重复领取，得到 %d 条", len(again))
+		t.Fatalf("リース期間中は重複して取得するべきではありません。実際の件数: %d", len(again))
 	}
 
 	// digest チャネルの配信にはリアルタイム取得で触れないこと。
@@ -272,7 +272,7 @@ func TestClaimRealtimeDeliveriesHonorsLeaseAndMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(left) != 0 {
-		t.Fatalf("实时领取不应拿到 digest 渠道的投递，得到 %d 条", len(left))
+		t.Fatalf("リアルタイムの取得では digest チャネルの配信を取得するべきではありません。実際の件数: %d", len(left))
 	}
 }
 
@@ -288,7 +288,7 @@ func TestClaimExpiredLeaseRecovers(t *testing.T) {
 	}
 	first, err := d.ClaimRealtimeDeliveries(ctx, ch.ID, 10, time.Minute)
 	if err != nil || len(first) != 1 {
-		t.Fatalf("首次领取失败: %v (%d 条)", err, len(first))
+		t.Fatalf("初回の取得に失敗しました: %v (%d 件)", err, len(first))
 	}
 	// リースを手動で過去に移し、「リース切れ」を再現する。
 	if _, err := d.Exec(`UPDATE notification_deliveries SET next_attempt_at = now() - interval '1 minute' WHERE id=$1`, first[0].ID); err != nil {
@@ -299,10 +299,10 @@ func TestClaimExpiredLeaseRecovers(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(second) != 1 {
-		t.Fatalf("租约过期的 sending 行应可被重新领取，得到 %d 条", len(second))
+		t.Fatalf("リース期限切れの sending 行は再取得できるべきです。実際の件数: %d", len(second))
 	}
 	if second[0].Attempts != 2 {
-		t.Fatalf("重新领取应累加尝试次数，得到 %d", second[0].Attempts)
+		t.Fatalf("再取得では試行回数を加算するべきです。実際の値: %d", second[0].Attempts)
 	}
 }
 
@@ -323,14 +323,14 @@ func TestClaimSkipsDisabledChannel(t *testing.T) {
 		t.Fatal(err)
 	}
 	if state != NotifyStateSkipped {
-		t.Fatalf("停用渠道的存量待发投递应被标记为 skipped，得到 %s", state)
+		t.Fatalf("無効にしたチャネルの既存の未送信配信は skipped になるべきです。実際の値: %s", state)
 	}
 	got, err := d.ClaimRealtimeDeliveries(ctx, ch.ID, 10, time.Minute)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 0 {
-		t.Fatalf("已停用渠道不应能被领取，得到 %d 条", len(got))
+		t.Fatalf("無効なチャネルは取得できるべきではありません。実際の件数: %d", len(got))
 	}
 }
 
@@ -348,10 +348,10 @@ func TestDigestBatchDueAndStableBatchID(t *testing.T) {
 	// バッチ作成直後で経過時間が 0 なら、30 分の周期では期限に達しないこと。
 	due, err := d.DigestBatchDue(ctx, ch.ID, 30*time.Minute)
 	if err != nil {
-		t.Fatalf("判断批次到期失败: %v", err)
+		t.Fatalf("バッチの期限判定に失敗しました: %v", err)
 	}
 	if due {
-		t.Fatal("刚建立的批次不应立即到期")
+		t.Fatal("作成直後のバッチはすぐに期限切れになるべきではありません")
 	}
 
 	// 3件の配信の作成時刻をともに古くし、周期分蓄積したバッチを再現する。
@@ -363,23 +363,23 @@ func TestDigestBatchDueAndStableBatchID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !due {
-		t.Fatal("超过周期的批次应判定为到期")
+		t.Fatal("周期を超えたバッチは期限切れと判定するべきです")
 	}
 
 	batch, err := d.ClaimDigestBatch(ctx, ch.ID, MaxDigestBatchSize, time.Minute)
 	if err != nil {
-		t.Fatalf("领取汇总批次失败: %v", err)
+		t.Fatalf("集約バッチの取得に失敗しました: %v", err)
 	}
 	if len(batch) != 3 {
-		t.Fatalf("汇总应一次领走全部 3 条，得到 %d 条", len(batch))
+		t.Fatalf("集約では全 3 件を一度に取得するべきです。実際の件数: %d", len(batch))
 	}
 	if batch[0].BatchID == nil {
-		t.Fatal("汇总批次必须写 batch_id，否则历史里看不出这几条是一起发的")
+		t.Fatal("集約バッチには batch_id を記録する必要があります。そうしないと、これらがまとめて送信されたことを履歴で判別できません")
 	}
 	firstBatchID := *batch[0].BatchID
 	for _, dl := range batch {
 		if dl.BatchID == nil || *dl.BatchID != firstBatchID {
-			t.Fatalf("同一批次应共享 batch_id，得到 %v vs %d", dl.BatchID, firstBatchID)
+			t.Fatalf("同じバッチでは batch_id を共有するべきです。実際の値: %v vs %d", dl.BatchID, firstBatchID)
 		}
 	}
 
@@ -405,10 +405,10 @@ func TestDigestBatchDueAndStableBatchID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(reclaimed) != 3 {
-		t.Fatalf("重领应拿到全部 3 条，得到 %d", len(reclaimed))
+		t.Fatalf("再取得では全 3 件を取得するべきです。実際の件数: %d", len(reclaimed))
 	}
 	if reclaimed[0].BatchID == nil || *reclaimed[0].BatchID != firstBatchID {
-		t.Fatalf("重试后 batch_id 应保持原值 %d，得到 %v", firstBatchID, reclaimed[0].BatchID)
+		t.Fatalf("再試行後も batch_id は元の値 %d を保持するべきです。実際の値: %v", firstBatchID, reclaimed[0].BatchID)
 	}
 }
 
@@ -422,7 +422,7 @@ func TestDeliveryStateTransitions(t *testing.T) {
 	}
 	got, err := d.ClaimRealtimeDeliveries(ctx, ch.ID, 10, time.Minute)
 	if err != nil || len(got) != 1 {
-		t.Fatalf("领取失败: %v (%d)", err, len(got))
+		t.Fatalf("取得に失敗しました: %v (%d)", err, len(got))
 	}
 	id := got[0].ID
 
@@ -434,7 +434,7 @@ func TestDeliveryStateTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if state != NotifyStatePending || lastErr != "网络抖动" {
-		t.Fatalf("重排后应为 pending 并记录原因，得到 state=%s err=%q", state, lastErr)
+		t.Fatalf("再スケジュール後は pending となり、理由を記録するべきです。実際の値: state=%s err=%q", state, lastErr)
 	}
 
 	if err := d.FailDeliveries(ctx, []int64{id}, "重试耗尽"); err != nil {
@@ -444,12 +444,12 @@ func TestDeliveryStateTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if state != NotifyStateFailed {
-		t.Fatalf("应为 failed，得到 %s", state)
+		t.Fatalf("failed であるべきです。実際の値: %s", state)
 	}
 
 	// 手動再送は再試行回数をゼロにし、直ちに期限到達とすること。そうしないと過去の失敗予算を引き継ぐ。
 	if err := d.RetryNotificationDelivery(ctx, id); err != nil {
-		t.Fatalf("重发失败: %v", err)
+		t.Fatalf("再送に失敗しました: %v", err)
 	}
 	var attempts int
 	var next time.Time
@@ -457,10 +457,10 @@ func TestDeliveryStateTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if state != NotifyStatePending || attempts != 0 {
-		t.Fatalf("重发后应为 pending 且 attempts=0，得到 state=%s attempts=%d", state, attempts)
+		t.Fatalf("再送後は pending かつ attempts=0 であるべきです。実際の値: state=%s attempts=%d", state, attempts)
 	}
 	if next.After(time.Now().Add(time.Second)) {
-		t.Fatal("重发应立即可领")
+		t.Fatal("再送はすぐに取得できるべきです")
 	}
 
 	// 配信済みの配信は再送できないこと。
@@ -468,7 +468,7 @@ func TestDeliveryStateTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := d.RetryNotificationDelivery(ctx, id); err == nil {
-		t.Fatal("已送达的投递不该允许重发")
+		t.Fatal("送達済みの配信は再送を許可するべきではありません")
 	}
 }
 
@@ -488,13 +488,13 @@ func TestListNotificationDeliveriesPagingAndFilter(t *testing.T) {
 
 	page1, total, err := d.ListNotificationDeliveries(ctx, NotificationDeliveryFilter{ChannelID: ch.ID, State: NotifyStateSending}, 1, 2)
 	if err != nil {
-		t.Fatalf("查询失败: %v", err)
+		t.Fatalf("検索に失敗しました: %v", err)
 	}
 	if total != 5 {
-		t.Fatalf("总数应为 5，得到 %d", total)
+		t.Fatalf("総数は 5 であるべきです。実際の値: %d", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("每页 2 条，得到 %d", len(page1))
+		t.Fatalf("1 ページ 2 件であるべきです。実際の件数: %d", len(page1))
 	}
 	// 新しい順：1ページ目の先頭 id は2ページ目の先頭より大きいこと。
 	page2, _, err := d.ListNotificationDeliveries(ctx, NotificationDeliveryFilter{ChannelID: ch.ID, State: NotifyStateSending}, 2, 2)
@@ -502,11 +502,11 @@ func TestListNotificationDeliveriesPagingAndFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(page2) != 2 || page2[0].ID >= page1[0].ID {
-		t.Fatalf("分页顺序应为新的在前，得到 page1[0]=%d page2[0]=%d", page1[0].ID, page2[0].ID)
+		t.Fatalf("ページの順序は新しいものが先であるべきです。実際の値: page1[0]=%d page2[0]=%d", page1[0].ID, page2[0].ID)
 	}
 	// 描画コンテキストを履歴とともに返すこと。そうしないと一覧に「何を通知したか」を表示できない。
 	if page1[0].ChannelName == "" || page1[0].FindingID == 0 {
-		t.Fatalf("历史项缺少展示字段: %+v", page1[0])
+		t.Fatalf("履歴項目に表示フィールドがありません: %+v", page1[0])
 	}
 
 	// 状態フィルター：pending は存在しない。
@@ -515,7 +515,7 @@ func TestListNotificationDeliveriesPagingAndFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	if totalPending != 0 || len(pending) != 0 {
-		t.Fatalf("不该有 pending 投递，得到 %d 条 (total=%d)", len(pending), totalPending)
+		t.Fatalf("pending の配信は存在するべきではありません。実際の件数: %d (total=%d)", len(pending), totalPending)
 	}
 }
 
@@ -544,59 +544,59 @@ func TestSetFindingStatusWithNotifyOnlyEmitsOnRealChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	if base < 1 {
-		t.Fatal("漏洞落库应在同一事务里登记一条推送事件")
+		t.Fatal("脆弱性の保存と同じトランザクションで通知イベントを 1 件登録するべきです")
 	}
 
 	// 同じ状態への変更：イベントを生成しないこと（再送による通知ノイズを防ぐ）。
 	from, found, notified, err := d.SetFindingStatusWithNotify(ctx, f.FindingID, "pending")
 	if err != nil || !found {
-		t.Fatalf("状态设置失败: found=%v err=%v", found, err)
+		t.Fatalf("状態の設定に失敗しました: found=%v err=%v", found, err)
 	}
 	if notified {
-		t.Fatal("状态未变化时不应登记推送事件")
+		t.Fatal("状態が変化しない場合は通知イベントを登録するべきではありません")
 	}
 	if from != "pending" {
-		t.Fatalf("应返回变更前状态 pending，得到 %q", from)
+		t.Fatalf("変更前の状態 pending を返すべきです。実際の値: %q", from)
 	}
 
 	// 実際の変更：イベントを登録し、from/to を記録すること。
 	from, found, notified, err = d.SetFindingStatusWithNotify(ctx, f.FindingID, "fixed")
 	if err != nil || !found {
-		t.Fatalf("状态设置失败: found=%v err=%v", found, err)
+		t.Fatalf("状態の設定に失敗しました: found=%v err=%v", found, err)
 	}
 	if !notified {
-		t.Fatal("状态实际变更时应登记推送事件")
+		t.Fatal("状態が実際に変化した場合は通知イベントを登録するべきです")
 	}
 	if from != "pending" {
-		t.Fatalf("from 应为 pending，得到 %q", from)
+		t.Fatalf("from は pending であるべきです。実際の値: %q", from)
 	}
 	var snapshot []byte
 	if err := d.QueryRow(`SELECT snapshot FROM notification_events WHERE finding_id=$1 AND kind=$2`,
 		f.FindingID, notify.EventFindingStatusChanged).Scan(&snapshot); err != nil {
-		t.Fatalf("未找到状态变更事件: %v", err)
+		t.Fatalf("状態変更イベントが見つかりません: %v", err)
 	}
 	var snap notify.Snapshot
 	if err := json.Unmarshal(snapshot, &snap); err != nil {
 		t.Fatal(err)
 	}
 	if snap.FromStatus != "pending" || snap.ToStatus != "fixed" {
-		t.Fatalf("快照里的状态流转不对: %s → %s", snap.FromStatus, snap.ToStatus)
+		t.Fatalf("スナップショット内の状態遷移が正しくありません: %s → %s", snap.FromStatus, snap.ToStatus)
 	}
 	// スナップショットに描画用フィールドを含めること。そうしないと状態変更メッセージが空になる。
 	if snap.VulnClass != "SQL注入" || snap.Severity != "high" || snap.Name != "状态变更用例" {
-		t.Fatalf("快照缺少渲染字段: %+v", snap)
+		t.Fatalf("スナップショットに描画フィールドがありません: %+v", snap)
 	}
 	var status string
 	if err := d.QueryRow(`SELECT status FROM findings WHERE id=$1`, f.FindingID).Scan(&status); err != nil {
 		t.Fatal(err)
 	}
 	if status != "fixed" {
-		t.Fatalf("状态应已更新为 fixed，得到 %s", status)
+		t.Fatalf("状態は fixed に更新済みであるべきです。実際の値: %s", status)
 	}
 
 	// 存在しない脆弱性：found=false、エラーにしない。
 	if _, found, _, err := d.SetFindingStatusWithNotify(ctx, 999999999, "fixed"); err != nil || found {
-		t.Fatalf("不存在的漏洞应返回 found=false 且无错，得到 found=%v err=%v", found, err)
+		t.Fatalf("存在しない脆弱性は found=false をエラーなしで返すべきです。実際の値: found=%v err=%v", found, err)
 	}
 }
 
@@ -610,17 +610,17 @@ func TestNotificationStatsSnapshot(t *testing.T) {
 	}
 	stats, err := d.NotificationStatsSnapshot(ctx)
 	if err != nil {
-		t.Fatalf("统计失败: %v", err)
+		t.Fatalf("集計に失敗しました: %v", err)
 	}
 	if stats.Channels < 1 || stats.ChannelsOn < 1 {
-		t.Fatalf("渠道计数不对: %+v", stats)
+		t.Fatalf("チャネル数が正しくありません: %+v", stats)
 	}
 	if stats.Pending < 1 {
-		t.Fatalf("应统计到待发投递: %+v", stats)
+		t.Fatalf("未送信の配信が集計されるべきです: %+v", stats)
 	}
 	// 作成直後の配信の滞留経過時間は 0 付近であり、負数や巨大値でないこと。
 	if stats.BacklogAgeMS < 0 || stats.BacklogAgeMS > int64(time.Hour/time.Millisecond) {
-		t.Fatalf("积压年龄不合法: %d ms", stats.BacklogAgeMS)
+		t.Fatalf("滞留時間が不正です: %d ms", stats.BacklogAgeMS)
 	}
 	_ = ch
 }
@@ -639,33 +639,33 @@ func TestNotificationChannelCRUDRoundTrip(t *testing.T) {
 	}
 	id, err := d.SaveNotificationChannel(ctx, ch)
 	if err != nil {
-		t.Fatalf("新建失败: %v", err)
+		t.Fatalf("作成に失敗しました: %v", err)
 	}
 	t.Cleanup(func() { d.Exec(`DELETE FROM notification_channels WHERE id=$1`, id) })
 
 	got, err := d.NotificationChannelByID(ctx, id)
 	if err != nil {
-		t.Fatalf("读取失败: %v", err)
+		t.Fatalf("読み込みに失敗しました: %v", err)
 	}
 	if got.Mode != NotifyModeDigest || got.RatePerMin != 42 || got.Name != "CRUD 往返" {
-		t.Fatalf("往返字段不一致: %+v", got)
+		t.Fatalf("往復後のフィールドが一致しません: %+v", got)
 	}
 	if !got.IsEnabled() {
-		t.Fatal("默认应为启用")
+		t.Fatal("デフォルトで有効であるべきです")
 	}
 	var cfg map[string]any
 	if err := json.Unmarshal(got.Config, &cfg); err != nil {
 		t.Fatal(err)
 	}
 	if cfg["host"] != "smtp.example.com" {
-		t.Fatalf("配置未正确落库: %v", cfg)
+		t.Fatalf("設定が正しく保存されていません: %v", cfg)
 	}
 	var filter notify.Filter
 	if err := json.Unmarshal(got.Filter, &filter); err != nil {
 		t.Fatal(err)
 	}
 	if filter.MinSeverity != "medium" || !filter.OnStatusChange {
-		t.Fatalf("过滤条件未正确落库: %+v", filter)
+		t.Fatalf("フィルター条件が正しく保存されていません: %+v", filter)
 	}
 
 	// 更新後に再読込。
@@ -680,7 +680,7 @@ func TestNotificationChannelCRUDRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if after.Name != "改名了" || after.IsEnabled() {
-		t.Fatalf("更新未生效: %+v", after)
+		t.Fatalf("更新が反映されていません: %+v", after)
 	}
 
 	// 削除後は黙って成功とせず「存在しない」と報告すること。
@@ -688,10 +688,10 @@ func TestNotificationChannelCRUDRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := d.NotificationChannelByID(ctx, id); err != ErrNotificationChannelNotFound {
-		t.Fatalf("期望 ErrNotificationChannelNotFound，得到 %v", err)
+		t.Fatalf("ErrNotificationChannelNotFound を期待しましたが、実際の値は %v です", err)
 	}
 	if err := d.DeleteNotificationChannel(ctx, id); err != ErrNotificationChannelNotFound {
-		t.Fatalf("重复删除应报不存在，得到 %v", err)
+		t.Fatalf("重複削除では存在しないというエラーを返すべきです。実際の値: %v", err)
 	}
 }
 
@@ -722,10 +722,10 @@ func TestSaveNotificationChannelKeepsExplicitZeroRate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.RatePerMin != 0 {
-		t.Fatalf("显式 0 表示不限流，必须原样保存，得到 %d", got.RatePerMin)
+		t.Fatalf("明示的な 0 はレート制限なしを意味し、そのまま保存する必要があります。実際の値: %d", got.RatePerMin)
 	}
 	if got.Mode != NotifyModeRealtime {
-		t.Fatalf("默认模式应为 realtime，得到 %s", got.Mode)
+		t.Fatalf("デフォルトのモードは realtime であるべきです。実際の値: %s", got.Mode)
 	}
 
 	// 負の値は不正入力で、黙って別値に変更せず拒否すること。
@@ -734,7 +734,7 @@ func TestSaveNotificationChannelKeepsExplicitZeroRate(t *testing.T) {
 		Config: json.RawMessage(`{"webhook":"https://example.com/h"}`),
 	}
 	if _, err := d.SaveNotificationChannel(ctx, bad); err == nil {
-		t.Fatal("负限流应被拒绝")
+		t.Fatal("負のレート制限は拒否されるべきです")
 	}
 }
 
@@ -753,7 +753,7 @@ func TestDeleteChannelCascadesDeliveries(t *testing.T) {
 		t.Fatal(err)
 	}
 	if before == 0 {
-		t.Fatal("前置条件不成立：未产生投递")
+		t.Fatal("前提条件が成立しません: 配信が生成されていません")
 	}
 	if err := d.DeleteNotificationChannel(ctx, ch.ID); err != nil {
 		t.Fatal(err)
@@ -763,14 +763,14 @@ func TestDeleteChannelCascadesDeliveries(t *testing.T) {
 		t.Fatal(err)
 	}
 	if after != 0 {
-		t.Fatalf("渠道删除后其投递应级联删除，仍有 %d 条", after)
+		t.Fatalf("チャネルの削除後は配信も連鎖削除されるべきですが、まだ %d 件あります", after)
 	}
 	var evExists bool
 	if err := d.QueryRow(`SELECT EXISTS(SELECT 1 FROM notification_events WHERE id=$1)`, ev).Scan(&evExists); err != nil {
 		t.Fatal(err)
 	}
 	if !evExists {
-		t.Fatal("删渠道不应连带删除事件本身")
+		t.Fatal("チャネルの削除でイベント自体も削除するべきではありません")
 	}
 }
 
@@ -790,14 +790,14 @@ func TestClaimDigestBatchHonorsCallerLimit(t *testing.T) {
 	// limit=3 を指定：3 件だけ取得し、残りは DB に残す。
 	got, err := d.ClaimDigestBatch(ctx, ch.ID, 3, time.Minute)
 	if err != nil {
-		t.Fatalf("领取失败: %v", err)
+		t.Fatalf("取得に失敗しました: %v", err)
 	}
 	if len(got) != 3 {
-		t.Fatalf("应按调用方限流额度只领 3 条，得到 %d", len(got))
+		t.Fatalf("呼び出し元のレート制限枠に従い、3 件だけ取得するべきです。実際の件数: %d", len(got))
 	}
 	// limit=0 は今回の割当枠を使い切った意味：1件も取得せず、エラーにもしないこと。
 	if got, err := d.ClaimDigestBatch(ctx, ch.ID, 0, time.Minute); err != nil || len(got) != 0 {
-		t.Fatalf("额度为 0 时应领 0 条且不报错，得到 %d 条 err=%v", len(got), err)
+		t.Fatalf("枠が 0 の場合は 0 件をエラーなしで取得するべきです。実際の件数: %d err=%v", len(got), err)
 	}
 }
 
@@ -832,17 +832,17 @@ func TestFinishFindingRetestEmitsStatusChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	if rt.ConversationID == nil {
-		t.Fatal("复测应关联一个会话")
+		t.Fatal("再テストは 1 つのセッションに関連付けるべきです")
 	}
 	// 再テストは先に running に入ってから結論を保存すること（実際のフローと一致）。
 	if ok, err := d.StartFindingRetest(ctx, rt.ID); err != nil || !ok {
-		t.Fatalf("启动复测失败: ok=%v err=%v", ok, err)
+		t.Fatalf("再テストの開始に失敗しました: ok=%v err=%v", ok, err)
 	}
 	if err := d.RecordFindingRetestResult(ctx, *rt.ConversationID, "fixed", "已修复", "证据"); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.FinishFindingRetest(rt.ID, "completed", ""); err != nil {
-		t.Fatalf("结束复测失败: %v", err)
+		t.Fatalf("再テストの終了に失敗しました: %v", err)
 	}
 
 	var status string
@@ -850,7 +850,7 @@ func TestFinishFindingRetestEmitsStatusChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	if status != FindingFixed {
-		t.Fatalf("复测判已修复后状态应为 fixed，得到 %s", status)
+		t.Fatalf("再テストで修正済みと判定した後は状態が fixed であるべきです。実際の値: %s", status)
 	}
 
 	// 重要なアサーション：状態変更イベントが1件存在し、from/to が正しいこと。
@@ -858,17 +858,17 @@ func TestFinishFindingRetestEmitsStatusChange(t *testing.T) {
 	err = d.QueryRow(`SELECT snapshot FROM notification_events WHERE finding_id=$1 AND kind=$2 ORDER BY id DESC LIMIT 1`,
 		f.FindingID, notify.EventFindingStatusChanged).Scan(&snapshot)
 	if err != nil {
-		t.Fatalf("复测判已修复应登记状态变更推送事件（否则配了 on_status_change 的渠道收不到）: %v", err)
+		t.Fatalf("再テストで修正済みと判定した場合は状態変更の通知イベントを登録するべきです（そうしないと on_status_change を設定したチャネルで受信できません）: %v", err)
 	}
 	var snap notify.Snapshot
 	if err := json.Unmarshal(snapshot, &snap); err != nil {
 		t.Fatal(err)
 	}
 	if snap.FromStatus != "pending" || snap.ToStatus != FindingFixed {
-		t.Fatalf("快照的状态流转不对: %s → %s", snap.FromStatus, snap.ToStatus)
+		t.Fatalf("スナップショットの状態遷移が正しくありません: %s → %s", snap.FromStatus, snap.ToStatus)
 	}
 	// スナップショットに描画用フィールドを含め、通知が空になることを防ぐ。
 	if snap.Name != "复测目标" || snap.Severity != "high" {
-		t.Fatalf("快照缺少渲染字段: %+v", snap)
+		t.Fatalf("スナップショットに描画フィールドがありません: %+v", snap)
 	}
 }

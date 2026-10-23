@@ -568,7 +568,7 @@ func TestDeleteByTaskID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !slices.Contains(hosts, "solo-del.test") || !slices.Contains(hosts, "shared-del.test") {
-		t.Fatalf("HostsByTask 缺 host: %v", hosts)
+		t.Fatalf("HostsByTask に host がありません: %v", hosts)
 	}
 
 	n, err := av2.DeleteByTaskID(taskA)
@@ -576,19 +576,19 @@ func TestDeleteByTaskID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 1 {
-		t.Fatalf("DeleteByTaskID: 应删 1 个独有资产,实删 %d", n)
+		t.Fatalf("DeleteByTaskID: 専有資産を 1 件削除するべきですが、実際の削除数は %d 件です", n)
 	}
 	// solo は削除済み
 	if a, _ := av2.GetByIDs([]int64{solo}); len(a) != 0 {
-		t.Fatalf("solo 资产应被删除")
+		t.Fatalf("solo 資産は削除されるべきです")
 	}
 	// shared は保持し、task_ids は taskB のみ残る
 	sa, _ := av2.GetByIDs([]int64{shared})
 	if len(sa) != 1 {
-		t.Fatalf("shared 资产应保留")
+		t.Fatalf("shared 資産は保持されるべきです")
 	}
 	if slices.Contains(sa[0].TaskIDs, taskA) || !slices.Contains(sa[0].TaskIDs, taskB) {
-		t.Fatalf("shared task_ids 应解除 A 保留 B,得 %v", sa[0].TaskIDs)
+		t.Fatalf("shared task_ids は A の関連付けを解除して B を保持するべきです。実際の値: %v", sa[0].TaskIDs)
 	}
 }
 

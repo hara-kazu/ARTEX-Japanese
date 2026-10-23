@@ -35,7 +35,7 @@ func TestReleaseCacheServesFromCache(t *testing.T) {
 		}
 	}
 	if calls != 1 {
-		t.Errorf("5 次查询只应回源 1 次，实际 %d 次", calls)
+		t.Errorf("5 回照会しても取得元への問い合わせは 1 回だけであるべきですが、実際は %d 回でした", calls)
 	}
 }
 
@@ -54,7 +54,7 @@ func TestReleaseCacheForceBypasses(t *testing.T) {
 		t.Fatal(err)
 	}
 	if calls != 2 {
-		t.Errorf("force 应绕过缓存，期望回源 2 次，实际 %d 次", calls)
+		t.Errorf("force はキャッシュを迂回すべきで、取得元への問い合わせは 2 回を期待しましたが、実際は %d 回でした", calls)
 	}
 }
 
@@ -74,7 +74,7 @@ func TestReleaseCacheExpiresAfterTTL(t *testing.T) {
 		t.Fatal(err)
 	}
 	if calls != 2 {
-		t.Errorf("TTL 过期后应重新回源，期望 2 次，实际 %d 次", calls)
+		t.Errorf("TTL の期限切れ後は取得元へ再度問い合わせるべきで、2 回を期待しましたが、実際は %d 回でした", calls)
 	}
 }
 
@@ -86,26 +86,26 @@ func TestReleaseCacheUsesShorterTTLForErrors(t *testing.T) {
 	})
 
 	if _, err := c.get(t.Context(), nil, false); err == nil {
-		t.Fatal("期望返回错误")
+		t.Fatal("エラーが返ることを期待しました")
 	}
 	// 失敗結果も短時間キャッシュし、GitHub に到達できないときにページ読込ごとにタイムアウトを待つことを防ぐ。
 	if _, err := c.get(t.Context(), nil, false); err == nil {
-		t.Fatal("期望返回错误")
+		t.Fatal("エラーが返ることを期待しました")
 	}
 	if calls != 1 {
-		t.Errorf("错误应短时缓存，期望回源 1 次，实际 %d 次", calls)
+		t.Errorf("エラーは短時間キャッシュすべきで、取得元への問い合わせは 1 回を期待しましたが、実際は %d 回でした", calls)
 	}
 
 	// ただしエラーの TTL は成功時より明確に短くし、ネットワーク復旧後すぐに自己回復できること。
 	if releaseErrTTL >= releaseTTL {
-		t.Fatalf("错误 TTL(%v) 必须短于成功 TTL(%v)", releaseErrTTL, releaseTTL)
+		t.Fatalf("エラーの TTL(%v) は成功時の TTL(%v) より短くする必要があります", releaseErrTTL, releaseTTL)
 	}
 	c.at = time.Now().Add(-releaseErrTTL - time.Second)
 	if _, err := c.get(t.Context(), nil, false); err == nil {
-		t.Fatal("期望返回错误")
+		t.Fatal("エラーが返ることを期待しました")
 	}
 	if calls != 2 {
-		t.Errorf("错误 TTL 过期后应重试，期望 2 次，实际 %d 次", calls)
+		t.Errorf("エラーの TTL の期限切れ後は再試行すべきで、2 回を期待しましたが、実際は %d 回でした", calls)
 	}
 }
 
@@ -128,16 +128,16 @@ func TestReleaseCacheDoesNotPoisonOnCallerCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := c.get(ctx, nil, false); err == nil {
-		t.Fatal("调用方已取消时应把错误透传给它")
+		t.Fatal("呼び出し元が取り消し済みの場合はエラーをそのまま返すべきです")
 	}
 
 	// 重要な不変条件：キャンセルされた1回は痕跡を一切残さず、キャッシュには"キャンセル済み"エラーがなく、
 	// 前回の正常な結果を保持していること。
 	if c.err != nil {
-		t.Fatalf("取消错误不应写进缓存，得到 %v", c.err)
+		t.Fatalf("取り消しエラーはキャッシュに書き込むべきではありませんが、%v でした", c.err)
 	}
 	if c.rel == nil || c.rel.TagName != "v0.3.8" {
-		t.Fatalf("缓存应保留上一次的好结果，得到 %+v", c.rel)
+		t.Fatalf("キャッシュは直前の正常な結果を保持すべきですが、%+v でした", c.rel)
 	}
 
 	// そのキャンセルでは新データを取得できなかったので、次の訪問者は取得元へ再照会すべきで、正常に結果を取得でき、
@@ -147,9 +147,9 @@ func TestReleaseCacheDoesNotPoisonOnCallerCancel(t *testing.T) {
 	}
 	rel, err := c.get(t.Context(), nil, false)
 	if err != nil {
-		t.Fatalf("取消之后的正常请求不应报错: %v", err)
+		t.Fatalf("取り消し後の正常なリクエストはエラーになるべきではありません: %v", err)
 	}
 	if rel == nil || rel.TagName != "v0.3.8" {
-		t.Fatalf("应拿到正常结果，得到 %+v", rel)
+		t.Fatalf("正常な結果を取得すべきですが、%+v でした", rel)
 	}
 }

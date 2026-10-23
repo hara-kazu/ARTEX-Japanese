@@ -401,7 +401,7 @@ function JudgeCard() {
               <Separator />
 
               <div className="space-y-4">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">手動承認（モデルが手動承認と判定した場合）</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">手動承認（モデルが「手動承認」と判定した場合）</p>
                 <Field label="承認待ちのタイムアウト（秒）">
                   <Input
                     type="number"

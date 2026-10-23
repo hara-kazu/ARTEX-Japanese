@@ -211,7 +211,7 @@ func TestUploadSkillEncrypted(t *testing.T) {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
 	if msg, _ := out["error"].(string); !strings.Contains(msg, "暗号化されています") {
-		t.Fatalf("error = %q, want 加密 hint", msg)
+		t.Fatalf("error = %q, want 暗号化されています hint", msg)
 	}
 }
 
@@ -227,7 +227,7 @@ func TestUploadSkillRejectsTraversal(t *testing.T) {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
 	if msg, _ := out["error"].(string); !strings.Contains(msg, "無効なパス") {
-		t.Fatalf("error = %q, want 非法路径", msg)
+		t.Fatalf("error = %q, want 無効なパス", msg)
 	}
 	if entries, _ := os.ReadDir(dir); len(entries) != 0 {
 		t.Fatalf("upload left files behind: %v", entries)

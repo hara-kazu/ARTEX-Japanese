@@ -82,7 +82,7 @@ func newNotifyFixture(t *testing.T) *notifyFixture {
 	f := &notifyFixture{s: s, pg: pg, request: request, n: newNotifier(s), taskID: taskID, expID: task.ExpID, cleanupMark: mark}
 	t.Cleanup(func() {
 		if _, err := pg.Exec(`DELETE FROM notification_events WHERE id > $1`, f.cleanupMark); err != nil {
-			t.Logf("清理通知事件失败: %v", err)
+			t.Logf("通知イベントの後処理に失敗しました: %v", err)
 		}
 	})
 	// 全体スイッチを有効にします（他のテストで無効にした可能性があります）。
@@ -107,7 +107,7 @@ func (f *notifyFixture) record(t *testing.T, vulnclass, severity string) int64 {
 		Evidence:      "poc",
 	}, nil)
 	if err != nil {
-		t.Fatalf("记录漏洞失败: %v", err)
+		t.Fatalf("脆弱性の記録に失敗しました: %v", err)
 	}
 	return out.FindingID
 }
@@ -117,7 +117,7 @@ func (f *notifyFixture) channel(t *testing.T, id int64) *db.NotificationChannel 
 	t.Helper()
 	ch, err := f.pg.NotificationChannelByID(context.Background(), id)
 	if err != nil {
-		t.Fatalf("读渠道失败: %v", err)
+		t.Fatalf("通知先の読み取りに失敗しました: %v", err)
 	}
 	return ch
 }
@@ -127,7 +127,7 @@ func (f *notifyFixture) deliver(t *testing.T, chID int64, baseURL string) {
 	t.Helper()
 	ctx := context.Background()
 	if _, _, err := f.pg.FanOutPendingEvents(ctx, 500); err != nil {
-		t.Fatalf("分派失败: %v", err)
+		t.Fatalf("割り当てに失敗しました: %v", err)
 	}
 	f.n.stepRealtime(ctx, f.channel(t, chID), 50, baseURL)
 }
@@ -138,13 +138,13 @@ func (f *notifyFixture) createChannel(t *testing.T, payload map[string]any) int6
 	raw, _ := json.Marshal(payload)
 	r := f.request("POST", "/api/notify/channels", string(raw))
 	if r.Code != 200 {
-		t.Fatalf("建渠道失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("通知先の作成に失敗しました %d: %s", r.Code, r.Body)
 	}
 	var res struct {
 		ID int64 `json:"id"`
 	}
 	if err := json.Unmarshal(r.Body.Bytes(), &res); err != nil || res.ID == 0 {
-		t.Fatalf("建渠道返回异常: %s (%v)", r.Body, err)
+		t.Fatalf("通知先の作成の戻り値が不正です: %s (%v)", r.Body, err)
 	}
 	t.Cleanup(func() { f.pg.Exec(`DELETE FROM notification_channels WHERE id=$1`, res.ID) })
 	return res.ID
@@ -185,7 +185,7 @@ func (f *fakeWebhook) body(t *testing.T, i int) map[string]any {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if i >= len(f.bodies) {
-		t.Fatalf("假接收端只收到 %d 条请求，取不到第 %d 条", len(f.bodies), i)
+		t.Fatalf("模擬受信先が受け取ったリクエストは %d 件だけで、%d 件目を取得できません", len(f.bodies), i)
 	}
 	return f.bodies[i]
 }
@@ -193,7 +193,7 @@ func (f *fakeWebhook) body(t *testing.T, i int) map[string]any {
 func (f *fakeWebhook) last(t *testing.T) map[string]any {
 	t.Helper()
 	if f.count() == 0 {
-		t.Fatal("假接收端没有收到任何请求")
+		t.Fatal("模擬受信先はリクエストを受信していません")
 	}
 	return f.body(t, f.count()-1)
 }
@@ -213,7 +213,7 @@ func markdownText(t *testing.T, body map[string]any) string {
 			}
 		}
 	}
-	t.Fatalf("请求体里没有可识别的正文: %v", body)
+	t.Fatalf("リクエスト本文に識別可能な本文がありません: %v", body)
 	return ""
 }
 
@@ -238,12 +238,12 @@ func TestNotifyEndToEndRealtimeDelivery(t *testing.T) {
 	f.deliver(t, chID, "")
 
 	if hook.count() != 1 {
-		t.Fatalf("应发出 1 条消息，实际 %d", hook.count())
+		t.Fatalf("メッセージは 1 件送信すべきですが、実際は %d 件でした", hook.count())
 	}
 	text := markdownText(t, hook.last(t))
 	for _, want := range []string{"SQL注入", "🟠 高", "要約"} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("消息正文缺少 %q:\n%s", want, text)
+			t.Fatalf("メッセージ本文に %q がありません:\n%s", want, text)
 		}
 	}
 	// 配信は sent へ遷移すること。
@@ -253,7 +253,7 @@ func TestNotifyEndToEndRealtimeDelivery(t *testing.T) {
 		t.Fatal(err)
 	}
 	if pending != 0 {
-		t.Fatalf("投递后仍有 %d 条未标记 sent", pending)
+		t.Fatalf("配信後も sent と記録されていないものが %d 件あります", pending)
 	}
 }
 
@@ -267,10 +267,10 @@ func TestNotifyChannelAPIMasksSecretsAndPreservesOnUpdate(t *testing.T) {
 
 	r := f.request("GET", "/api/notify/channels", "")
 	if r.Code != 200 {
-		t.Fatalf("列渠道失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("通知先の列挙に失敗しました %d: %s", r.Code, r.Body)
 	}
 	if strings.Contains(r.Body.String(), "abc123456") || strings.Contains(r.Body.String(), "SECabcdef123456") {
-		t.Fatalf("接口回显泄露了凭据: %s", r.Body)
+		t.Fatalf("インターフェースの応答から認証情報が漏れています: %s", r.Body)
 	}
 	var listed struct {
 		Channels []struct {
@@ -293,13 +293,13 @@ func TestNotifyChannelAPIMasksSecretsAndPreservesOnUpdate(t *testing.T) {
 		}
 	}
 	if mine == nil {
-		t.Fatal("新建的渠道未出现在列表里")
+		t.Fatal("新しく作成した通知先が一覧にありません")
 	}
 	if !notify.IsMasked(fmt.Sprint(mine.Config["webhook"])) || !notify.IsMasked(fmt.Sprint(mine.Config["secret"])) {
-		t.Fatalf("凭据字段应为掩码值: %v", mine.Config)
+		t.Fatalf("認証情報のフィールドはマスク値であるべきですが、%v でした", mine.Config)
 	}
 	if len(mine.SecretKeys) == 0 {
-		t.Fatal("接口应告知前端哪些字段是凭据")
+		t.Fatal("インターフェースはどのフィールドが認証情報かをフロントエンドへ通知すべきです")
 	}
 
 	// PATCH は名前変更 + マスク済み認証情報だけを返し、元の認証情報をそのまま保持すること。
@@ -308,26 +308,26 @@ func TestNotifyChannelAPIMasksSecretsAndPreservesOnUpdate(t *testing.T) {
 		"config": map[string]any{"webhook": fmt.Sprint(mine.Config["webhook"]), "secret": fmt.Sprint(mine.Config["secret"])},
 	})
 	if r := f.request("PATCH", fmt.Sprintf("/api/notify/channels/%d", chID), string(body)); r.Code != 200 {
-		t.Fatalf("更新失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("更新に失敗しました %d: %s", r.Code, r.Body)
 	}
 	cfg := f.channelConfig(t, chID)
 	if cfg["webhook"] != "https://oapi.dingtalk.com/robot/send?access_token=abc123456" {
-		t.Fatalf("掩码回传把真凭据覆盖了: %v", cfg["webhook"])
+		t.Fatalf("マスク値を返したことで実際の認証情報が上書きされました: %v", cfg["webhook"])
 	}
 	if cfg["secret"] != "SECabcdef123456" {
-		t.Fatalf("掩码回传把 secret 覆盖了: %v", cfg["secret"])
+		t.Fatalf("マスク値を返したことで secret が上書きされました: %v", cfg["secret"])
 	}
 	if f.channel(t, chID).Name != "改名后" {
-		t.Fatal("名字未更新")
+		t.Fatal("名前が更新されていません")
 	}
 
 	// secret の明示的な空欄指定は反映すること（マスクを返すだけなら保持）。
 	body, _ = json.Marshal(map[string]any{"config": map[string]any{"secret": ""}})
 	if r := f.request("PATCH", fmt.Sprintf("/api/notify/channels/%d", chID), string(body)); r.Code != 200 {
-		t.Fatalf("清空 secret 失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("secret の消去に失敗しました %d: %s", r.Code, r.Body)
 	}
 	if _, still := f.channelConfig(t, chID)["secret"]; still {
-		t.Fatal("空串应清空 secret")
+		t.Fatal("空文字列では secret を消去すべきです")
 	}
 }
 
@@ -347,26 +347,26 @@ func TestNotifyChannelAPICreateValidation(t *testing.T) {
 		payload map[string]any
 		wantSub string
 	}{
-		{"类型非法", map[string]any{"name": "x", "kind": "nope", "config": map[string]any{}}, "無効なチャンネルの種類です"},
-		{"缺名称", map[string]any{"kind": notify.KindDingTalk, "config": map[string]any{"webhook": "https://e.com/h"}}, "チャンネル名がありません"},
-		{"缺 webhook", map[string]any{"name": "x", "kind": notify.KindDingTalk, "config": map[string]any{}}, "Webhook"},
-		{"webhook 协议非法", map[string]any{"name": "x", "kind": notify.KindDingTalk, "config": map[string]any{"webhook": "file:///etc/passwd"}}, "Webhook アドレスが無効です"},
-		{"模式非法", map[string]any{"name": "x", "kind": notify.KindDingTalk, "mode": "sometimes", "config": map[string]any{"webhook": "https://e.com/h"}}, "無効な通知モードです"},
+		{"無効な種類", map[string]any{"name": "x", "kind": "nope", "config": map[string]any{}}, "無効なチャンネルの種類です"},
+		{"名前がない", map[string]any{"kind": notify.KindDingTalk, "config": map[string]any{"webhook": "https://e.com/h"}}, "チャンネル名がありません"},
+		{"webhook がない", map[string]any{"name": "x", "kind": notify.KindDingTalk, "config": map[string]any{}}, "Webhook"},
+		{"webhook のプロトコルが無効", map[string]any{"name": "x", "kind": notify.KindDingTalk, "config": map[string]any{"webhook": "file:///etc/passwd"}}, "Webhook アドレスが無効です"},
+		{"無効なモード", map[string]any{"name": "x", "kind": notify.KindDingTalk, "mode": "sometimes", "config": map[string]any{"webhook": "https://e.com/h"}}, "無効な通知モードです"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			raw, _ := json.Marshal(tc.payload)
 			r := f.request("POST", "/api/notify/channels", string(raw))
 			if r.Code != 400 {
-				t.Fatalf("应返回 400，得到 %d: %s", r.Code, r.Body)
+				t.Fatalf("400 を返すべきですが、%d でした: %s", r.Code, r.Body)
 			}
 			if !strings.Contains(r.Body.String(), tc.wantSub) {
-				t.Fatalf("错误信息应提到 %q，得到 %s", tc.wantSub, r.Body)
+				t.Fatalf("エラーメッセージには %q を含めるべきですが、%s でした", tc.wantSub, r.Body)
 			}
 		})
 	}
 	if r := f.request("DELETE", "/api/notify/channels/99999999", ""); r.Code != 404 {
-		t.Fatalf("删除不存在的渠道应 404，得到 %d", r.Code)
+		t.Fatalf("存在しない通知先の削除は 404 を返すべきですが、%d でした", r.Code)
 	}
 }
 
@@ -388,11 +388,11 @@ func TestNotifyFilterBlocksBelowThreshold(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 0 {
-		t.Fatalf("低于阈值的漏洞不该产生投递，得到 %d 条", n)
+		t.Fatalf("閾値未満の脆弱性は配信を生成すべきではありませんが、%d 件でした", n)
 	}
 	f.n.stepRealtime(context.Background(), f.channel(t, chID), 50, "")
 	if hook.count() != 0 {
-		t.Fatal("被过滤的漏洞不应发出消息")
+		t.Fatal("絞り込みで除外された脆弱性のメッセージは送信すべきではありません")
 	}
 }
 
@@ -417,22 +417,22 @@ func TestNotifyDigestBatchesMultipleFindingsIntoOneMessage(t *testing.T) {
 	// 期限前は送信しない。
 	f.n.stepDigest(ctx, ch, 50, "")
 	if hook.count() != 0 {
-		t.Fatal("汇总批次未到期就发了")
+		t.Fatal("集計バッチの期限前に送信されました")
 	}
 
 	// 時刻を古くすると三件を一メッセージへ集約。
 	f.agePendingBatch(t, chID)
 	f.n.stepDigest(ctx, ch, 50, "")
 	if got := hook.count(); got != 1 {
-		t.Fatalf("三条应汇总成一条消息，实际发了 %d 条", got)
+		t.Fatalf("三件を一件のメッセージに集計すべきですが、実際は %d 件送信されました", got)
 	}
 	text := markdownText(t, hook.last(t))
 	if !strings.Contains(text, "過去") || !strings.Contains(text, "3件の脆弱性") {
-		t.Fatalf("汇总消息缺少条数/时间窗文案:\n%s", text)
+		t.Fatalf("集計メッセージに件数/期間の文言がありません:\n%s", text)
 	}
 	for i := 1; i <= 3; i++ {
 		if !strings.Contains(text, fmt.Sprintf("汇总漏洞%d", i)) {
-			t.Fatalf("汇总消息缺少第 %d 条:\n%s", i, text)
+			t.Fatalf("集計メッセージに %d 件目がありません:\n%s", i, text)
 		}
 	}
 	// 同じバッチでは batch_id を共有すること。
@@ -441,7 +441,7 @@ func TestNotifyDigestBatchesMultipleFindingsIntoOneMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	if total != 3 || distinct != 1 {
-		t.Fatalf("三条投递应共享一个 batch_id，得到 distinct=%d total=%d", distinct, total)
+		t.Fatalf("三件の配信は一つの batch_id を共有すべきですが、distinct=%d total=%d でした", distinct, total)
 	}
 }
 
@@ -463,7 +463,7 @@ func TestNotifyDisabledChannelDoesNotSend(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 0 {
-		t.Fatalf("停用渠道不该产生投递，得到 %d 条", n)
+		t.Fatalf("無効な通知先への配信は生成すべきではありませんが、%d 件でした", n)
 	}
 }
 
@@ -479,7 +479,7 @@ func TestNotifyStatusChangeDelivery(t *testing.T) {
 	finding := f.record(t, "状态变更用例", "high")
 	r := f.request("PATCH", fmt.Sprintf("/api/exploration/findings/%d", finding), `{"status":"fixed"}`)
 	if r.Code != 200 {
-		t.Fatalf("改状态失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("状態の変更に失敗しました %d: %s", r.Code, r.Body)
 	}
 	f.deliver(t, chID, "")
 
@@ -493,7 +493,7 @@ func TestNotifyStatusChangeDelivery(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("没有收到含「状态变更 → 已修复」的消息（共 %d 条）", hook.count())
+		t.Fatalf("「状態の変更 → 修正済み」を含むメッセージを受信していません（合計 %d 件）", hook.count())
 	}
 }
 
@@ -507,7 +507,7 @@ func TestNotifyStatusChangeSuppressedByDefault(t *testing.T) {
 	})
 	finding := f.record(t, "不订阅变更", "high")
 	if r := f.request("PATCH", fmt.Sprintf("/api/exploration/findings/%d", finding), `{"status":"false_positive"}`); r.Code != 200 {
-		t.Fatalf("改状态失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("状態の変更に失敗しました %d: %s", r.Code, r.Body)
 	}
 	if _, _, err := f.pg.FanOutPendingEvents(context.Background(), 500); err != nil {
 		t.Fatal(err)
@@ -519,7 +519,7 @@ WHERE d.channel_id=$1 AND e.kind=$2`, chID, notify.EventFindingStatusChanged).Sc
 		t.Fatal(err)
 	}
 	if n != 0 {
-		t.Fatalf("未订阅状态变更的渠道不该收到状态变更投递，得到 %d 条", n)
+		t.Fatalf("状態変更を購読していない通知先は状態変更の配信を受信すべきではありませんが、%d 件でした", n)
 	}
 }
 
@@ -532,14 +532,14 @@ func TestNotifyTestMessageEndpoint(t *testing.T) {
 		"config": map[string]any{"webhook": hook.URL},
 	})
 	if r := f.request("POST", fmt.Sprintf("/api/notify/channels/%d/test", chID), ""); r.Code != 200 {
-		t.Fatalf("测试发送失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("テスト送信に失敗しました %d: %s", r.Code, r.Body)
 	}
 	if hook.count() != 1 {
-		t.Fatalf("假接收端应收到 1 条测试消息，得到 %d", hook.count())
+		t.Fatalf("模擬受信先はテストメッセージを 1 件受信すべきですが、%d 件でした", hook.count())
 	}
 	// テストメッセージは一目でテストと分かり、本当の脆弱性と誤認させないこと。
 	if text := markdownText(t, hook.last(t)); !strings.Contains(text, "テスト") {
-		t.Fatalf("测试消息应标明是测试: %s", text)
+		t.Fatalf("テストメッセージにはテストであることを明記すべきです: %s", text)
 	}
 	// 設定の不正時は通知先の元のエラーをそのまま返すこと。
 	badID := f.createChannel(t, map[string]any{
@@ -548,7 +548,7 @@ func TestNotifyTestMessageEndpoint(t *testing.T) {
 		"config": map[string]any{"webhook": "http://127.0.0.1:1/hook"},
 	})
 	if r := f.request("POST", fmt.Sprintf("/api/notify/channels/%d/test", badID), ""); r.Code != 502 {
-		t.Fatalf("投递失败应回 502，得到 %d: %s", r.Code, r.Body)
+		t.Fatalf("配信失敗時は 502 を返すべきですが、%d でした: %s", r.Code, r.Body)
 	}
 }
 
@@ -578,12 +578,12 @@ func TestNotifyDeliveriesHistoryAndRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	if state != db.NotifyStateFailed {
-		t.Fatalf("重试耗尽后应为 failed，得到 %s", state)
+		t.Fatalf("再試行を使い切った後は failed であるべきですが、%s でした", state)
 	}
 
 	r := f.request("GET", fmt.Sprintf("/api/notify/deliveries?channel_id=%d&state=failed", chID), "")
 	if r.Code != 200 {
-		t.Fatalf("查历史失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("履歴の照会に失敗しました %d: %s", r.Code, r.Body)
 	}
 	var hist struct {
 		Deliveries []struct {
@@ -599,28 +599,28 @@ func TestNotifyDeliveriesHistoryAndRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	if hist.Total != 1 || len(hist.Deliveries) != 1 {
-		t.Fatalf("应查到 1 条失败投递，得到 total=%d len=%d", hist.Total, len(hist.Deliveries))
+		t.Fatalf("失敗した配信が 1 件あるべきですが、total=%d len=%d でした", hist.Total, len(hist.Deliveries))
 	}
 	if hist.Deliveries[0].LastError == "" {
-		t.Fatal("历史里应带上失败原因，否则用户无法排查")
+		t.Fatal("履歴には失敗理由を含めるべきです。そうでなければユーザーが原因を調べられません")
 	}
 	if hist.Deliveries[0].Attempts < db.MaxNotifyAttempts {
-		t.Fatalf("尝试次数应被记录，得到 %d", hist.Deliveries[0].Attempts)
+		t.Fatalf("試行回数は記録すべきですが、%d でした", hist.Deliveries[0].Attempts)
 	}
 	if hist.Deliveries[0].Title != "会失败的推送" {
-		t.Fatalf("历史应带出漏洞标题，得到 %q", hist.Deliveries[0].Title)
+		t.Fatalf("履歴には脆弱性のタイトルを含めるべきですが、%q でした", hist.Deliveries[0].Title)
 	}
 
 	// 手動の再送：pending へ戻り、試行回数をゼロにすること。
 	if r := f.request("POST", fmt.Sprintf("/api/notify/deliveries/%d/retry", hist.Deliveries[0].ID), ""); r.Code != 200 {
-		t.Fatalf("重发失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("再送に失敗しました %d: %s", r.Code, r.Body)
 	}
 	var attempts int
 	if err := f.pg.QueryRow(`SELECT state, attempts FROM notification_deliveries WHERE id=$1`, hist.Deliveries[0].ID).Scan(&state, &attempts); err != nil {
 		t.Fatal(err)
 	}
 	if state != db.NotifyStatePending || attempts != 0 {
-		t.Fatalf("重发后应为 pending 且 attempts=0，得到 %s/%d", state, attempts)
+		t.Fatalf("再送後は pending かつ attempts=0 であるべきですが、%s/%d でした", state, attempts)
 	}
 }
 
@@ -628,7 +628,7 @@ func TestNotifyMetaAndSettingsRoundTrip(t *testing.T) {
 	f := newNotifyFixture(t)
 	r := f.request("GET", "/api/notify/meta", "")
 	if r.Code != 200 {
-		t.Fatalf("meta 失败: %s", r.Body)
+		t.Fatalf("meta に失敗しました: %s", r.Body)
 	}
 	var meta struct {
 		Kinds []struct {
@@ -640,27 +640,27 @@ func TestNotifyMetaAndSettingsRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(meta.Kinds) != len(notify.Kinds()) {
-		t.Fatalf("meta 应列出全部 %d 个渠道，得到 %d", len(notify.Kinds()), len(meta.Kinds))
+		t.Fatalf("meta は全 %d 件の通知先を列挙すべきですが、%d 件でした", len(notify.Kinds()), len(meta.Kinds))
 	}
 	for _, k := range meta.Kinds {
 		if len(k.SecretKeys) == 0 {
-			t.Errorf("渠道 %s 未上报凭据字段", k.Kind)
+			t.Errorf("通知先 %s が認証情報のフィールドを報告していません", k.Kind)
 		}
 	}
 
 	// 三つの全体設定の往復。末尾スラッシュを正規化し、リンクが "//function/..." にならないこと。
 	if r := f.request("PUT", "/api/settings", `{"notify_public_base_url":"https://artex.example.com/","notify_digest_interval_min":15,"notify_enabled":true}`); r.Code != 200 {
-		t.Fatalf("写设置失败 %d: %s", r.Code, r.Body)
+		t.Fatalf("設定の書き込みに失敗しました %d: %s", r.Code, r.Body)
 	}
 	t.Cleanup(func() {
 		f.pg.Exec(`DELETE FROM settings WHERE key IN ($1,$2)`, settingNotifyPublicBaseURL, settingNotifyDigestMinutes)
 	})
 	payload := f.s.settingsPayload()
 	if payload["notify_public_base_url"] != "https://artex.example.com" {
-		t.Fatalf("回链地址未规范化: %v", payload["notify_public_base_url"])
+		t.Fatalf("リンク先アドレスが正規化されていません: %v", payload["notify_public_base_url"])
 	}
 	if payload["notify_digest_interval_min"] != 15 {
-		t.Fatalf("汇总周期未生效: %v", payload["notify_digest_interval_min"])
+		t.Fatalf("集計周期が反映されていません: %v", payload["notify_digest_interval_min"])
 	}
 
 	// 不正な値は拒否すること。
@@ -670,7 +670,7 @@ func TestNotifyMetaAndSettingsRoundTrip(t *testing.T) {
 		`{"notify_digest_interval_min":99999}`,
 	} {
 		if r := f.request("PUT", "/api/settings", body); r.Code != 400 {
-			t.Errorf("%s 应返回 400，得到 %d", body, r.Code)
+			t.Errorf("%s は 400 を返すべきですが、%d でした", body, r.Code)
 		}
 	}
 }
@@ -691,11 +691,11 @@ func TestNotifyDeepLinkUsesPublicBaseURL(t *testing.T) {
 	body := hook.last(t)
 	card, _ := body["actionCard"].(map[string]any)
 	if card == nil {
-		t.Fatalf("有回链时应用 ActionCard，得到 msgtype=%v", body["msgtype"])
+		t.Fatalf("リンク先がある場合は ActionCard を使用すべきですが、msgtype=%v でした", body["msgtype"])
 	}
 	want := fmt.Sprintf("https://artex.example.com/function/findings/detail?id=%d", finding)
 	if card["singleURL"] != want {
-		t.Fatalf("回链不对\n期望 %s\n得到 %v", want, card["singleURL"])
+		t.Fatalf("リンク先が不正です\n期待値 %s\n実際の値 %v", want, card["singleURL"])
 	}
 }
 
@@ -714,10 +714,10 @@ func TestNotifyNoDeepLinkWithoutBaseURL(t *testing.T) {
 
 	body := hook.last(t)
 	if body["msgtype"] != "markdown" {
-		t.Fatalf("未配外部地址时应发 markdown，得到 %v", body["msgtype"])
+		t.Fatalf("外部アドレスが未設定なら markdown を送信すべきですが、%v でした", body["msgtype"])
 	}
 	if text := markdownText(t, body); strings.Contains(text, "詳細を表示") {
-		t.Fatalf("未配外部地址时不该出现详情链接:\n%s", text)
+		t.Fatalf("外部アドレスが未設定なら詳細リンクは含めるべきではありません:\n%s", text)
 	}
 }
 
@@ -755,7 +755,7 @@ func TestNotifyDigestSegmentsAndDefersRemainder(t *testing.T) {
 
 	f.n.stepDigest(ctx, ch, 50, "")
 	if hook.count() != 1 {
-		t.Fatalf("应只发出一条消息，得到 %d", hook.count())
+		t.Fatalf("メッセージは一件だけ送信すべきですが、%d 件でした", hook.count())
 	}
 
 	var sent, pending int
@@ -767,17 +767,17 @@ func TestNotifyDigestSegmentsAndDefersRemainder(t *testing.T) {
 		t.Fatal(err)
 	}
 	if sent == 0 {
-		t.Fatal("应有条目被标记为已送达")
+		t.Fatal("配信済みと記録された項目があるべきです")
 	}
 	if pending == 0 {
-		t.Fatalf("一批 %d 条不可能全装进 4096 字节，应有剩余待发；sent=%d", total, sent)
+		t.Fatalf("一つのバッチの %d 件すべては 4096 バイトに収まらず、送信待ちが残るべきです；sent=%d", total, sent)
 	}
 	if sent+pending != total {
-		t.Fatalf("条目数对不上：sent=%d pending=%d total=%d（既没送达也没待发=丢失）", sent, pending, total)
+		t.Fatalf("項目数が一致しません：sent=%d pending=%d total=%d（配信済みでも送信待ちでもない=消失）", sent, pending, total)
 	}
 	// 本文で、今回含めなかった残り件数を正確に伝えること。
 	if text := markdownText(t, hook.last(t)); !strings.Contains(text, "残り") {
-		t.Fatalf("消息应说明还有条目未包含在本条:\n%.400s", text)
+		t.Fatalf("メッセージには今回含めていない項目があることを示すべきです:\n%.400s", text)
 	}
 
 	// 後回しの項目は再試行予算を消費しないこと。取得時の attempts の仮 +1 を延期時に戻す。
@@ -787,7 +787,7 @@ WHERE channel_id=$1 AND state=$2`, chID, db.NotifyStatePending).Scan(&maxAttempt
 		t.Fatal(err)
 	}
 	if maxAttempts > 0 {
-		t.Fatalf("被推迟的条目不该消耗重试次数（否则几条之后就会被判失败），得到 attempts=%d", maxAttempts)
+		t.Fatalf("延期した項目は再試行回数を消費すべきではありません（そうでなければ数件後に失敗と判定されます）。attempts=%d でした", maxAttempts)
 	}
 
 	// 収束まで繰り返し、**最終的な全件到着**と実際に複数回に分かれたことを検証。
@@ -805,16 +805,16 @@ WHERE channel_id=$1 AND state <> $2 AND state <> $3`, chID, db.NotifyStateSent, 
 		}
 		rounds++
 		if rounds > total+5 {
-			t.Fatalf("分段投递不收敛：跑了 %d 轮仍有 %d 条悬而未决", rounds, undelivered)
+			t.Fatalf("分割配信が収束しません：%d 回実行しても %d 件が未確定です", rounds, undelivered)
 		}
 		before := hook.count()
 		f.n.stepDigest(ctx, ch, 50, "")
 		if hook.count() == before {
-			t.Fatalf("第 %d 轮没有任何进展，剩余 %d 条会永久卡住", rounds, undelivered)
+			t.Fatalf("%d 回目で進展がなく、残り %d 件が永久に停止します", rounds, undelivered)
 		}
 	}
 	if rounds < 2 {
-		t.Fatalf("一条 4096 字节的消息装不下 %d 条长标题漏洞，应分多轮发出，实际只用了 %d 轮", total, rounds)
+		t.Fatalf("4096 バイトの一件のメッセージには長いタイトルの脆弱性 %d 件は収まらず、複数回に分けて送信すべきですが、実際は %d 回だけでした", total, rounds)
 	}
 	// 初回後はすべて**残りの続送だけ**で、通知先が拒否した項目がないこと。
 	var failed int
@@ -823,7 +823,7 @@ WHERE channel_id=$1 AND state <> $2 AND state <> $3`, chID, db.NotifyStateSent, 
 		t.Fatal(err)
 	}
 	if failed != 0 {
-		t.Fatalf("假接收端始终返回成功，不该有失败条目，得到 %d", failed)
+		t.Fatalf("模擬受信先は常に成功を返すため、失敗した項目はないべきですが、%d 件でした", failed)
 	}
 }
 
@@ -836,13 +836,13 @@ WHERE channel_id=$1 AND state <> $2 AND state <> $3`, chID, db.NotifyStateSent, 
 // 両者の長さ一致を検証し、CI でずれを検出します。
 func TestNotifyBackoffTableMatchesAttemptBudget(t *testing.T) {
 	if len(notifyBackoff) != db.MaxNotifyAttempts {
-		t.Fatalf("退避档位数(%d)与最大尝试次数(%d)不一致——改一个必须同时改另一个",
+		t.Fatalf("バックオフの段階数(%d)と最大試行回数(%d)が一致しません——一方を変更したら、もう一方も変更する必要があります",
 			len(notifyBackoff), db.MaxNotifyAttempts)
 	}
 	// バックオフは単調非減少とし、再試行の加速による制限の悪化を防ぎます。
 	for i := 1; i < len(notifyBackoff); i++ {
 		if notifyBackoff[i] < notifyBackoff[i-1] {
-			t.Fatalf("退避间隔必须单调不减：第 %d 档 %v < 第 %d 档 %v",
+			t.Fatalf("バックオフの間隔は単調非減少である必要があります：%d 番目 %v < %d 番目 %v",
 				i, notifyBackoff[i], i-1, notifyBackoff[i-1])
 		}
 	}
@@ -857,24 +857,24 @@ func TestNotifyRateLimitDoesNotConsumeRetryBudget(t *testing.T) {
 	now := time.Now()
 	// 一分に 1 件：満杯でも最大 1 件。
 	if got := n.takeTokens(1, 1, notifyMaxSendsPerChannelPerTick, now); got != 1 {
-		t.Fatalf("满桶时每分钟 1 条应取 1 个令牌，得到 %d", got)
+		t.Fatalf("バケットが満杯なら毎分 1 件の設定でトークンを 1 個取得すべきですが、%d でした", got)
 	}
 	if got := n.takeTokens(1, 1, notifyMaxSendsPerChannelPerTick, now.Add(time.Millisecond)); got != 0 {
-		t.Fatalf("令牌耗尽后应立即返回 0，得到 %d", got)
+		t.Fatalf("トークンを使い切った後は直ちに 0 を返すべきですが、%d でした", got)
 	}
 	if got := n.takeTokens(1, 1, notifyMaxSendsPerChannelPerTick, now.Add(30*time.Second)); got != 0 {
-		t.Fatalf("半程不应补满一个令牌，得到 %d", got)
+		t.Fatalf("周期の半分ではトークンを一個分補充すべきではありませんが、%d でした", got)
 	}
 	if got := n.takeTokens(1, 1, notifyMaxSendsPerChannelPerTick, now.Add(time.Minute)); got != 1 {
-		t.Fatalf("满一个周期应补回 1 个令牌，得到 %d", got)
+		t.Fatalf("一周期後はトークンを 1 個補充すべきですが、%d でした", got)
 	}
 	// 無制限の通知先にも有限の上限を使い、一回の処理が無限の蓄積で停止するのを防ぎます。
 	if got := n.takeTokens(2, 0, notifyUnlimitedBurstPerTick+10, now); got != notifyUnlimitedBurstPerTick {
-		t.Fatalf("不限流应返回每轮上限 %d，得到 %d", notifyUnlimitedBurstPerTick, got)
+		t.Fatalf("レート制限がない場合は各回の上限 %d を返すべきですが、%d でした", notifyUnlimitedBurstPerTick, got)
 	}
 	// 通知先ごとのバケットは独立。
 	if got := n.takeTokens(1, 1, notifyMaxSendsPerChannelPerTick, now.Add(time.Millisecond)); got != 0 {
-		t.Fatalf("渠道 1 的桶应仍然为空，得到 %d", got)
+		t.Fatalf("通知先 1 のバケットは空のままであるべきですが、%d でした", got)
 	}
 }
 
@@ -888,23 +888,23 @@ func TestNotifyTakeTokensKeepsUnusedTokens(t *testing.T) {
 	now := time.Now()
 	// 初期は満杯（100）、今回必要なのは 5 個だけ。
 	if got := n.takeTokens(1, 100, 5, now); got != 5 {
-		t.Fatalf("want=5 时应恰好取 5 个令牌，得到 %d", got)
+		t.Fatalf("want=5 の場合はトークンをちょうど 5 個取得すべきですが、%d でした", got)
 	}
 	// 重要な検証：残り 95 個は破棄されずバケットに残ること。
 	// 時刻を進めず、補充分ではなく既存分だけを取得させます。
 	if got := n.takeTokens(1, 100, 95, now); got != 95 {
-		t.Fatalf("剩余令牌应仍可取用（期望 95），得到 %d——桶被整轮抽空了", got)
+		t.Fatalf("残りのトークンも取得できるべきですが（期待値 95）、%d でした——バケット全体が一回で空になっています", got)
 	}
 	if got := n.takeTokens(1, 100, 1, now); got != 0 {
-		t.Fatalf("桶已取尽，应返回 0，得到 %d", got)
+		t.Fatalf("バケットは空なので 0 を返すべきですが、%d でした", got)
 	}
 	// want<=0 では消費しないこと（空の回は消費しない）。
 	n2 := &Notifier{buckets: map[int64]*notifyBucket{}}
 	if got := n2.takeTokens(1, 20, 0, now); got != 0 {
-		t.Fatalf("want=0 应返回 0，得到 %d", got)
+		t.Fatalf("want=0 は 0 を返すべきですが、%d でした", got)
 	}
 	if got := n2.takeTokens(1, 20, 20, now); got != 20 {
-		t.Fatalf("want=0 的那次不该消耗令牌，应仍可取满 20，得到 %d", got)
+		t.Fatalf("want=0 の呼び出しではトークンを消費せず、その後も 20 個すべて取得できるべきですが、%d でした", got)
 	}
 }
 
@@ -919,17 +919,17 @@ func TestDigestTickPlanDecouplesBatchSizeFromSendBudget(t *testing.T) {
 	tokens, claimLimit := digestTickPlan()
 	// 一バッチ = 一メッセージ = 一要求 = 一トークン。トークンの単位はメッセージで、脆弱性ではありません。
 	if tokens != 1 {
-		t.Fatalf("汇总一批只发一条消息，应恰好消耗 1 个令牌，得到 %d", tokens)
+		t.Fatalf("集計バッチはメッセージを一件だけ送るため、トークンをちょうど 1 個消費すべきですが、%d でした", tokens)
 	}
 	if claimLimit != db.MaxDigestBatchSize {
-		t.Fatalf("汇总批次大小应为内存上界 db.MaxDigestBatchSize=%d，得到 %d",
+		t.Fatalf("集計バッチのサイズはメモリー上限 db.MaxDigestBatchSize=%d であるべきですが、%d でした",
 			db.MaxDigestBatchSize, claimLimit)
 	}
 	// 重要な関係：バッチサイズは各回の要求予算より十分大きいこと。同程度になれば、
 	// 「メッセージ件数」と「一バッチの脆弱性件数」を再び混同しています。
 	if claimLimit <= notifyMaxSendsPerChannelPerTick {
-		t.Fatalf("汇总批次大小 %d 不应受每轮请求预算 %d 约束——"+
-			"请求预算是由租约倒推的「发几次请求」，与「一批装几条漏洞」是两个量纲",
+		t.Fatalf("集計バッチのサイズ %d は各回のリクエスト予算 %d に制限されるべきではありません——"+
+			"リクエスト予算はリースから逆算した「何回リクエストするか」であり、「一バッチに脆弱性を何件含めるか」とは別の尺度です",
 			claimLimit, notifyMaxSendsPerChannelPerTick)
 	}
 }
@@ -943,9 +943,9 @@ func TestDigestTickPlanDecouplesBatchSizeFromSendBudget(t *testing.T) {
 func TestNotifyTickBudgetFitsWithinLease(t *testing.T) {
 	worst := time.Duration(notifyMaxSendsPerChannelPerTick) * notifySendTimeout
 	if worst >= notifyLease {
-		t.Fatalf("单渠道一轮的最坏耗时 %v 不应达到或超过租约 %v"+
+		t.Fatalf("一つの通知先の一回の最悪所要時間 %v はリース期間 %v 以上になってはいけません"+
 			"（notifyMaxSendsPerChannelPerTick=%d × notifySendTimeout=%v）——"+
-			"改这三个常量中的任意一个都要同步检查另外两个",
+			"この三つの定数のどれかを変更したら、残り二つも確認する必要があります",
 			worst, notifyLease, notifyMaxSendsPerChannelPerTick, notifySendTimeout)
 	}
 }

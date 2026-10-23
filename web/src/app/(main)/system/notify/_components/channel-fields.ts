@@ -42,7 +42,7 @@ export const CHANNEL_FIELDS: Record<string, FieldDef[]> = {
       key: "secret",
       label: "署名キー",
       kind: "password",
-      help: "ボットの安全設定で「署名」を選択した場合に入力します。カスタムキーワードを使用する場合や安全設定が無効の場合は空欄にします",
+      help: "ボットの安全設定で「署名」を選択した場合に入力します。「カスタムキーワード」を使用する場合や安全設定が無効の場合は空欄にします",
     },
   ],
   feishu: [
@@ -52,7 +52,7 @@ export const CHANNEL_FIELDS: Record<string, FieldDef[]> = {
       kind: "text",
       placeholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
     },
-    { key: "secret", label: "署名検証キー", kind: "password", help: "ボットの署名検証が有効な場合に入力し、それ以外は空欄にします" },
+    { key: "secret", label: "署名検証キー", kind: "password", help: "ボットの「署名検証」が有効な場合に入力し、それ以外は空欄にします" },
   ],
   wecom: [
     {
