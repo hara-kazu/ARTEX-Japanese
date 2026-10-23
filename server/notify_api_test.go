@@ -830,7 +830,7 @@ WHERE channel_id=$1 AND state <> $2 AND state <> $3`, chID, db.NotifyStateSent, 
 // TestNotifyBackoffTableMatchesAttemptBudget は設定間のずれを防ぐ検証。
 //
 // 再試行予算（db.MaxNotifyAttempts）とバックオフ列（notifyBackoff）は別パッケージにあり、
-// 前者は状態機械の方針、後者はエンジンの実行間隔です。予算だけ 5 回へ上げ、
+// 前者は状態機械の方針、後者はエンジンの実行間隔です。片方だけを変更すると——たとえば予算だけ 5 回へ上げ、
 // バックオフを追加し忘れると、エラーにならず、第 4、5 回も最後の間隔を使い、
 // 「再試行が理由なく遅くなる」ように見え、ここが原因とは気付きにくくなります。
 // 両者の長さ一致を検証し、CI でずれを検出します。

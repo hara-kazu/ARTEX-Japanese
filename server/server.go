@@ -1386,7 +1386,7 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 	cfg.ThinkingType = req.ThinkingType
 	cfg.ReasoningEffort = req.ReasoningEffort
 	// 同様に送受信モードもこの profile の選択に従う：一方のチャネルのみ対応する端点は、ここで
-	// 明らかにし、セッションまで"テスト済み設定が全く動かない"と気付かないことを防ぐ。
+	// 明らかにし、セッションまで"テストに合格した設定が全く動かない"と気付かないことを防ぐ。
 	if req.Streaming != nil {
 		cfg.Stream = *req.Streaming
 	}

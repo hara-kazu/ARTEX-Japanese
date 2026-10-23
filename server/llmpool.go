@@ -83,7 +83,7 @@ func (s *Server) poolChain(headID int64, headProv llm.Provider, headCfg agent.Co
 	}
 	profs, err := s.m.pg.PoolProfiles()
 	if err != nil {
-		log.Printf("[llmpool] ラウンドロビンチェーンの読み込みに失敗しました: %v", err)
+		log.Printf("[llmpool] 巡回チェーンの読み込みに失敗しました: %v", err)
 		return nil
 	}
 	var head *db.LLMProfile
@@ -136,7 +136,7 @@ func (s *Server) poolForActive(activeID int64, prov llm.Provider, cfg agent.Conf
 	for _, m := range pool.Members() {
 		names = append(names, m.Name+"/"+m.Model)
 	}
-	log.Printf("[llmpool] LLM のラウンドロビンを有効にしました。チェーン(%d): %v", len(names), names)
+	log.Printf("[llmpool] LLM の巡回を有効にしました。チェーン(%d): %v", len(names), names)
 	return pool
 }
 

@@ -32,7 +32,7 @@ type ComposerLayout = "inline" | "stacked";
 const preparationLabels = {
   preparing: "コンテキストを準備しています…",
   summarizing_history: "以前のサイド質問の履歴を整理しています…",
-  compressing_snapshot: "サイド質問用のコンテキストを圧縮しています…",
+  compressing_snapshot: "サイド質問用のコンテキストのコピーを圧縮しています…",
   retrying: "モデルのコンテキスト上限を超えたため、縮小して再試行しています…",
   answering: "回答しています…",
 };

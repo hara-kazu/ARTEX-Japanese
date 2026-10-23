@@ -194,7 +194,7 @@ var builtinAgents = []builtinAgent{
 		// Now はグローバル runtime 変数(server.globalPromptVars を参照)であり、各 agent のカタログに
 		// 重複定義しない。withGlobalVars で追加する際にグローバル項目と名前が重なるため。
 	}, false, nil},
-	{"planner", "計画", "planner", "状況を確認し、目標の達成を判定します。未探索の新しい方向がある場合に探索インテントを追加します（タスクごとに1つの計画ループ）。", []promptVar{
+	{"planner", "計画", "planner", "状況を確認し、目標の達成を判定します。まだカバーされていない新しい方向が実際にある場合にのみ探索インテントを追加します（タスクごとに1つの計画ループ）。", []promptVar{
 		{"Goal", "タスク全体の目標", "example.com の管理者権限を取得", "exploration"},
 		{"AssetSummary", "資産数 / 種類別の分布の要約（任意）", "domain:3 ip:5 site:2", "distilled"},
 	}, false, nil},

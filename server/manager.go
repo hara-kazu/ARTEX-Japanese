@@ -265,7 +265,7 @@ const (
 	// LLM 順次切り替え（フェイルオーバー）。既定は無効。有効なら「全体の有効設定」を使う agent が現在の設定を
 	// 利用できない場合（残高不足/key 失効/レート制限/サービス異常）、次の設定へ自動で切り替えます。
 	// settingLLMPoolBindFallback は順次切り替え有効時だけ意味を持ちます。既定は無効で、agent/タスクが明示的に
-	// 関連付けた設定を専有し、失敗もそのまま失敗とします。有効なら関連付けた設定の失敗時も順次切り替えチェーンへ進みます。
+	// 関連付けた設定だけを使い、失敗もそのまま失敗とします。有効なら関連付けた設定の失敗時も順次切り替えチェーンへ進みます。
 	settingLLMPoolOn           = "llm_pool_enabled"
 	settingLLMPoolBindFallback = "llm_pool_bind_fallback"
 	// タスク同時実行上限：スイッチ + 最大数。既定は無効。有効時の既定上限は 5（defaultConcurrencyLimit を参照）。

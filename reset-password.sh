@@ -4,7 +4,7 @@
 #
 # ログインユーザー名は ARTEX 固定です。パスワードはデータベースの settings テーブルの
 # auth.password_hash キーに bcrypt ハッシュで保存します。このスクリプトは接続後、
-# pgcrypto で bcrypt ハッシュを生成して同じキーへ保存し、バックエンドの検証（golang.org/x/crypto/bcrypt）と完全に互換です。
+# pgcrypto を使ってデータベース内で bcrypt ハッシュを生成して同じキーへ保存し、バックエンドの検証（golang.org/x/crypto/bcrypt）と完全に互換です。
 #
 # 2つの導入方法：
 #   local （標準）—— ホストから psql で直接接続します。接続情報の優先度：

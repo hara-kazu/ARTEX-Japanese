@@ -145,7 +145,7 @@ func PostgresDSN() (dsn, source string, err error) {
 	if db.Host != "" || db.DBName != "" || db.User != "" {
 		return db.buildDSN(), "設定ファイル " + Path() + " (database フィールド)", nil
 	}
-	return "", "", fmt.Errorf("データベース設定がありません。環境変数 ARTEX_PG_DSN または設定ファイル %s の database（dsn または host/user/dbname）を設定して再試行してください", Path())
+	return "", "", fmt.Errorf("データベース設定が見つかりません：環境変数 ARTEX_PG_DSN が未設定で、設定ファイル %s にも database（dsn または host/user/dbname）がありません。この設定ファイルを作成するか、環境変数を設定してから再試行してください", Path())
 }
 
 func (d Database) buildDSN() string {

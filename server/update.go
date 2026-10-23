@@ -70,7 +70,7 @@ const (
 	// 失敗結果も短時間キャッシュし、GitHub に到達できないときページ読込ごとにタイムアウトを待つことを防ぐ；
 	// ただし TTL は短くし、ネットワーク復旧後に速やかに自然回復させる。
 	releaseErrTTL = 2 * time.Minute
-	// 照会用のタイムアウト。NewClient の 30 分タイムアウトは全パッケージのダウンロード用で、バージョン照会ではそこまで待てない。
+	// 照会用のタイムアウト。NewClient の 30 分タイムアウトはパッケージ全体のダウンロード用で、バージョン照会ではそこまで待てない。
 	releaseTimeout = 20 * time.Second
 )
 
@@ -265,7 +265,7 @@ func (s *Server) updateCheck(w http.ResponseWriter, r *http.Request) {
 
 // updateApply は新版をダウンロードしてステージングし、完了後にプロセスを終了して監視スクリプトに再起動を委ねる。
 //
-// 即座に 202 を返し、実作業はバックグラウンドの goroutine で実行：全パッケージのダウンロードは数分かかり、
+// 即座に 202 を返し、実作業はバックグラウンドの goroutine で実行：パッケージ全体のダウンロードには数分かかることがあり、
 // リクエストに紐付けるとリバースプロキシのタイムアウトで切断される。進捗は /api/update/stream を使用。
 func (s *Server) updateApply(w http.ResponseWriter, r *http.Request) {
 	current := BuildVersion

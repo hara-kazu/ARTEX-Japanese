@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ARTEX の更新スクリプト：① Docker のイメージを更新  ② ローカルの実行ファイルを再ビルド
+# ARTEX の更新スクリプト：① Docker 更新（新しいイメージを取得して再作成）  ② ローカルの実行ファイルを再ビルド
 # install.sh に対応：install は初回導入、update は新バージョンへの更新を担当する。
 # DB 移行の手動実行は不要——artex は起動のたびに schema.sql（ADD COLUMN/CREATE
 # INDEX IF NOT EXISTS を含む）を冪等に再実行するため、“再起動で移行”される。データ（pgdata ボリューム、./data、./skills）は影響を受けない。

@@ -109,7 +109,7 @@ func (c webhookChannel) Send(ctx context.Context, cfg map[string]any, m Message)
 	}
 
 	// GET はリクエストボディを含めない：内容を query に詰めるのはテンプレートの能力の範囲外で、GET の意味にも合わないため、
-	// GET は「一致したらフックを発火」のような受信側にのみ適する。
+	// GET は「アクセスされるとすぐにフックを発火」のような受信側にのみ適する。
 	var payload any
 	if method != http.MethodGet {
 		body, err := renderWebhookBody(cfgString(cfg, "body_template"), m)

@@ -775,7 +775,7 @@ export const findings: Finding[] = [
     status: "pending",
     summary: "内部 Jenkins の未認証 Script Console でリモートコマンド実行",
     evidence:
-      "GET /script で認証なしに Groovy を実行。'whoami'.execute().text → SYSTEM。認証情報ストアから acme\\svc_deploy も取得。",
+      "GET /script で認証なしに Groovy を実行。'whoami'.execute().text → SYSTEM。認証情報ストアからドメインアカウント acme\\svc_deploy も取得。",
     intent_id: "i11",
     task_id: "t-acme-web",
     task_description: "Acme 公式サイトと管理画面の外部ペネトレーションテスト",
@@ -802,8 +802,8 @@ export const findings: Finding[] = [
     severity: "critical",
     status: "confirmed",
     report:
-      "## 脆弱性の概要\n\n外部の Fastjson RCE で DMZ に足場を確立し、sudo による権限昇格、2枚の NIC による境界突破、Jenkins の未認証 RCE を経てドメインアカウント `svc_deploy` を取得。**Domain Admins** のメンバーであり、**DC01** を完全に制御できました。\n\n## 影響\n\n- ドメイン管理者権限で全ホストとアカウントを制御可能\n- `secretsdump` で `krbtgt` を含む全ドメインの NTLM ハッシュを取得し、ゴールデンチケットを作成して長期間潜伏可能\n- 内部の検証目標を達成\n\n## 再現手順\n\n1. `svc_deploy` でログインし、ハッシュを取得：\n\n```\npsexec.py acme/svc_deploy@10.10.10.10\nsecretsdump.py acme/svc_deploy@10.10.10.10\n```\n\n2. DC01 の SYSTEM 権限でドメイン全体のハッシュを取得\n\n## 修正案\n\n- サービスアカウントの権限を絞り、Domain Admins から除外し、階層管理（tiering）を実施\n- `krbtgt` を連続2回リセットし、サービスアカウントのパスワードを強化・変更\n- DMZ と内部の分離、および前述の RCE / 権限昇格の経路を修正\n",
-    summary: "DC01 を制御（Domain Admin）— 内部の検証目標を達成",
+      "## 脆弱性の概要\n\n外部の Fastjson RCE で DMZ に足場を確立し、sudo による権限昇格、2枚の NIC による境界突破、Jenkins の未認証 RCE を経てドメインアカウント `svc_deploy` を取得。**Domain Admins** のメンバーであり、ドメインコントローラー **DC01** を完全に制御できました。\n\n## 影響\n\n- ドメイン管理者権限でドメイン内の全ホストとアカウントを制御可能\n- `secretsdump` で `krbtgt` を含むドメイン全体の NTLM ハッシュを取得し、ゴールデンチケットを作成して長期間潜伏可能\n- 内部の検証目標を達成\n\n## 再現手順\n\n1. `svc_deploy` でログインし、ハッシュを取得：\n\n```\npsexec.py acme/svc_deploy@10.10.10.10\nsecretsdump.py acme/svc_deploy@10.10.10.10\n```\n\n2. DC01 の SYSTEM 権限でドメイン全体のハッシュを取得\n\n## 修正案\n\n- サービスアカウントの権限を絞り、Domain Admins から除外し、階層管理（tiering）を実施\n- `krbtgt` を連続2回リセットし、サービスアカウントのパスワードを強化・変更\n- DMZ と内部の分離、および前述の RCE / 権限昇格の経路を修正\n",
+    summary: "ドメインコントローラー DC01 を制御（Domain Admin）— 内部の検証目標を達成",
     evidence:
       "svc_deploy は Domain Admins に所属。psexec.py で DC01 の SYSTEM 権限を取得し、secretsdump で krbtgt を含む全域の NTLM ハッシュを取得し、対象の制御を完了。",
     intent_id: "i13",
@@ -994,7 +994,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "i13",
       type: "intent",
-      payload: P({ summary: "ドメイン管理者の認証情報で DC01 にログインし、制御" }),
+      payload: P({ summary: "ドメイン管理者の認証情報で ドメインコントローラー DC01 にログインし、制御" }),
       priority: 10,
       state: "done",
       origin: "planner",
@@ -1005,7 +1005,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa1",
       type: "fact",
-      payload: P({ summary: "admin.acme.com（Element-UI の管理画面）を検出" }),
+      payload: P({ summary: "サブドメイン admin.acme.com（Element-UI の管理画面）を検出" }),
       priority: 0,
       state: "open",
       origin: "work#1",
@@ -1095,7 +1095,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa9",
       type: "fact",
-      payload: P({ summary: "Jenkins の認証情報ストアから acme\\svc_deploy の平文パスワードを取得" }),
+      payload: P({ summary: "Jenkins の認証情報ストアからドメインアカウント acme\\svc_deploy の平文パスワードを取得" }),
       priority: 0,
       state: "open",
       origin: "work#11",
@@ -1151,7 +1151,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fiRce",
       type: "finding",
-      payload: P({ summary: "shop の Fastjson デシリアライズ RCE でコマンド実行" }),
+      payload: P({ summary: "shop の Fastjson デシリアライズ RCE でサーバー上のコマンド実行" }),
       priority: 0,
       state: "confirmed",
       origin: "work#7",
@@ -1169,7 +1169,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fiJenkins",
       type: "finding",
-      payload: P({ summary: "内部 Jenkins の未認証 Groovy による RCE" }),
+      payload: P({ summary: "内部 Jenkins の未認証 Groovy によるサーバー上の RCE" }),
       priority: 0,
       state: "confirmed",
       origin: "work#11",
@@ -1178,7 +1178,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fiKerb",
       type: "finding",
-      payload: P({ summary: "Kerberoasting で svc_sql のパスワードを解読" }),
+      payload: P({ summary: "Kerberoasting でドメインサービスアカウント svc_sql のパスワードを解読" }),
       priority: 0,
       state: "confirmed",
       origin: "work#12",
@@ -1187,7 +1187,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fiDC",
       type: "finding",
-      payload: P({ summary: "DC01 を制御（Domain Admin）— 内部の検証目標を達成" }),
+      payload: P({ summary: "ドメインコントローラー DC01 を制御（Domain Admin）— 内部の検証目標を達成" }),
       priority: 0,
       state: "confirmed",
       origin: "work#13",
@@ -1198,7 +1198,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "h1",
       type: "hint",
-      payload: P({ summary: "Element-UI の管理画面で、既定パスワードを優先して検証" }),
+      payload: P({ summary: "Element-UI の管理画面で、既定パスワードの一覧を優先して検証" }),
       priority: 5,
       state: "consumed",
       origin: "mainagent",
@@ -1366,7 +1366,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T14:12:15Z"),
     kind: "thinking",
     summary:
-      "recent_facts を確認：workG が faGit「.git をダウンロード可能で、git-dumper でバックエンドのソースを復元」と faCreds「config.php に sa/Acme@2021 をハードコード（内部で共通の可能性）」を返しました。work#6 の識別結果 fa3 は「shop に Fastjson 1.2.24 があり、既知のデシリアライズ RCE が存在」です。【新しい仕組み】は、①内部で DB パスワードを再利用できる可能性と、②Fastjson の確立した RCE 手法です。既存の認証 / 注入とは【異なる】、shop の RCE から DMZ に進む経路が開けました。まず faGit の詳細で復元内容を確認します。",
+      "recent_facts を確認：workG が faGit「.git をダウンロード可能で、git-dumper でバックエンドのソースを復元」と faCreds「config.php に sa/Acme@2021 をハードコード（内部で共通の可能性）」を返しました。work#6 の識別結果 fa3 は「shop に Fastjson 1.2.24 があり、既知のデシリアライズ RCE が存在」です。【実質的に新しい仕組み】は、①内部で DB パスワードを再利用できる可能性と、②Fastjson の確立した RCE 手法です。既存の認証 / 注入とは【本質的に異なる】、shop の RCE から DMZ に進む経路が開けました。まず faGit の詳細で復元内容を確認します。",
   },
   {
     seq: 1102,
@@ -1528,7 +1528,7 @@ export const activity: Activity[] = [
     tool: "list_findings",
     tool_use_id: "p3-lf",
     summary:
-      "F-09「ドメインコントローラー DC01 の完全な制御 / secretsdump による全ドメインのハッシュ取得」は critical（証拠：psexec svc_deploy@10.10.10.10 + NTDS.dit dump）。上流の fa9→fa10→i13 の経路も完全",
+      "F-09「ドメインコントローラー DC01 の完全な制御 / secretsdump によるドメイン全体のハッシュ取得」は critical（証拠：psexec svc_deploy@10.10.10.10 + NTDS.dit dump）。上流の fa9→fa10→i13 の経路も完全",
   },
   {
     seq: 1304,
@@ -1539,7 +1539,7 @@ export const activity: Activity[] = [
     tool_use_id: "p3-pg",
     summary: "prove_goal(g4, evidence=F-09)",
     detail:
-      "reason：Jenkins から svc_deploy（Domain Admin）が漏えい → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュを取得。F-09 で確認済みで、「内部の対象ドメインコントローラー DC01 を制御」の条件を達成。",
+      "reason：Jenkins から svc_deploy（Domain Admin）が漏えい → psexec で DC01 を制御 → secretsdump でドメイン全体のハッシュを取得。F-09 で確認済みで、「内部の対象ドメインコントローラー DC01 を制御」の条件を達成。",
   },
   {
     seq: 1305,
@@ -1556,7 +1556,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:26:10Z"),
     kind: "text",
     summary:
-      "g4 を完了し、外部 RCE → DMZ → 内部 → ドメインコントローラーの経路を確認しました。未調査の方向を確認すると、g2「ユーザーの機密データの読み取り」は未完了ですが、i3（管理画面のユーザー API）と i5（API IDOR）がカバーしており、どちらも running です。【新しい独立した未調査の方向】はないため、追加インテントは0件とし、i3 / i5 の出力を待ちます。",
+      "g4 を完了し、外部 RCE → DMZ → 内部 → ドメインコントローラーの経路を完全に確立しました。未カバーの方向を一つずつ照合すると、g2「ユーザーの機密データの読み取り」はまだあと一歩ですが、i3（管理画面のユーザー API）と i5（API IDOR）がカバーしており、どちらも running です。【本質的に異なる未カバーの新しい方向】はないため、追加インテントは0件とし、i3 / i5 の出力を待ちます。",
   },
 
   // ── 第 4 回 · 管理画面を攻略し、g2 を収束（2026-07-26 03:55）──
@@ -2667,7 +2667,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "t13c",
     summary: "Administrator:500:aad3b435...:::  krbtgt:502:aad3b435...:::",
-    detail: "krbtgt を含む全ドメインの NTLM ハッシュを取得。ゴールデンチケットを作成して持続的に制御可能。",
+    detail: "krbtgt を含むドメイン全体の NTLM ハッシュを取得。ゴールデンチケットを作成して持続的に制御可能。",
   },
   {
     seq: 397,
@@ -2685,7 +2685,7 @@ export const activity: Activity[] = [
     intent_id: "i13",
     ts: T("2026-07-26T00:20:00Z"),
     kind: "result",
-    summary: "ドメインコントローラー DC01 を制御し、secretsdump で全ドメインのハッシュを取得。対象の目標を達成しました。",
+    summary: "ドメインコントローラー DC01 を制御し、secretsdump でドメイン全体のハッシュを取得。対象の目標を達成しました。",
     input_tokens: 144000,
     output_tokens: 9200,
     cache_read_tokens: 96000,
@@ -2709,7 +2709,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:52:08Z"),
     kind: "text",
     summary:
-      "目標②はユーザーの機密データの読み取りです。「管理画面のユーザー API の列挙」と「API IDOR」を並行して進めます。一括取得はブロックルールに一致するため、あなたの承認による許可が必要です。",
+      "目標②はユーザーの機密データの読み取りです。「管理画面のユーザー API の列挙」と「API IDOR」を並行して進めます。一括エクスポートはブロックルールに一致するため、あなたの承認による許可が必要です。",
   },
   {
     seq: 400,
@@ -2748,7 +2748,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:22:12Z"),
     kind: "text",
     summary:
-      "制御を確認済みです。攻撃経路は shop の Fastjson RCE → DMZ での権限昇格 → 内部の Jenkins からドメインの認証情報を取得 → svc_deploy は Domain Admins → psexec で DC01 の SYSTEM → secretsdump で全ドメインのハッシュ取得です。4目標は達成済みまたは進行中です。",
+      "制御を確認済みです。攻撃経路は shop の Fastjson RCE → DMZ での権限昇格 → 内部の Jenkins からドメインの認証情報を取得 → svc_deploy は Domain Admins に所属 → psexec で DC01 の SYSTEM → secretsdump でドメイン全体のハッシュ取得です。4目標は達成済みまたは進行中です。",
   },
 ];
 
@@ -3784,7 +3784,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-25T23:25:10Z"),
       kind: "text",
       summary:
-        "はい、svc_deploy + Domain Admins で psexec により DC01 を制御できます。その後 secretsdump で全ドメインのハッシュを取得して完了します。secretsdump はブロックルールの対象なので、事前に許可しました。",
+        "はい、svc_deploy + Domain Admins で psexec により DC01 を制御できます。その後 secretsdump でドメイン全体のハッシュを取得して完了します。secretsdump はブロックルールの対象なので、事前に許可しました。",
     },
     { seq: 10, worker: "user", ts: T("2026-07-26T00:22:00Z"), kind: "user", summary: "対象を制御しました。攻撃経路を要約してください。" },
     {
@@ -3793,7 +3793,7 @@ export const conversationMessages: Record<number, Activity[]> = {
       ts: T("2026-07-26T00:22:12Z"),
       kind: "text",
       summary:
-        "完全なキルチェーン：\n1. .git の漏えい → ソースのホワイトボックス解析 + ハードコードされた認証情報\n2. shop の Fastjson RCE → DMZ のリバース shell\n3. sudo で root に昇格して足場を確立\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → ドメインの認証情報 svc_deploy を取得\n6. Kerberoasting → svc_sql のパスワードを解読\n7. svc_deploy の Domain Admins 権限 → psexec で DC01 を制御 → secretsdump で全ドメインのハッシュ取得\n\n4目標を達成し、17件の検出結果（高7 / 中4 / 低2 + 内部の8経路）を記録しました。",
+        "完全なキルチェーン：\n1. .git の漏えい → ソースのホワイトボックス解析 + ハードコードされた認証情報\n2. shop の Fastjson RCE → DMZ のリバース shell\n3. sudo で root に昇格して足場を確立\n4. 内部調査 → DC01 / FS01 / Jenkins\n5. Jenkins の未認証アクセス → ドメインの認証情報 svc_deploy を取得\n6. Kerberoasting → svc_sql のパスワードを解読\n7. svc_deploy∈Domain Admins → psexec で DC01 を制御 → secretsdump でドメイン全体のハッシュ取得\n\n4目標を達成し、17件の検出結果（高7 / 中4 / 低2 + 内部の8経路）を記録しました。",
     },
   ],
 };

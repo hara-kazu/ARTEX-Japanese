@@ -175,7 +175,7 @@ func (s *Server) delegateToTask(ctx context.Context, in json.RawMessage, pick fu
 
 func (s *Server) toolListTasks() actool.CoreTool {
 	return roTool("list_tasks",
-		"すべてのタスクの id・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーション agentが全体の状況、停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、(アクティブ設定) はグローバルのアクティブ設定に従うことを表します。",
+		"すべてのタスクの id・説明・目標・状態・実行時間・親タスク・LLM 設定を一覧表示します。オーケストレーション agentが全体の状況、長時間停滞しているタスク、各タスクの使用 LLM を把握するために使用します。実行時間は秒単位で、実行中は作成から現在まで、終了済みは作成から最終活動までです。llm_profile はタスクの planner/worker が使う設定名で、(アクティブ設定) はグローバルのアクティブ設定に従うことを表します。",
 		objSchema(map[string]any{}),
 		func(context.Context, json.RawMessage) (actool.Result, error) {
 			lastAct, _ := s.m.PG().LastActivityAll()
@@ -247,7 +247,7 @@ func (s *Server) toolSpawnTask() actool.CoreTool {
 			"parent_ref":             strParam("任意: 親タスクの id（親子関係を設定）"),
 			"source_task_ids":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": fmt.Sprintf("任意: 読み取り専用で継承する元タスクの id 一覧（最大%d件）。子タスクは、これらのタスクで判明した資産や結論を出発点として参照できます。親子関係だけを表す parent_ref と異なり、内容を継承します。", db.MaxTaskSourceCount)},
 			"llm_profile_id":         map[string]any{"type": "integer", "description": "任意: この子タスクの planner/worker が使う LLM 設定の id（list_llm_profiles を参照）。省略時は親タスクの設定を継承し、それもなければグローバルのアクティブ設定を使用します"},
-			"timeout_seconds":        map[string]any{"type": "integer", "description": "任意: タスクのタイムアウト（秒）。時間に達すると終了処理を行い、最終状態 timeout になります。省略または 0 は時間制限なしです"},
+			"timeout_seconds":        map[string]any{"type": "integer", "description": "任意: タスクのタイムアウト（秒）。時間に達するとグレースフルな終了処理を開始し、最終状態 timeout になります。省略または 0 は時間制限なしです"},
 			"plan_heartbeat_seconds": map[string]any{"type": "integer", "description": "任意: planner のハートビート間隔（秒）。前回の計画終了またはタスク開始から、この時間だけトリガーがなければ計画を実行します。デッドロックの回避と実行中のworkerの監督に使用します。省略または 0 は既定の 600 秒（10min）です"},
 			"seed_first_intent":      map[string]any{"type": "boolean", "description": "任意: 単純なタスクで有効にすると、作成時に説明と目標から初期インテントを1件割り当て、workerが最初の planner を待たずにテストを開始します。既定の false では、通常どおり計画してから実行します。"},
 		}, "description", "goal"),
@@ -322,7 +322,7 @@ func (s *Server) toolSpawnTask() actool.CoreTool {
 			}
 			// 作成後の共通処理。HTTP 作成（server.go createTask）と同じ launchTask を再利用：
 			// seed + 背後で表示可能な目標分解（第0回/LLMステップ/各goal）+ engine.Run。
-			// seed_first_intent は既定 false（先に計画して実行）。単純なタスクでは有効にして work を直接一件実行できます。
+			// seed_first_intent は既定 false（先に計画して実行）。単純なタスクでは有効にして、テスト用の work を一件直接割り当てられます。
 			s.launchTask(t, a.Description+" "+a.Goal, a.SeedFirstIntent)
 			return actool.Text(fmt.Sprintf("task created: %s", t.ID)), nil
 		})
@@ -685,7 +685,7 @@ func (s *Server) reseedWorkerPrompt() {
 }
 
 // reporterToolCallMessage は必ず get_finding_traffic を一回読んでから報告を書くよう要求します。
-// 読取専用で「取得スイッチに依存しない」ツールなので、自動関連付けが無効でも手動の証拠を読めます。ここを
+// 読取専用で「取得スイッチに依存しない」ツールなので、自動関連付けが無効でも手動で関連付けた証拠を読めます。ここを
 // 「自動関連付け有効時だけ読む」にすると、既定の無効設定では reporter が evidence_version を渡さず、
 // SetFindingReportVersionByNodeID が legacy として -1 を保存します。脆弱性詳細と Markdown 出力には
 // 「証拠変更済み、報告更新待ち」が残り続け、UI には解消する入口がなくなります。

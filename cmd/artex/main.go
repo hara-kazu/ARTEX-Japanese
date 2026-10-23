@@ -87,7 +87,7 @@ func run() int {
 	if _, e := os.Stat(cfgPath); e == nil {
 		log.Printf("[config] 設定ファイル: %s", cfgPath)
 	} else {
-		log.Printf("[config] 設定ファイル: %s（見つからないため、環境変数 ARTEX_PG_DSN を使用します）", cfgPath)
+		log.Printf("[config] 設定ファイル: %s（見つからないため、環境変数 ARTEX_PG_DSN のみを試します）", cfgPath)
 	}
 
 	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

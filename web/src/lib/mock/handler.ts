@@ -79,7 +79,7 @@ const mockFindingTrafficSeeds: Record<string, MockBindingSeed[]> = {
     { traffic_id: "x-17", role: "baseline", note: "Jenkins Script Console に認証なしで到達可能。" },
     { traffic_id: "x-18", role: "proof", note: "scriptText の Groovy コマンドを実行し、SYSTEM が返る。" },
   ],
-  "f-17": [{ traffic_id: "x-19", role: "proof", note: "psexec で svc_deploy として DC01 にログイン。" }],
+  "f-17": [{ traffic_id: "x-19", role: "proof", note: "psexec で svc_deploy としてドメインコントローラー DC01 にログイン。" }],
 };
 
 // demo は固定のメッセージ本文を使い、詳細ページの Request/Response が空白になるのを避ける。

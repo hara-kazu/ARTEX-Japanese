@@ -435,7 +435,7 @@ func (e *Engine) ControlWork(ctx context.Context, intentID int64, action string)
 	run := e.work[intentID]
 	if run == nil {
 		e.workMu.Unlock()
-		return fmt.Errorf("%w：インテント%dに実行中の work はありません（終了済み、または未割り当て）", errWorkControlConflict, intentID)
+		return fmt.Errorf("%w：インテント%dに実行中の work はありません（すでに終了しているか、まだ取得されていない可能性があります）", errWorkControlConflict, intentID)
 	}
 	if run.action != "" {
 		e.workMu.Unlock()
@@ -498,7 +498,7 @@ func (e *Engine) SteerWork(intentID int64, msg string) error {
 	running := e.work[intentID] != nil
 	e.workMu.Unlock()
 	if !running {
-		return fmt.Errorf("インテント%dに実行中の work はありません（終了済み、または未割り当て）", intentID)
+		return fmt.Errorf("インテント%dに実行中の work はありません（すでに終了しているか、まだ取得されていない可能性があります）", intentID)
 	}
 	e.steerMu.Lock()
 	e.steerBox[intentID] = append(e.steerBox[intentID], msg)
@@ -626,7 +626,7 @@ func (e *Engine) KillWork(intentID int64) error {
 	run := e.work[intentID]
 	e.workMu.Unlock()
 	if run == nil {
-		return fmt.Errorf("インテント%dに実行中の work はありません（終了済み、または未割り当て）", intentID)
+		return fmt.Errorf("インテント%dに実行中の work はありません（すでに終了しているか、まだ取得されていない可能性があります）", intentID)
 	}
 	run.cancel(agent.AbortKilledByPlanner)
 	return nil
