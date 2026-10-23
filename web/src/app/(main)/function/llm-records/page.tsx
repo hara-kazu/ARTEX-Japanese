@@ -76,7 +76,7 @@ function tryFormatJSON(s: string): string {
   }
 }
 
-// 复制当前框内文本的小按钮。复制成功后短暂显示对勾。text 为空/仅占位符时禁用。
+// 現在の欄内のテキストをコピーする小ボタン。コピー成功後は一時的にチェックを表示する。text が空/プレースホルダーだけなら無効。
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,14 +88,14 @@ function CopyButton({ text }: { text: string }) {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // navigator.clipboard 在非安全上下文(如 http 局域网)不可用，回退到 execCommand。
+      // navigator.clipboard は安全でないコンテキスト(http のローカルネットワークなど)では使えないため、execCommand にフォールバックする。
       const ta = document.createElement("textarea");
       ta.value = text;
       ta.style.position = "fixed";
       ta.style.opacity = "0";
       document.body.appendChild(ta);
       ta.select();
-      try { document.execCommand("copy"); } catch { /* 忽略：不支持则静默 */ }
+      try { document.execCommand("copy"); } catch { /* 無視：未対応なら何も表示しない */ }
       document.body.removeChild(ta);
     }
     setCopied(true);
@@ -139,15 +139,15 @@ export default function LLMRecordsPage() {
   const [selected, setSelected] = React.useState<LLMRecordItem | null>(null);
   const [detail, setDetail] = React.useState<LLMRecordDetail | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
-  // 归一化视图 / HTTP 原文视图。原文是排查 provider 侧问题的唯一依据：归一化视图
-  // 不含工具 schema，响应里也没有 tool_use 块。
+  // 正規化ビュー / HTTP 原文ビュー。原文は provider 側の問題を調べる唯一の根拠：正規化ビューには
+  // ツールの schema がなく、レスポンスにも tool_use ブロックがない。
   const [rawView, setRawView] = React.useState(false);
 
   const hasRaw = !!(detail?.raw_request || detail?.raw_response);
-  // 开关保持用户选择，但切到一条无原文的旧记录时自动落回解析视图，而不是显示空白。
+  // 切り替えはユーザーの選択を保持するが、原文がない古い記録に移る場合は空白表示を避けて解析ビューへ自動で戻る。
   const showRaw = rawView && hasRaw;
-  // 原文请求体是 JSON，pretty-print 只改排版不改语义，便于阅读；原文响应是 SSE
-  // 帧，tryFormatJSON 解析失败会原样返回，故两边共用一个函数即可。
+  // 原文リクエストボディは JSON で、pretty-print は意味を変えず表示だけを整えて読みやすくする；原文レスポンスは SSE
+  // フレームで、tryFormatJSON は解析失敗時にそのまま返すため、両方で同じ関数を使える。
   const reqText = showRaw
     ? detail?.raw_request && tryFormatJSON(detail.raw_request)
     : detail?.request_body && tryFormatJSON(detail.request_body);
@@ -485,8 +485,8 @@ export default function LLMRecordsPage() {
               ) : (
                 <Badge variant="destructive" className="text-xs">Error</Badge>
               )}
-              {/* 原文视图开关。旧记录没有原文，此时禁用而非静默回退，避免看着像
-                  「原文与解析一致」。 */}
+              {/* 原文ビューの切り替え。古い記録には原文がないため、この場合は黙ってフォールバックせず無効化し、
+                  「原文と解析が一致している」ように見えるのを避ける。 */}
               <Button
                 variant={showRaw ? "secondary" : "ghost"}
                 size="sm"

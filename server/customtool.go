@@ -22,12 +22,12 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-// 本文件实现自定义工具执行器(docs/自定义工具设计.md)。system=false 的 tools 行按
-// kind 分派:command(渲染命令→复用 Bash 底层 run)、script(仅 Python;写临时文件、
-// stdin=参数 JSON + env TOOL_*、用配置的解释器)、http(原生请求+可设代理)。这些工具
-// 像流量/编排工具一样 seed 不需要(它们本就在 tools 表),经 hostTools 注入、按绑定过滤。
+// このファイルはカスタムツールの実行機構です（docs/自定义工具设计.md）。system=false の tools 行を
+// kind ごとに分岐します。command（コマンドを描画→Bash の下位 run を再利用）、script（Python のみ。一時ファイル、
+// stdin=引数 JSON + env TOOL_*、設定したインタープリターを使用）、http（直接要求+プロキシ設定可能）。これらのツールは
+// トラフィック/編成ツールと同様に seed が不要で（既に tools テーブルに存在）、hostTools で挿入し、関連付けで絞り込みます。
 
-// ---------- 自定义工具 CRUD ----------
+// ---------- カスタムツール CRUD ----------
 
 type customToolReq struct {
 	Key         string          `json:"key"`
@@ -40,7 +40,7 @@ type customToolReq struct {
 	Deferred    bool            `json:"deferred"`
 }
 
-var reToolKey = reAgentKey // 同 agent key 规则:小写字母开头 + 小写字母/数字/下划线
+var reToolKey = reAgentKey // agent key と同じ規則：小文字で始まり、小文字/数字/アンダースコアを使用
 
 func (s *Server) pgCreateCustomTool(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
@@ -178,7 +178,7 @@ func (s *Server) pgTestCustomTool(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"output": res.Flatten(), "is_error": res.IsError})
 }
 
-// ---------- Python 解释器(检测 + 入库 + 覆盖) ----------
+// ---------- Python インタープリター（検出 + DB 保存 + 上書き） ----------
 
 const settingPythonInterp = "python_interpreter"
 
@@ -213,7 +213,7 @@ func (s *Server) seedPythonInterpreter() {
 	}
 }
 
-// ---------- exec 规格 ----------
+// ---------- exec 仕様 ----------
 
 type commandExec struct {
 	Command   string `json:"command"`
@@ -240,7 +240,7 @@ func timeoutOr(ms, def int) time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-// ---------- 通用工具构造 ----------
+// ---------- 汎用ツールの構築 ----------
 
 // customTools builds CoreTools for every user-defined (system=false) tool row.
 // shell-kind tools are environment hints only — they surface in the Bash tool
@@ -261,7 +261,7 @@ func (s *Server) customTools() ([]actool.CoreTool, error) {
 }
 
 // buildCustomTool turns one custom-tool row into a CoreTool. Empty schema → a thin
-// {args:string} (薄壳工具), so command/http templates can use {args}.
+// {args:string}（薄いラッパーツール）, so command/http templates can use {args}.
 func (s *Server) buildCustomTool(t *db.Tool) actool.CoreTool {
 	schema := ensureSchema(t.Schema)
 	key, kind, execRaw := t.Key, t.Kind, t.Exec
@@ -326,7 +326,7 @@ func ensureSchema(raw json.RawMessage) map[string]any {
 	}
 }
 
-// ---------- command:渲染命令 → 复用 Bash 底层 run ----------
+// ---------- command：コマンド描画 → Bash の下位 run を再利用 ----------
 
 func (s *Server) runCommandTool(ctx context.Context, execRaw json.RawMessage, params map[string]any, tc *actool.ToolContext) (actool.Result, error) {
 	var spec commandExec
@@ -335,8 +335,8 @@ func (s *Server) runCommandTool(ctx context.Context, execRaw json.RawMessage, pa
 		return actool.Errorf("command が空です"), nil
 	}
 	cmd := renderTemplate(spec.Command, params, shellQuote)
-	// 复用 Bash 也在用的底层 run(经 Bash CoreTool.Call):自动继承安全 floor/超时/
-	// 代理 env/输出溢出。工具与 Bash 平级、共用底层,不经过 Bash 这个工具让模型调。
+	// Bash も使う下位 run を再利用します（Bash CoreTool.Call 経由）。安全 floor/タイムアウト/
+	// プロキシ env/出力超過を自動継承します。Bash と同じ階層で下位処理を共有し、Bash ツール経由でモデルに呼ばせません。
 	bashIn, _ := json.Marshal(map[string]any{"command": cmd})
 	if spec.TimeoutMs > 0 {
 		var cancel context.CancelFunc
@@ -346,7 +346,7 @@ func (s *Server) runCommandTool(ctx context.Context, execRaw json.RawMessage, pa
 	return actool.NewBash().Call(ctx, bashIn, tc)
 }
 
-// ---------- script(仅 Python):临时文件 + stdin JSON + env ----------
+// ---------- script（Python のみ）：一時ファイル + stdin JSON + env ----------
 
 func (s *Server) runScriptTool(ctx context.Context, key string, execRaw json.RawMessage, params map[string]any, tc *actool.ToolContext) (actool.Result, error) {
 	var spec scriptExec
@@ -397,14 +397,14 @@ func execPython(ctx context.Context, interp, key, code string, params map[string
 	defer cancel()
 	c := exec.CommandContext(runCtx, interp, tmp)
 	c.Dir = workDir
-	c.Env = append(os.Environ(), sessionEnv...) // 会话代理 env
-	for k, v := range params {                  // 标量参数镜像成 TOOL_<NAME>
+	c.Env = append(os.Environ(), sessionEnv...) // セッションのプロキシ env
+	for k, v := range params {                  // スカラー引数を TOOL_<NAME> に複製
 		if sv, ok := scalarStr(v); ok {
 			c.Env = append(c.Env, "TOOL_"+strings.ToUpper(k)+"="+sv)
 		}
 	}
 	pj, _ := json.Marshal(params)
-	c.Stdin = bytes.NewReader(pj) // 参数 JSON 走 stdin
+	c.Stdin = bytes.NewReader(pj) // 引数 JSON は stdin で渡す
 	out, err := c.CombinedOutput()
 	body := string(out)
 	if runCtx.Err() == context.DeadlineExceeded {
@@ -415,7 +415,7 @@ func execPython(ctx context.Context, interp, key, code string, params map[string
 	return body, nil
 }
 
-// ---------- http:原生请求 + 代理 ----------
+// ---------- http：直接要求 + プロキシ ----------
 
 func (s *Server) runHTTPTool(ctx context.Context, execRaw json.RawMessage, params map[string]any, tc *actool.ToolContext) (actool.Result, error) {
 	var spec httpExec

@@ -26,8 +26,8 @@ type chatAttachment struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 	Size int64  `json:"size"`
-	// Abs 是落盘的绝对路径(m.dir 已是绝对)。建任务前暂存(scope=staging)时前端要用它把
-	// 提示词写进描述;task/session 走 composeAgentMessage 在后端拼路径,不依赖此字段。
+	// Abs は保存先の絶対パスです（m.dir は既に絶対パス）。タスク作成前の一時保存（scope=staging）ではフロントエンドがこれを使い、
+	// プロンプトを説明へ書きます。task/session はバックエンドの composeAgentMessage でパスを組み立て、このフィールドに依存しません。
 	Abs string `json:"abs,omitempty"`
 }
 
@@ -41,8 +41,8 @@ type chatAttachment struct {
 //
 //	scope=task    → <workDir>/tasks/<id>/uploads/
 //	scope=session → <workDir>/sessions/<id>/uploads/
-//	scope=staging → <workDir>/drafts/<id>/uploads/   (建任务前暂存:任务尚无 ID,
-//	                文件先落这里,前端按返回的 abs 绝对路径写进任务描述)
+//	scope=staging → <workDir>/drafts/<id>/uploads/   （タスク作成前の一時保存：まだ ID がないため、
+//	                ファイルを先にここへ保存し、フロントエンドが応答の abs 絶対パスをタスク説明に書きます）
 func (s *Server) chatUpload(w http.ResponseWriter, r *http.Request) {
 	var sub string
 	taskScoped := false

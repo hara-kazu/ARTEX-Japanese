@@ -16,7 +16,7 @@ import { SearchDialog } from "./sidebar/search-dialog";
 import { ThemeSwitcher } from "./sidebar/theme-switcher";
 import { UpdateBadge } from "./update-badge";
 
-// 任务详情页保持原样：它自带头部/Tabs 与内边距，这里不再叠加全局头部和 padding。
+// タスク詳細ページは元のまま：独自のヘッダー/Tabs と内側余白があり、グローバルヘッダーや padding を重ねない。
 function isFullBleed(pathname: string) {
   const p = (() => {
     try {
@@ -25,8 +25,8 @@ function isFullBleed(pathname: string) {
       return pathname;
     }
   })();
-  // 静态导出开了 trailingSlash，列表页自身的 pathname 是 "/function/tasks/"，
-  // 先去掉尾斜杠再判前缀，否则列表页会被误判成详情页而丢掉全局头部。
+  // 静的エクスポートでは trailingSlash が有効で、一覧ページ自体の pathname は "/function/tasks/" のため、
+  // 先に末尾スラッシュを除いてから接頭辞を判定し、一覧ページが詳細ページと誤判定されてグローバルヘッダーを失うのを防ぐ。
   const normalized = p.replace(/\/+$/, "");
   return normalized.startsWith("/function/tasks/");
 }

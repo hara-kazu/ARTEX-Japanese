@@ -9,7 +9,7 @@ import (
 // fix: the task-context header (description + goal) is rendered ONCE per task, no
 // matter how many same-task fires are merged.
 
-const longGoal = "拿到题目 f2-05 的受保护 flag 并通过 submit_flag 提交；本题密文已高度收敛，flag 只能由二进制内嵌数据派生……" // 代表那段几千字的继承事实
+const longGoal = "拿到题目 f2-05 的受保护 flag 并通过 submit_flag 提交；本题密文已高度收敛，flag 只能由二进制内嵌数据派生……" // 数千文字の継承事実を表す
 
 func sameTaskFires(n int) []triggeredRun {
 	items := make([]triggeredRun, n)
@@ -92,7 +92,7 @@ func TestTaskContextHeaderEmptyForIntervalFire(t *testing.T) {
 func TestTaskContextHeaderTruncatesLongGoal(t *testing.T) {
 	huge := strings.Repeat("很", 5000)
 	h := taskContextHeader(72, "d", huge)
-	if len([]rune(h)) > 800 { // 200 desc + 500 goal + 截断标记/装饰，远小于 5000
+	if len([]rune(h)) > 800 { // 200 desc + 500 goal + 切り詰めマーカー/装飾で、5000 よりはるかに短い
 		t.Fatalf("header should be bounded even for a huge goal, got %d runes", len([]rune(h)))
 	}
 }

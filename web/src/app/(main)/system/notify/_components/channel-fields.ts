@@ -1,9 +1,9 @@
-// 渠道字段表与配置值的解析工具。
+// チャネルのフィールドテーブルと設定値の解析ツール。
 //
-// 与页面拆开是因为这一份是**数据**而不是视图：它描述每种渠道有哪些字段、
-// 各自该用什么控件，以及表单文本到配置值（JSON）的双向转换。
-// 单独放一个文件后，新增渠道只需要动这里，页面本身不必改。
-// 渠道类型的展示名与简介。放在前端是因为它只影响文案，后端不需要知道。
+// ページから分離するのは、これがビューではなく**データ**であり、各チャネルのフィールド、
+// 各々に使うコントロール、フォームテキストと設定値（JSON）の双方向変換を記述するため。
+// 個別ファイルにすることで、チャネル追加時はここだけ変更すればよく、ページ自体の変更は不要になる。
+// チャネルの種類の表示名と紹介。文言だけに影響しバックエンドが知る必要はないため、フロントエンドに置く。
 export const KIND_LABEL: Record<string, string> = {
   dingtalk: "DingTalk",
   feishu: "Lark",
@@ -13,14 +13,14 @@ export const KIND_LABEL: Record<string, string> = {
   email: "メール",
 };
 
-// 各渠道的配置字段定义。
+// 各チャネルの設定フィールド定義。
 //
-// 这里刻意保留一份前端字段表，而不是让后端下发 schema：后端只负责
-// Validate（必填/格式），UI 需要的是布局与控件类型，两者关注的不是同一件事。
-// 唯一的耦合点是 secret_keys —— 哪些字段该渲染成密码框由后端给出，
-// 因为只有渠道实现自己清楚哪些值算凭据（企业微信的整个 Webhook 就是凭据，
-// 而钉钉的只是其中一个 secret）。新增渠道时这里少一个条目只会让表单变空白，
-// 不会静默出错（下面的 hasFields 会提示）。
+// バックエンドから schema を配布せず、フロントエンドのフィールドテーブルを意図的に保持する：バックエンドは
+// Validate（必須/形式）だけを担当し、UI が必要とするレイアウトやコントロールの種類とは関心事が異なる。
+// 唯一の結合点は secret_keys —— どのフィールドをパスワード欄にするかはバックエンドが示す。
+// どの値が認証情報かはチャネル実装自身しか分からないため（企業版 WeChat は Webhook 全体が認証情報で、
+// DingTalk はその中の secret だけ）。チャネル追加時にここで項目が欠けてもフォームが空白になるだけで、
+// 黙って誤動作しない（下の hasFields が知らせる）。
 export type FieldKind = "text" | "password" | "number" | "select" | "textarea" | "switch" | "kv" | "list";
 export interface FieldDef {
   key: string;
@@ -152,7 +152,7 @@ export const emptyForm = (kind: string): ChannelForm => ({
   onStatusChange: false,
 });
 
-// parseKV 解析「每行 KEY=VALUE」的文本域。
+// parseKV は「各行 KEY=VALUE」のテキスト領域を解析する。
 export function parseKV(text: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const line of text.split("\n")) {
@@ -163,7 +163,7 @@ export function parseKV(text: string): Record<string, string> {
   }
   return out;
 }
-// parseIDs 解析逗号/空白分隔的 id 列表。
+// parseIDs はカンマ/空白区切りの id 一覧を解析する。
 export function parseIDs(text: string): number[] {
   return text
     .split(/[\s,，]+/)
@@ -172,7 +172,7 @@ export function parseIDs(text: string): number[] {
     .map((s) => Number(s))
     .filter((n) => Number.isFinite(n) && n > 0);
 }
-// parseKeywords 解析行/逗号分隔的关键词列表（漏洞类型名可能含空格，所以按行或逗号切）。
+// parseKeywords は行/カンマ区切りのキーワード一覧を解析する（脆弱性の種類名には空白が入り得るため、行またはカンマで分ける）。
 export function parseKeywords(text: string): string[] {
   return text
     .split(/[\n,，]+/)

@@ -28,12 +28,12 @@ set -euo pipefail
 PASS_KEY="auth.password_hash"
 BCRYPT_COST=10
 
-MODE=""            # local | docker（空=自动判定）
+MODE=""            # local | docker（空=自動判定）
 DSN=""
 HOST="" PORT="" USER="" DBPASS="" DBNAME="" SSLMODE=""
 CONFIG=""
-CONTAINER=""       # docker 模式的 postgres 服务/容器名（默认 postgres）
-EXEC_KIND=""       # compose | docker（docker 模式下用哪种 exec；空=自动）
+CONTAINER=""       # docker モードの postgres サービス/コンテナー名（デフォルト postgres）
+EXEC_KIND=""       # compose | docker（docker モードで使う exec の種類；空=自動）
 NEWPASS=""
 ASSUME_YES=0
 
@@ -42,7 +42,7 @@ info() { echo "· $*" >&2; }
 
 usage() { sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
-# ---- 参数解析 -------------------------------------------------------------
+# ---- 引数解析 -------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -m|--mode)        MODE="${2:-}"; shift 2 ;;
@@ -63,8 +63,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# ---- 从 config.json 读取 database.*（仅 local 模式、且未显式给出连接时）-----
-# 优先用 python3 解析（健壮）；缺 python3 时退回 grep（config.json 为规整分字段）。
+# ---- config.json から database.* を読み取る（local モードで接続を明示していない場合のみ）-----
+# python3 での解析を優先（堅牢）；python3 がなければ grep にフォールバック（config.json は整形済みのフィールド別）。
 read_config_json() {
   local path="$1"
   [[ -f "$path" ]] || return 1
@@ -75,7 +75,7 @@ try:
     d = json.load(open(sys.argv[1])).get("database", {})
 except Exception:
     sys.exit(1)
-# 支持直接给 dsn，或分字段
+# dsn の直接指定、または個別フィールドに対応
 if d.get("dsn"):
     print("DSN\t" + d["dsn"]); sys.exit(0)
 for k in ("host","port","user","password","dbname","sslmode"):
@@ -83,7 +83,7 @@ for k in ("host","port","user","password","dbname","sslmode"):
         print(k.upper() + "\t" + str(d[k]))
 PY
   else
-    # 极简后备：逐键 grep（值为字符串或数字）
+    # 最小限の代替：キーごとに grep（値は文字列または数値）
     local k
     for k in host port user password dbname sslmode; do
       local v
@@ -110,7 +110,7 @@ apply_config_fields() {
   done
 }
 
-# ---- 自动判定模式 ---------------------------------------------------------
+# ---- モードの自動判定 ---------------------------------------------------------
 if [[ -z "$MODE" ]]; then
   if [[ -n "$DSN$HOST$USER$DBNAME" || -n "${ARTEX_PG_DSN:-}" || -f "${CONFIG:-config.json}" ]]; then
     MODE="local"
@@ -122,7 +122,7 @@ if [[ -z "$MODE" ]]; then
 fi
 info "導入モード：$MODE"
 
-# ---- 采集新密码 -----------------------------------------------------------
+# ---- 新パスワードの取得 -----------------------------------------------------------
 if [[ -z "$NEWPASS" ]]; then
   read -r -s -p "新しいパスワードを入力（ログイン名は ARTEX）：" NEWPASS; echo >&2
   [[ -n "$NEWPASS" ]] || die "パスワードを入力してください"
@@ -131,11 +131,11 @@ if [[ -z "$NEWPASS" ]]; then
 fi
 [[ -n "$NEWPASS" ]] || die "パスワードを入力してください"
 
-# 通过环境变量把密码交给 psql（\getenv 读取，不进入 argv/ps）
+# 環境変数でパスワードを psql へ渡す（\getenv で読み取り、argv/ps には出さない）
 export ARTEX_RESET_NEWPASS="$NEWPASS"
 
-# 库内生成 bcrypt 并 upsert；密码用 :'newpw' 自动转义。CREATE EXTENSION 幂等，
-# 若数据库角色无建扩展权限会在此报错（提示见下方 run 的失败分支）。
+# データベース内で bcrypt を生成して upsert；パスワードは :'newpw' で自動エスケープする。CREATE EXTENSION は冪等で、
+# データベースロールに拡張作成権限がなければここでエラーになる（案内は下の run の失敗分岐を参照）。
 SQL=$(cat <<SQL
 \\set ON_ERROR_STOP on
 \\getenv newpw ARTEX_RESET_NEWPASS
@@ -146,9 +146,9 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 SQL
 )
 
-# ---- 执行 -----------------------------------------------------------------
+# ---- 実行 -----------------------------------------------------------------
 if [[ "$MODE" == "local" ]]; then
-  # 连接信息优先级：命令行 > --dsn/$ARTEX_PG_DSN > config.json
+  # 接続情報の優先順位：コマンドライン > --dsn/$ARTEX_PG_DSN > config.json
   if [[ -z "$DSN" && -z "$HOST$USER$DBNAME" ]]; then
     [[ -n "${ARTEX_PG_DSN:-}" ]] && DSN="$ARTEX_PG_DSN"
   fi
@@ -191,7 +191,7 @@ else
   command -v docker >/dev/null 2>&1 || die "docker が見つかりません"
   CONTAINER="${CONTAINER:-postgres}"
 
-  # 选择 exec 方式：优先 docker compose exec（服务名），否则 docker exec（容器名）
+  # exec 方式を選択：docker compose exec（サービス名）を優先し、それ以外は docker exec（コンテナー名）
   if [[ -z "$EXEC_KIND" ]]; then
     if docker compose version >/dev/null 2>&1 && [[ -f docker-compose.yml ]]; then
       EXEC_KIND="compose"
@@ -200,7 +200,7 @@ else
     fi
   fi
 
-  # 容器内的 psql 凭据：优先命令行，其次 .env 的 POSTGRES_*，再退回 compose 默认(artex)
+  # コンテナー内の psql 認証情報：コマンドラインを優先し、次に .env の POSTGRES_*、最後に compose のデフォルト(artex)
   if [[ -f .env ]]; then
     # shellcheck disable=SC1091
     set -a; . ./.env; set +a
@@ -216,7 +216,7 @@ else
     [[ "$ans" == "y" || "$ans" == "Y" ]] || die "キャンセルしました"
   fi
 
-  # -e 只带名字不带值 → 从当前环境继承，密码不出现在 docker 命令 argv 里。
+  # -e は名前のみで値を付けない → 現在の環境から継承し、パスワードを docker コマンドの argv に含めない。
   declare -a EXEC_CMD
   if [[ "$EXEC_KIND" == "compose" ]]; then
     EXEC_CMD=(docker compose exec -T -e ARTEX_RESET_NEWPASS -e PGPASSWORD "$CONTAINER"

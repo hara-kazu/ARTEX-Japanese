@@ -5,18 +5,18 @@ import (
 	"time"
 )
 
-// LLM 重试策略：五层重试的「次数 + 间隔」全局配置，见 docs/LLM重试设计.md。
-// 存在 settings 表的一个 JSON 值里 —— 它是整机一份的运行参数，不值得为它开一张表；
-// 读取走内置默认兜底，所以键不存在(全新库/从未配置过)时行为与写死常量时代完全一致。
+// LLM の再試行ポリシー：5層の再試行の「回数 + 間隔」のグローバル設定。docs/LLM重试设计.md を参照。
+// settings テーブルの1つの JSON 値に保存する —— マシン全体で1組の実行パラメーターなので、専用テーブルは不要；
+// 読み取りは組み込みデフォルトにフォールバックするため、キーがない(新規 DB/未設定)場合も定数固定時と挙動は完全に一致する。
 
 const settingLLMRetryPolicy = "llm_retry_policy"
 
 // RetryRule is one layer's knob pair. The zero value means "unset":
 //
-//	Attempts   0 = 用内置默认次数; -1 = 关闭该层重试; >0 = 用该值
-//	IntervalMS 0 = 用该层原本的间隔策略(通常是指数退避); >0 = 改用固定毫秒间隔
+//	Attempts   0 = 組み込みのデフォルト回数; -1 = この層の再試行を無効; >0 = この値を使用
+//	IntervalMS 0 = この層の元の間隔ポリシー(通常は指数バックオフ); >0 = 固定ミリ秒間隔を使用
 //
-// -1 是「显式关掉」而不是「0 次」，因为 0 已经被「未配置」占用了。
+// 0 は既に「未設定」に使用されているため、-1 は「0 回」でなく「明示的に無効」を表す。
 type RetryRule struct {
 	Attempts   int `json:"attempts"`
 	IntervalMS int `json:"interval_ms"`
@@ -76,20 +76,20 @@ func (o RetryOverride) Clamped() RetryOverride {
 	return o
 }
 
-// LLMRetryPolicy holds the五层 retry configuration. Connect/Empty/Stream are the
+// LLMRetryPolicy holds the 5層の retry configuration. Connect/Empty/Stream are the
 // per-request layers (a profile may override them, see LLMProfile.Retry);
 // Breaker and Intent are process-wide by nature and live only here.
 type LLMRetryPolicy struct {
-	// Connect：SDK 建连重试(连接重置/超时/429/5xx，流开始前)。默认 3 次、指数退避。
+	// Connect：SDK 接続再試行(接続リセット/タイムアウト/429/5xx、ストリーム開始前)。デフォルト 3 回、指数バックオフ。
 	Connect RetryRule `json:"connect"`
-	// Empty：SDK 空响应重试(完成但无 content block，仅 openai 格式)。默认 2 次、指数退避。
+	// Empty：SDK 空レスポンス再試行(完了したが content block なし、openai 形式のみ)。デフォルト 2 回、指数バックオフ。
 	Empty RetryRule `json:"empty"`
-	// Stream：同 provider 安全窗口重试(未交付输出前的断流重放)。默认 2 次、0.5s 起指数(封顶 4s)。
+	// Stream：同じ provider の安全ウィンドウ内の再試行(出力提供前の切断を再生)。デフォルト 2 回、0.5s から指数増加(上限 4s)。
 	Stream RetryRule `json:"stream"`
-	// Breaker：轮询熔断。Attempts=连续几次瞬时失败触发熔断(默认 3，-1=瞬时失败不熔断，
-	// 硬失败如余额不足/密钥失效仍立即熔断)；IntervalMS=固定冷却时长(0=默认 1/5/30min 梯度)。
+	// Breaker：順次切り替えのサーキットブレーカー。Attempts=連続何回の一時的失敗で遮断するか(デフォルト 3、-1=一時的失敗では遮断せず、
+	// 残高不足/キー無効などの確定的失敗は直ちに遮断)；IntervalMS=固定クールダウン時間(0=デフォルトの 1/5/30min 段階)。
 	Breaker RetryRule `json:"breaker"`
-	// Intent：worker 以 model_error 收场后的整条意图重跑。默认 2 次、固定 3s。
+	// Intent：worker が model_error で終了した後の意図全体の再実行。デフォルト 2 回、固定 3s。
 	Intent RetryRule `json:"intent"`
 }
 

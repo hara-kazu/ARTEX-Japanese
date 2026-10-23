@@ -10,11 +10,11 @@ import (
 	"github.com/Autumn-27/norma/llm"
 )
 
-// LLM 轮询(故障转移)的服务端接线。设计见 docs/LLM轮询设计.md：
-//   - 全局激活配置这条路径(agent 未绑定、任务未 pin)才轮询;
-//   - 绑定/pin 的路径默认独占该配置,失败即失败(可由 llm_pool_bind_fallback 打开兜底);
-//   - 链序 = 激活配置 → 其余按 priority DESC,排除 pool_exclude 的;
-//   - 熔断状态进程级共享(s.llmHealth),重建 pool 不清空。
+// LLM 順次切り替え（フェイルオーバー）のサーバー接続処理。docs/LLM轮询设计.md を参照：
+//   - 全体の有効設定の経路（agent 未関連付け、タスク未 pin）だけで順次切り替えする。
+//   - 関連付け/pin は既定で専有し、失敗時もそのまま失敗（llm_pool_bind_fallback で補完を有効化可能）。
+//   - 順序 = 有効な設定 → priority DESC の残り。pool_exclude は除外。
+//   - 遮断状態はプロセス全体で共有（s.llmHealth）し、pool 再構築でも消さない。
 
 // newLLMHealthRegistry builds the process-wide circuit-breaker registry, mirroring
 // state into PG so a cooling-off window survives a restart. Writes are async and

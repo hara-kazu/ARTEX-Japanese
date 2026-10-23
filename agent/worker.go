@@ -34,18 +34,18 @@ import (
 // independent of the traffic-recording MITM proxy — set it when the search endpoint
 // is only reachable via a VPN/SOCKS proxy. Empty = direct.
 //
-// 注意 deepseek 后端与其它三个的性质不同：DeepSeek 没有可直接调用的搜索接口，
-// 搜索只存在于其 Anthropic 兼容 messages 接口内部(web_search_20250305 server
-// tool)，因此每次搜索会消耗一次模型调用，且搜索请求由 DeepSeek 服务端发出——
-// 不经过本机 Proxy，也不会进流量留痕。
+// deepseek バックエンドは他の3つとは性質が異なる：DeepSeek には直接呼び出せる検索 API がなく、
+// 検索は Anthropic 互換の messages API 内部(web_search_20250305 server
+// tool)だけにあるため、検索ごとにモデル呼び出しを1回消費し、検索リクエストは DeepSeek サーバーから送られる——
+// ローカルの Proxy を通らず、トラフィック履歴にも入らない。
 type WebSearchOpts struct {
 	Enabled   bool
 	Backend   string
 	BraveKey  string
 	TavilyKey string
 	Proxy     string
-	// DeepSeek* 来自当前激活的 LLM 配置(仅 anthropic 格式的 DeepSeek 官方端点)，
-	// 不单独配置，随 LLM 配置切换而变。
+	// DeepSeek* は現在有効な LLM 設定に由来(anthropic 形式の DeepSeek 公式端点のみ)し、
+	// 単独では設定せず、LLM 設定の切り替えに伴って変わる。
 	DeepSeekBaseURL string
 	DeepSeekAPIKey  string
 	DeepSeekModel   string
@@ -223,10 +223,10 @@ func proxyEnv(proxyAddr, caCert string) []string {
 	return env
 }
 
-// workerDefaultTmpl is the built-in EDITABLE body (段 [A]) of the worker system
-// prompt, seeded into agent_prompts. The trafficTool block and the 中间产物输出规约
+// workerDefaultTmpl is the built-in EDITABLE body (区分 [A]) of the worker system
+// prompt, seeded into agent_prompts. The trafficTool block and the 中間成果物の出力規約
 // are NOT here — they are code-owned and appended by workerSystem after rendering
-// (段 [B]/[C]), so editing the DB body can never drop them.
+// (区分 [B]/[C]), so editing the DB body can never drop them.
 const workerDefaultTmpl = `あなたはサイバーセキュリティ基盤上で、許可を得たペネトレーションテストを「実行」する work agent です。【1件のインテント】（探索方向を示す1文）が割り当てられます。唯一の役割は、**そのインテントを完了し、検出結果を知識グラフに書き戻し、実行を終了して返すことです。**
 
 **厳守する境界**：
@@ -242,7 +242,7 @@ const workerDefaultTmpl = `あなたはサイバーセキュリティ基盤上�
 
 インテントを完了したら、実施したことと書き戻した事実を1文でまとめてください。`
 
-// workerTrafficBlock is 段 [B]: the traffic-tool note, code-injected only when
+// workerTrafficBlock is 区分 [B]: the traffic-tool note, code-injected only when
 // traffic capture (recording) is on — i.e. the traffic_* tools actually exist.
 // Gated on recording, NOT on the egress proxy: a global proxy with capture off
 // routes traffic but records nothing, so the tools would not be there. Not stored,
@@ -254,14 +254,14 @@ func workerTrafficBlock(recording bool) string {
 	return "\n\n**トラフィックのツール**：\n- traffic_search / traffic_get / traffic_blob：応答の再確認や、アクセス済みリソースの検索に使用します。**先にトラフィックを調べ、同じ URL に curl を繰り返さないでください**。traffic_search は **host の指定が必須**で、既定では非常に軽量な索引を3件だけ返します（id/method/url/status/resp_len。応答内容は含みません）。さらに必要なら limit を明示的に増やしてください。body_contains でリクエスト / レスポンス本文を全文検索できます（3文字以上。部分文字列と中国語に対応し、パスワード / 鍵 / エラー / 内部ネットワークのアドレスなどを検索）。個々の原文は traffic_get(id) で取得します。非常に大きい本文は @blob sha256:<hash> と表示されるため、traffic_blob(hash) で全文を分割して取得してください。"
 }
 
-// artifactSpec is 段 [C]: the code-owned, non-editable tail appended to every
+// artifactSpec is 区分 [C]: the code-owned, non-editable tail appended to every
 // pentest agent's prompt — intermediate artifacts must land in the shared work
 // dir, never /tmp. Guaranteed present regardless of how the DB body is edited.
 func artifactSpec(dir string) string {
 	return "\n\n**中間生成物の出力規約**：スクリプト、payload、取得した応答本文、一時データなど、すべての中間生成物は、**必ずこのタスクの作業ディレクトリに書き込んでください：" + dir + "**（相対パスならここに書き込まれます。この絶対パスも使用できます）。**/tmp に書き込んだり、他の絶対パスを使用したりしないでください**。"
 }
 
-// workerArtifactSpec is the worker's 段 [C]: its per-intent run dir is pre-created
+// workerArtifactSpec is the worker's 区分 [C]: its per-intent run dir is pre-created
 // by the engine (ensureRunDir), so it just writes relative paths there — no manual
 // mkdir, no cross-worker name collisions.
 func workerArtifactSpec(runDir string) string {
@@ -323,9 +323,9 @@ func renderIntentTask(intent *db.Node) string {
 // purpose is letting the worker read context (existing facts/assets/hints)
 // so it avoids redundant work and doesn't re-derive what others already found.
 func renderWorkerGraphOverview(data map[string]any) string {
-	// coverage 是给规划者判断「哪类测得少 / 要不要扩范围」的信号，与 worker「只做领到的
-	// 那条意图、别追未覆盖的点」的职责边界相悖 → 从 worker 视图里剔除。data 是本次 worker
-	// 专属的新 map，删键不影响 planner。
+	// coverage は計画担当が「テストが少ない型 / 範囲拡大の要否」を判断する信号で、worker の「取得した
+	// 意図だけを実行し、未被覆の箇所を追わない」という責務境界に反するため、worker の表示から除外する。data は今回の worker
+	// 専用の新しい map で、キー削除は planner に影響しない。
 	delete(data, "coverage")
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -369,25 +369,25 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 	}
 	tsx.SetOwnerNode(intent.ID)         // assets this worker discovers anchor to its intent → visible to the task
 	tsx.SetEnrich(enr)                  // async DNS/HTTP auto-completion for assets this worker writes
-	tsx.SetNotifyFinding(notifyFinding) // report_finding 落库时当场唤醒 planner，带上「哪个意图+finding」
+	tsx.SetNotifyFinding(notifyFinding) // report_finding の保存時にその場で planner を起動し、「どの意図+finding」かを渡す
 	// base = built-in worker tools ∪ host tools (traffic) ∪ default tools (incl. Bash);
 	// then augment with the agent's visible skills/MCP. During the SDK settlement
 	// phase, Bash is hidden via Settlement.DisabledTools (no local gating needed).
 	base := append(tsx.WorkerTools(), w.extraTools...)
-	// worker 刻意不给 MultiEdit/Glob/Grep：文件精改用 Edit、检索走 Bash(grep/find)，
-	// 收敛工具面、减少低价值调用。其余 SDK 默认工具(Read/Write/Edit/LS/Bash/Sleep)照常。
+	// worker には意図的に MultiEdit/Glob/Grep を与えない：ファイルの細かな編集は Edit、検索は Bash(grep/find) に集約し、
+	// ツールの範囲を絞って低価値の呼び出しを減らす。他の SDK デフォルトツール(Read/Write/Edit/LS/Bash/Sleep)は通常どおり。
 	base = append(base, defaultToolsExcept("MultiEdit", "Glob", "Grep")...)
 	ctx = WithRunInfo(ctx, RunInfo{TaskID: taskID, ExplorationID: explorationID(ts), IntentID: intent.ID})
 	tools, def, cleanup := AugmentTools(ctx, "worker", base)
 	defer cleanup()
 
-	// 意图是 worker 的【唯一职责、贯穿整个 run 的不变量】→ 连同启动指令、意图锚定的目标资产
-	// 原始数据一起放进 system prompt：system 每次 run 都重新拼一遍、绝不会被 compaction 压掉，
-	// 长 run 里意图永远在场，续跑时也不依赖 transcript 历史是否留住那条首消息。代价是 system
-	// 混入 per-intent 易变数据、失去跨意图缓存复用；这是刻意的取舍（意图丢失比省 token 严重得多）。
-	// 与 planner「态势块放 user turn」分叉是有意的：planner 本身是产意图的那个、没有单一 mandate，
-	// worker 有。仅【全局态势 overview】留在启动 user 消息里——它可降级、容忍 stale，压掉无碍。
-	// 本次意图的专属工作目录 <workDir>/tasks/<taskID>/i<intentID>，引擎侧先建好。
+	// 意図は worker の【唯一の責務で、run 全体を貫く不変条件】なので、起動指示と、意図が固定する対象資産の
+	// 元データとともに system prompt に入れる：system は run ごとに再構築し、compaction では決して圧縮されないため、
+	// 長い run でも意図は常に存在し、再開時も transcript 履歴に最初のメッセージが残っているかに依存しない。代償として system に
+	// per-intent の可変データが混ざり、意図間のキャッシュ再利用を失うが、意図した選択（意図の喪失は token 節約よりはるかに重大）。
+	// planner の「状況ブロックは user turn に置く」と分けるのは意図的：planner 自身は意図を生成する側で単一の mandate がないが、
+	// worker にはある。【全体状況 overview】のみ起動 user メッセージに残す——格下げ可能で stale を許容でき、圧縮されても問題ない。
+	// 今回の意図専用の作業ディレクトリ <workDir>/tasks/<taskID>/i<intentID> は、エンジン側で事前に作成する。
 	runDir := ensureRunDir(w.workDir, taskID, intent.ID)
 	// The run-wide intent is not the current tool action. Do not forward it or
 	// inherit a parent run's background into the action reviewer.
@@ -395,9 +395,9 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 	overview := renderWorkerGraphOverview(tsx.graphOverviewData())
 	sysBody := workerSystem(w.proxyAddr, w.proxyCACert, w.workDir, runDir)
 	if w.wantConstraints() {
-		sysBody += constraintBlock(ts) // 操作约束(若有)注入系统提示,worker 执行时严格遵守
+		sysBody += constraintBlock(ts) // 操作制約(あれば)をシステムプロンプトに注入し、worker は実行時に厳守する
 	}
-	// 意图块 → 意图锚定资产块 → 启动指令，依次追加到 system 尾部（与 constraintBlock 同一套追加法）。
+	// 意図ブロック → 意図の固定資産ブロック → 起動指示の順で system 末尾に追加（constraintBlock と同じ追加方法）。
 	sysBody += renderIntentTask(intent)
 	if as != nil {
 		if ids := intentAssetIDs(intent); len(ids) > 0 {
@@ -405,10 +405,10 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 				if b, err := json.Marshal(assets); err == nil {
 					sysBody += "\n\nこのインテントの asset_ids に対応する対象資産：\n" + string(b)
 				}
-				// 意图明确针对的这些资产 → 自动纳入任务测试范围（与 insertAssets 同一套
-				// 保守粒度）。upsertTaskScope 的 ON CONFLICT DO NOTHING + uq_task_scope
-				// 唯一索引保证不会重复添加；重跑/重试同样是幂等 no-op。
-				// 资产覆盖度功能关闭时不再累积测试范围(分母)。
+				// 意図が明示的に対象とするこれらの資産 → 自動でタスクのテスト範囲に追加（insertAssets と同じ
+				// 保守的な粒度）。upsertTaskScope の ON CONFLICT DO NOTHING + uq_task_scope の
+				// 一意インデックスで重複追加を防ぎ、再実行/再試行も冪等な no-op となる。
+				// 資産被覆率機能が無効な場合、テスト範囲(分母)を蓄積しない。
 				if coverageEnabled {
 					for _, a := range assets {
 						_ = as.AddAutoScope(taskID, a.Type, a.Domain, a.URL, a.IP)
@@ -419,7 +419,7 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 	}
 	sysBody += "\n\n上記のインテントの実行を開始してください。この一件だけを実行し、事実、assets、finding だけを生成し、完了したら停止してください。"
 	system, boundary := deferredSystem(sysBody, def)
-	// 任务级 deadline(经 ctx 注入)夹逼本 run 的墙钟预算 + 决定收尾词(见 taskclock.go)。
+	// タスク単位の deadline(ctx 経由で注入)がこの run の実時間予算を制限し、終了プロンプトを決める(taskclock.go を参照)。
 	tc := taskClockFrom(ctx)
 	maxDur, clamped := clampMaxDuration(tc.DeadlineUnix, w.runTimeout)
 	settle := wrapupSettlement("worker", []string{"Bash"})
@@ -434,13 +434,13 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 		DeferredTools:   def.Deferred,
 		UnlockSet:       def.Unlock,
 		PermissionMode:  permission.ModeBypass,
-		// WebFetch 走记录代理，其 HTTP 与 curl 一样被留痕；载入代理 CA 让经 MITM
-		// 重签的 HTTPS 证书能【正常校验通过】（而非关掉校验）。proxy 空则直连。
+		// WebFetch は記録プロキシを通し、HTTP は curl と同様に履歴を残す；プロキシ CA を読み込んで MITM が
+		// 再署名した HTTPS 証明書を【通常どおり検証できる】ようにする（検証を無効にしない）。proxy が空なら直接接続。
 		EnableWebFetch: true,
 		WebFetchProxy:  w.proxyAddr,
 		WebFetchCACert: w.proxyCACert,
-		// 联网搜索(可选)。ddgs 无需 key；brave-free 需 BraveKey；tavily 需 TavilyKey。
-		// WebSearchProxy 是独立的出口代理(http/https/socks5)，与记录流量的 MITM 代理无关；空则直连。
+		// ネットワーク検索(任意)。ddgs は key 不要；brave-free は BraveKey が必要；tavily は TavilyKey が必要。
+		// WebSearchProxy は独立した送信プロキシ(http/https/socks5)で、トラフィック記録用の MITM プロキシとは無関係；空なら直接接続。
 		EnableWebSearch:       w.webSearch.Enabled,
 		WebSearchBackend:      w.webSearch.Backend,
 		BraveSearchAPIKey:     w.webSearch.BraveKey,
@@ -449,24 +449,24 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 		DeepSeekSearchAPIKey:  w.webSearch.DeepSeekAPIKey,
 		DeepSeekSearchModel:   w.webSearch.DeepSeekModel,
 		WebSearchProxy:        w.webSearch.Proxy,
-		// Bash 子命令的 HTTP 默认走记录代理 + 信任其 CA（工具无需 -x/-k）。
+		// Bash サブコマンドの HTTP はデフォルトで記録プロキシ経由 + その CA を信頼（ツールの -x/-k は不要）。
 		BashEnv:    proxyEnv(w.proxyAddr, w.proxyCACert),
 		WorkingDir: runDir,
 		MaxTurns:   w.maxTurns, // 0 = unlimited (configurable in agent management)
-		// 墙钟预算,轮边界判,不打断半路;0 = 不限。有任务级 deadline 时夹逼到 min(自身预算,
-		// 距 deadline 剩余),让本 run 在任务到点时自然进收尾(见 taskclock.go)。
+		// 実時間予算をラウンド境界で判定し、途中で中断しない;0 = 無制限。タスク単位の deadline がある場合は min(自身の予算、
+		// deadline までの残り時間)に制限し、タスク期限時にこの run が自然に終了処理へ入るようにする(taskclock.go を参照)。
 		MaxDuration: maxDur,
-		// 命中预算(轮次 OR 时长)→ SDK 跑一轮收尾(隐藏 Bash),把已识别的写回,避免烂尾。
-		// clamped(被任务 deadline 夹逼)时用 PromptByReason:因超时=任务到点→任务超时词,
-		// 因步数=夹逼窗口内步数先耗尽→回落 per-run 词。非 clamped 维持纯 per-run。
+		// 予算(ラウンド数 OR 時間)に到達→ SDK が1ラウンドの終了処理を行い(Bash を非表示)、認識済み内容を書き戻し、未完了を防ぐ。
+		// clamped(タスクの deadline で制限)の場合は PromptByReason を使用:タイムアウト=タスク期限到達→タスクのタイムアウト文、
+		// ステップ数=制限ウィンドウ内で先にステップが尽きる→per-run 文に戻す。clamped でなければ純粋な per-run を維持。
 		Settlement: settle,
 		// large tool output spills to cmd-output/ with a head + pointer (SDK tool.Capture);
-		// full output preserved on disk. 截断上限用 SDK 默认(30000 字符)。
+		// full output preserved on disk. 切り詰め上限は SDK のデフォルト(30000 文字)を使用。
 		ToolOutputDir: cmdOutDir(runDir),
 		Compaction:    compactionConfig(w.compactionWindow()), // long tool-heavy runs stay within the window
-		Todos:         actool.NewTodoStore(),                  // 会话级临时待办（TodoWrite），纯规划用，退出即丢
-		NonStreaming:  w.nonStreaming(),                       // 该 profile 选非流式时走 Provider.Complete
-		MaxTokens:     w.maxTokens(),                          // 0 = 不发上限,由服务端默认值决定
+		Todos:         actool.NewTodoStore(),                  // セッション単位の一時的な TODO（TodoWrite）で、計画専用、終了時に破棄
+		NonStreaming:  w.nonStreaming(),                       // この profile が非ストリーミングを選択した場合は Provider.Complete を使用
+		MaxTokens:     w.maxTokens(),                          // 0 = 上限を送信せず、サーバー側のデフォルト値に委ねる
 	}
 	if hooks != nil { // typed-nil guard: only set when concrete (avoids harness panic)
 		opts.Hooks = hooks
@@ -482,15 +482,15 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 			emit(r)
 		}
 	}
-	// 意图 / 启动指令 / 意图锚定资产已随 system prompt 下发（见上方 sysBody 组装）。
-	// 这条启动 user 消息只承载【全局态势 overview】——可降级的了解大局信息，压掉无碍。
-	// overview 罕见地 marshal 失败为空时，回退一句启动词，避免首轮出现空 user 消息。
+	// 意図 / 起動指示 / 意図の固定資産は system prompt とともに送信済み（上の sysBody の組み立てを参照）。
+	// この起動 user メッセージは【全体状況 overview】のみ保持——格下げ可能な全体把握用情報なので、圧縮されても問題ない。
+	// overview の marshal がまれに失敗して空の場合は、1文の起動文にフォールバックし、初回に空の user メッセージが出ることを防ぐ。
 	input := overview
 	if strings.TrimSpace(input) == "" {
 		input = "system で割り当てられたインテントの実行を開始してください。この一件だけを実行し、事実、assets、finding だけを生成し、完了したら停止してください。"
 	}
 
-	// 实验功能:开启后由 noa 接管上下文压缩(归档集中在 <workDir>/noa/<SessionID> 下,持久)。
+	// 実験機能:有効時は noa がコンテキスト圧縮を担当(アーカイブは <workDir>/noa/<SessionID> 配下に集約し、永続化)。
 	noaSession := WorkerSessionID(ts.ID(), intent.ID)
 	enableNoa(&opts, w.noaEnabledFn, w.workDir, noaSession, noaWarn(noaSession))
 	ctx = attachSideCapture(ctx, &opts)

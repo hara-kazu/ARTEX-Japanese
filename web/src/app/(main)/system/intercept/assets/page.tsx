@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import type { AssetInterceptKind, AssetInterceptRule } from "@/lib/types";
 
-// ---- kind 元信息 ----
+// ---- kind メタ情報 ----
 
 const KIND_OPTIONS: { value: AssetInterceptKind; label: string; group: string; placeholder: string }[] = [
   { value: "exact_domain", label: "ドメイン（完全一致）", group: "完全一致", placeholder: "example.gov.cn" },
@@ -77,7 +77,7 @@ type RuleForm = {
 
 const defaultForm = (): RuleForm => ({ enabled: true, kind: "fuzzy_domain", pattern: "", note: "" });
 
-// 前端轻校验（与后端一致：仅 exact_ip / cidr 做格式校验，其余交后端）。
+// フロントエンドの簡易検証（バックエンドと一致：exact_ip / cidr だけ形式検証し、他はバックエンドへ任せる）。
 function frontValidate(form: RuleForm): string | null {
   const p = form.pattern.trim();
   if (!p) return "一致条件を入力してください";

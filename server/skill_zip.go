@@ -14,18 +14,18 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-// Go 的 archive/zip 只内置 Store(0) 和 Deflate(8) 两种解压器，遇到别的方法会返回
-// "zip: unsupported compression algorithm"。压缩软件在非默认档位下经常写出别的方法
-// (7-Zip 的 bzip2、WinZip 的 zstd)，所以这里把纯 Go 能解的两种补上；真的解不了的
-// (Deflate64 / LZMA / XZ / PPMd / 加密包) 在解压前就报出中文提示，而不是把底层
-// 错误原样甩给用户。
+// Go の archive/zip の組み込み展開器は Store(0) と Deflate(8) の2種類のみで、別の方式では
+// "zip: unsupported compression algorithm" を返す。圧縮ソフトはデフォルト以外の設定で別方式をよく使用するため、
+// (7-Zip の bzip2、WinZip の zstd)、純粋な Go で解ける2種類をここで追加する；本当に展開できないものは
+// (Deflate64 / LZMA / XZ / PPMd / 暗号化アーカイブ)は展開前に中国語で説明し、下位の
+// エラーをそのままユーザーへ投げない。
 const (
 	zipMethodStore     = 0
 	zipMethodDeflate   = 8
 	zipMethodDeflate64 = 9
 	zipMethodBzip2     = 12
 	zipMethodLZMA      = 14
-	zipMethodZstdPKW   = 20 // PKWARE 早期给 zstd 分配的编号
+	zipMethodZstdPKW   = 20 // PKWARE が初期に zstd へ割り当てた番号
 	zipMethodZstd      = 93
 	zipMethodXZ        = 95
 	zipMethodJPEG      = 96
@@ -90,16 +90,16 @@ func skillZipEntries(zr *zip.Reader) []skillZipEntry {
 		name := zipEntryName(f)
 		if strings.HasPrefix(name, "__MACOSX/") || strings.Contains(name, "/__MACOSX/") ||
 			path.Base(name) == ".DS_Store" {
-			continue // macOS 打包残留
+			continue // macOS の梱包残骸
 		}
 		out = append(out, skillZipEntry{f: f, name: name})
 	}
 	return out
 }
 
-// zipEntryName returns the entry path as UTF-8. Windows 上的 7-Zip / WinRAR / 资源管理器
-// 在不置 UTF-8 标志位时会把中文文件名按 GBK 写进 zip，Go 原样保留这些字节，于是名字
-// 既不是合法 UTF-8 也过不了路径校验 —— 这里按 GBK 兜底解码。
+// zipEntryName returns the entry path as UTF-8. Windows の 7-Zip / WinRAR / エクスプローラーは
+// UTF-8 フラグを立てない場合、中国語ファイル名を GBK で zip に書き込み、Go はバイトをそのまま保持するため、名前は
+// 有効な UTF-8 でなく、パス検証も通らない —— ここで GBK による復号にフォールバックする。
 func zipEntryName(f *zip.File) string {
 	if utf8.ValidString(f.Name) {
 		return f.Name

@@ -103,7 +103,7 @@ func (s *AssetStore) upsertTaskScope(ts TaskScope) error {
 
 // AddAutoScope records the conservative task scope implied by ONE explicitly-inserted
 // asset item (source='auto'). MUST be called only from insertAssets' top-level loop —
-// never from a db-layer side effect (linkHostAssets), so派生资产不会盲目扩大范围。
+// never from a db-layer side effect (linkHostAssets), so派生資産が無条件に範囲を広げない。
 // Rule: scope granularity follows the asset's own type. taskID<=0 → no-op.
 func (s *AssetStore) AddAutoScope(taskID int64, assetType, domain, rawURL, ip string) error {
 	if taskID <= 0 {
@@ -277,12 +277,12 @@ type CoverageByType struct {
 // NOT a precise metric. Denominator = assets matching any active task_scope row;
 // Tested = those anchored to at least one fact node in the exploration.
 type Coverage struct {
-	Enabled     bool             `json:"enabled"`     // 资产覆盖度功能是否开启；false 时其余字段为零值
-	ScopeRows   int              `json:"scope_rows"`  // 0 → 范围未锚定
-	Denominator int              `json:"denominator"` // 范围内资产数
-	Tested      int              `json:"tested"`      // 已测(约)
-	Pct         *float64         `json:"pct"`         // 覆盖度；分母 0 时 null
-	ByType      []CoverageByType `json:"by_type"`     // 按资产类型的 总数/已测
+	Enabled     bool             `json:"enabled"`     // 資産被覆率機能を有効にするか；false のとき他のフィールドはゼロ値
+	ScopeRows   int              `json:"scope_rows"`  // 0 → 範囲未固定
+	Denominator int              `json:"denominator"` // 範囲内の資産数
+	Tested      int              `json:"tested"`      // テスト済み(概数)
+	Pct         *float64         `json:"pct"`         // 被覆率；分母 0 なら null
+	ByType      []CoverageByType `json:"by_type"`     // 資産型ごとの 合計/テスト済み
 }
 
 // CoverageEnabled reports whether a task has the asset-coverage feature turned on

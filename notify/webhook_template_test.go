@@ -8,21 +8,21 @@ import (
 	"testing"
 )
 
-// 本文件锁住通用 Webhook 模板的**能力边界**。
+// このファイルは汎用 Webhook テンプレートの**能力の境界**を固定する。
 //
-// 这是全包唯一「用户提供的字符串会被当代码求值」的地方，所以要明确它能做什么、
-// 不能做什么，并用测试把这些性质固定下来——否则将来有人顺手给模板上下文加个
-// 方法、或在 FuncMap 里加个 readFile，能力面就静默扩大了，而 diff 看起来
-// 只是一个无害的小函数。
+// 本パッケージ内で唯一「ユーザー提供の文字列をコードとして評価する」場所なので、できることと
+// できないことを明確にし、テストでその性質を固定する必要がある。そうしないと、将来ついでにテンプレートコンテキストに
+// メソッドを加えたり、FuncMap に readFile を加えたりして、diff では無害な小さな関数に
+// しか見えないまま、能力の範囲が黙って広がってしまう。
 
-// TestTemplateContextHasNoMethods 是最重要的一条。
+// TestTemplateContextHasNoMethods は最も重要な条件。
 //
-// text/template 会调用导出方法（{{.Foo}} 既能取字段也能调方法）。所以模板上下文
-// 只要能接触到**任何**带导出方法的类型，就等于把那些方法暴露给了模板作者。
-// 本功能的上下文刻意全是纯数据（只有导出字段、零方法）。
+// text/template は公開メソッドを呼び出す（{{.Foo}} はフィールド取得もメソッド呼び出しも可能）。そのためテンプレートコンテキストから
+// 公開メソッドを持つ**いかなる**型にもアクセスできると、そのメソッドをテンプレート作成者に公開したことになる。
+// この機能のコンテキストは意図的に純粋なデータのみである（公開フィールドのみ、メソッドなし）。
 //
-// 若这条失败：说明有人给 webhookTemplateData / webhookItem 加了方法。
-// 在决定放行之前，先想清楚那个方法能不能被模板用来读取不希望暴露的东西。
+// この条件が失敗したら、webhookTemplateData / webhookItem に誰かがメソッドを追加したことを意味する。
+// 許可を決める前に、そのメソッドをテンプレートで使い、公開したくないものを読み取れないかをよく考える。
 func TestTemplateContextHasNoMethods(t *testing.T) {
 	for _, v := range []any{webhookTemplateData{}, webhookItem{}} {
 		typ := reflect.TypeOf(v)
@@ -37,10 +37,10 @@ func TestTemplateContextHasNoMethods(t *testing.T) {
 	}
 }
 
-// TestTemplateFuncsAreMinimal 锁住暴露给模板的函数集合。
+// TestTemplateFuncsAreMinimal はテンプレートに公開する関数の集合を固定する。
 //
-// FuncMap 里每多一个函数就多一项能力。当前只有 json / jsons，作用是把值序列化
-// 成 JSON 片段——不能读文件、不能发请求、不能执行命令。
+// FuncMap に関数が1つ増えるごとに能力が1つ増える。現在は json / jsons のみで、値を
+// JSON 断片にシリアライズする用途に限り、ファイル読み取り、リクエスト送信、コマンド実行はできない。
 func TestTemplateFuncsAreMinimal(t *testing.T) {
 	var got []string
 	for name := range webhookTemplateFuncs {
@@ -54,14 +54,14 @@ func TestTemplateFuncsAreMinimal(t *testing.T) {
 	}
 }
 
-// TestTemplateCannotReachUnknownData 覆盖模板里的越界访问：
-// 访问不存在的东西必须失败，而不是回显点什么；且失败信息不得带出内部数据。
+// TestTemplateCannotReachUnknownData はテンプレートからの範囲外アクセスを検証する：
+// 存在しないものへのアクセスは何かを返すのでなく失敗する必要があり、失敗メッセージには内部データを含めてはならない。
 func TestTemplateCannotReachUnknownData(t *testing.T) {
 	_, err := renderWebhookBody(`{"x": {{.Environment}}, "y": {{.Env}}}`, singleMsg())
 	if err == nil {
 		t.Fatal("访问不存在的字段应报错")
 	}
-	// 错误里不能出现模板上下文里的真实内容（漏洞标题/摘要）。
+	// エラーにテンプレートコンテキスト内の実際の内容（脆弱性のタイトル/要約）が現れてはならない。
 	for _, leak := range []string{"SQL注入", "参数 id"} {
 		if strings.Contains(err.Error(), leak) {
 			t.Errorf("模板错误泄露了消息内容 %q: %v", leak, err)
@@ -69,8 +69,8 @@ func TestTemplateCannotReachUnknownData(t *testing.T) {
 	}
 }
 
-// TestTemplateRenderFailsPermanently 模板写错属于配置错误，重试不会自愈。
-// 若被判成可重试，一条坏模板会让每次投递都白跑三轮退避。
+// TestTemplateRenderFailsPermanently はテンプレートの誤りが設定エラーであり、再試行しても自然に直らないことを検証する。
+// 再試行可能と判定すると、不正なテンプレート1つで各配信が無駄に3回バックオフすることになる。
 func TestTemplateRenderFailsPermanently(t *testing.T) {
 	cfg := map[string]any{
 		"url":           "https://example.com/hook",
@@ -79,22 +79,22 @@ func TestTemplateRenderFailsPermanently(t *testing.T) {
 	if err := (webhookChannel{}).Validate(cfg); err == nil {
 		t.Fatal("模板语法错误应在保存时就被拦下")
 	}
-	// 即便绕过校验直接投递，也必须判永久失败而不是反复重试。
+	// 検証を回避して直接配信しても、繰り返し再試行せず永続的な失敗と判定する必要がある。
 	_, err := (webhookChannel{}).Send(context.Background(), cfg, singleMsg())
 	if err == nil || !IsPermanent(err) {
 		t.Fatalf("坏模板应判永久失败，得到 %v", err)
 	}
 }
 
-// TestTemplateCanOnlyProduceJSON 覆盖「模板渲染结果必须是合法 JSON」这条约束。
-// 它顺带挡住了「用模板生成纯文本去触发别的协议」这类用法。
+// TestTemplateCanOnlyProduceJSON は「テンプレートの描画結果は正しい JSON でなければならない」という制約を検証する。
+// これにより「テンプレートでプレーンテキストを生成して他のプロトコルを発火させる」という使い方も防ぐ。
 func TestTemplateCanOnlyProduceJSON(t *testing.T) {
-	// 合法模板能过。
+	// 正しいテンプレートは通る。
 	ok := map[string]any{"url": "https://example.com/hook", "body_template": `{"t":{{json .Title}}}`}
 	if err := (webhookChannel{}).Validate(ok); err != nil {
 		t.Fatalf("合法模板应通过校验: %v", err)
 	}
-	// 渲染出非 JSON 时必须拒绝（而不是原样发出去）。
+	// JSON 以外を描画したら、必ず拒否する（そのまま送信しない）。
 	bad := map[string]any{"url": "http://127.0.0.1:1/hook", "body_template": `not json {{.Count}}`}
 	_, err := (webhookChannel{}).Send(context.Background(), bad, singleMsg())
 	if err == nil || !IsPermanent(err) {

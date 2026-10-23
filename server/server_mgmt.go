@@ -361,9 +361,9 @@ func (s *Server) pgSaveAgentConfig(w http.ResponseWriter, r *http.Request) {
 		RunSeconds       *int  `json:"run_seconds"`
 		WebSearch        *bool `json:"web_search"`
 		InteractiveShell *bool `json:"interactive_shell"`
-		// llm_profile_id 三态:字段缺省=不动;显式 null=解绑(跟随任务/全局);数字=绑定该 profile。
+		// llm_profile_id は3状態:フィールド省略=変更なし;明示的な null=紐付け解除(タスク/グローバルに従う);数値=その profile に紐付け。
 		LLMProfileID json.RawMessage `json:"llm_profile_id"`
-		// P3 触发后处理策略(三者一起可选,提供任一即整体写入;未提供则不动)。
+		// P3 トリガー後の処理ポリシー(3つまとめて任意で、どれかを指定すれば全体を書き込み、未指定なら変更なし)。
 		TriggerRunMode     *string `json:"trigger_run_mode"`
 		TriggerMergeMode   *string `json:"trigger_merge_mode"`
 		TriggerMaxParallel *int    `json:"trigger_max_parallel"`
@@ -373,13 +373,13 @@ func (s *Server) pgSaveAgentConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profileChanged := false
-	if req.LLMProfileID != nil { // key present (数字 或 null)
+	if req.LLMProfileID != nil { // key present (数値 または null)
 		var id *int64
 		if err := json.Unmarshal(req.LLMProfileID, &id); err != nil {
 			writeErr(w, 400, "llm_profile_id の形式が無効です")
 			return
 		}
-		if id != nil { // 绑定:校验目标 profile 有效
+		if id != nil { // 紐付け:対象 profile が有効か検証
 			if _, ok := s.loadProfileConfig(*id); !ok {
 				writeErr(w, 400, "指定の LLM 設定が存在しないか、無効です")
 				return
@@ -423,8 +423,8 @@ func (s *Server) pgSaveAgentConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// P3 触发策略:三者作为一组写入(SetAgentTriggerBehavior 一次写三列),缺的字段用
-	// 当前存量值回填,避免只传一个把另两个覆盖成默认。
+	// P3 トリガーポリシー:3つを1組として書き込み(SetAgentTriggerBehavior で3列を一度に更新)、未指定フィールドは
+	// 現在の既存値を補い、1つだけ渡して他の2つをデフォルトで上書きすることを防ぐ。
 	if req.TriggerRunMode != nil || req.TriggerMergeMode != nil || req.TriggerMaxParallel != nil {
 		runMode, mergeMode, maxPar := a.TriggerRunMode, a.TriggerMergeMode, a.TriggerMaxParallel
 		if req.TriggerRunMode != nil {
@@ -483,7 +483,7 @@ func (s *Server) pgGetAgent(w http.ResponseWriter, r *http.Request) {
 	if sk == nil {
 		sk = []string{}
 	}
-	// 可选 LLM 配置列表(id/name/model/是否默认),供前端渲染 "默认模型" 下拉;当前绑定见 agent.llm_profile_id。
+	// 任意の LLM 設定一覧(id/name/model/デフォルトか)で、フロントエンドが "デフォルトモデル" ドロップダウンを描画する際に使用;現在の紐付けは agent.llm_profile_id を参照。
 	profs, _ := pg.ListProfiles()
 	llmProfiles := make([]map[string]any, 0, len(profs))
 	for _, p := range profs {
@@ -494,13 +494,13 @@ func (s *Server) pgGetAgent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"agent": agentDTO(a), "prompt": cur, "variables": vars, "versions": vers,
 		"visibility":   map[string]any{"mcp": mcp, "skill": sk},
-		"llm_profiles": llmProfiles, // 可绑定的 LLM 配置候选
+		"llm_profiles": llmProfiles, // 紐付け可能な LLM 設定候補
 
-		"wrapup_prompt":            a.WrapupPrompt,                  // 已保存的收尾提示词(空=用内置默认)
-		"wrapup_default":           agent.WrapupDefault(a.Key),      // 内置默认(供占位/恢复默认)
-		"wrapup_max_turns":         a.WrapupMaxTurns,                // 已保存的收尾轮数(0=用内置默认)
-		"wrapup_max_turns_default": agent.WrapupTurnsDefault(a.Key), // 内置默认轮数(供 "0=默认N" 提示)
-		// 任务级超时收尾词(仅 worker/planner 有内置默认;task_timeout_supported 供前端决定是否显示该分区)
+		"wrapup_prompt":            a.WrapupPrompt,                  // 保存済みの終了プロンプト(空=組み込みデフォルトを使用)
+		"wrapup_default":           agent.WrapupDefault(a.Key),      // 組み込みデフォルト(仮表示/デフォルト復元用)
+		"wrapup_max_turns":         a.WrapupMaxTurns,                // 保存済みの終了ラウンド数(0=組み込みデフォルトを使用)
+		"wrapup_max_turns_default": agent.WrapupTurnsDefault(a.Key), // 組み込みデフォルトのラウンド数("0=デフォルトN" の説明用)
+		// タスク単位のタイムアウト終了プロンプト(worker/planner のみ組み込みデフォルトあり;task_timeout_supported はこの区分の表示要否をフロントエンドが決めるためのもの)
 		"task_timeout_wrapup_supported":         agent.TaskTimeoutWrapupDefault(a.Key) != "",
 		"task_timeout_wrapup_prompt":            a.TaskTimeoutWrapupPrompt,
 		"task_timeout_wrapup_default":           agent.TaskTimeoutWrapupDefault(a.Key),
@@ -533,7 +533,7 @@ func (s *Server) pgSavePrompt(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgResetPrompt restores an agent's prompt body to the in-code built-in default
-// (段 [A]). Only built-in agents have a code default; custom agents have none.
+// (区分 [A]). Only built-in agents have a code default; custom agents have none.
 func (s *Server) pgResetPrompt(w http.ResponseWriter, r *http.Request) {
 	pg, a, ok := s.agentByKey(w, r)
 	if !ok {
@@ -622,7 +622,7 @@ func (s *Server) pgSaveTaskTimeoutWrapup(w http.ResponseWriter, r *http.Request)
 		writeErr(w, 400, err.Error())
 		return
 	}
-	turns := a.TaskTimeoutWrapupMaxTurns // 未传则保留原值
+	turns := a.TaskTimeoutWrapupMaxTurns // 未送信なら元の値を保持
 	if body.MaxTurns != nil {
 		turns = *body.MaxTurns
 		if turns < 0 {
@@ -738,7 +738,7 @@ func (s *Server) pgSetAgentVisibility(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// ---------- tools (内置工具目录) ----------
+// ---------- tools (組み込みツールカタログ) ----------
 
 func (s *Server) pgListTools(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
@@ -804,7 +804,7 @@ func (s *Server) pgUpdateTool(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgResetTool overwrites a tool row with its code-defined defaults (description,
-// schema, agent binding) and re-enables it — the explicit "恢复默认" action, since
+// schema, agent binding) and re-enables it — the explicit "デフォルト復元" action, since
 // startup seeding is first-insert-only and never overwrites edits.
 func (s *Server) pgResetTool(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
@@ -955,7 +955,7 @@ func (s *Server) pgMCPTools(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"tools": tools})
 }
 
-// ---------- skills (文件系统) ----------
+// ---------- skills (ファイルシステム) ----------
 
 type skillFileNode struct {
 	Name          string   `json:"name"`
@@ -1277,7 +1277,7 @@ func skillNameFromFrontmatter(md []byte) string {
 		}
 		if inFM && strings.HasPrefix(t, "name:") {
 			v := strings.TrimSpace(strings.TrimPrefix(t, "name:"))
-			return strings.Trim(v, `"'`) // name: "中文技能" 也认
+			return strings.Trim(v, `"'`) // name: "中文技能" も認識
 		}
 	}
 	return ""
@@ -1307,7 +1307,7 @@ func (s *Server) fsUploadSkill(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err.Error())
 		return
 	}
-	// entries carry UTF-8-decoded names (GBK 包也能读) and exclude archiver junk.
+	// entries carry UTF-8-decoded names (GBK のパッケージも読める) and exclude archiver junk.
 	entriesAll := skillZipEntries(zr)
 	if err := checkSkillZipMethods(entriesAll); err != nil {
 		writeErr(w, 400, err.Error())
@@ -1482,7 +1482,7 @@ func (s *Server) fsDeleteSkill(w http.ResponseWriter, r *http.Request) {
 const skillPathBlocked = `\%#?*:"<>|`
 
 // skillPathRune reports whether r may appear in a client-supplied skill path.
-// It is a blacklist over Unicode rather than an ASCII whitelist so that 中文 (and any
+// It is a blacklist over Unicode rather than an ASCII whitelist so that 中国語 (and any
 // other script) file names work, while everything that makes path validation hard is
 // still refused: control/format characters, look-alike whitespace, separators.
 func skillPathRune(r rune) bool {
@@ -1492,9 +1492,9 @@ func skillPathRune(r rune) bool {
 	case strings.ContainsRune(skillPathBlocked, r):
 		return false
 	case unicode.Is(unicode.Cf, r), unicode.Is(unicode.Co, r), unicode.Is(unicode.Cs, r):
-		return false // zero-width joiners, bidi overrides (RLO 文件名伪装), private use
+		return false // zero-width joiners, bidi overrides (RLO によるファイル名偽装), private use
 	case r != ' ' && unicode.IsSpace(r):
-		return false // NBSP / 全角空格 之类：看着是空格，其实不是
+		return false // NBSP / 全角スペース など：スペースに見えるが、実際は違う
 	}
 	return true
 }
@@ -1809,9 +1809,9 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	p := body.LLMProfile
 	p.APIKey = body.APIKey
 	p.Streaming = body.Streaming == nil || *body.Streaming
-	// 输出上限:负数无意义,归零(= 不发送该字段)。字段名开关只有 Chat Completions
-	// 用得上——anthropic 与 openai-responses 各自定死了字段名,存下来只会误导后续读者,
-	// 故非 openai 格式一律清空。未知取值同样清空,避免把 DB CHECK 的报错甩给用户。
+	// 出力上限:負数は意味がないのでゼロにする(= このフィールドは送らない)。フィールド名スイッチは Chat Completions
+	// でのみ使用——anthropic と openai-responses は各々フィールド名が固定され、保存すると後の読み手を誤解させるため、
+	// openai 以外の形式は一律クリアする。未知の値も同様にクリアし、DB CHECK エラーをユーザーに投げないようにする。
 	if p.MaxTokens < 0 {
 		p.MaxTokens = 0
 	}
@@ -1834,8 +1834,8 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"id": id})
 }
 
-// pgGetLLMRetryPolicy 返回全局重试策略(五层各自的次数+间隔)。未配置过 → 全零，
-// 前端把零显示成「默认」。
+// pgGetLLMRetryPolicy はグローバル再試行ポリシー(5層それぞれの回数+間隔)を返す。未設定 → すべてゼロで、
+// フロントエンドはゼロを「デフォルト」と表示する。
 func (s *Server) pgGetLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -1844,9 +1844,9 @@ func (s *Server) pgGetLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, pg.LLMRetryPolicy())
 }
 
-// pgSaveLLMRetryPolicy 保存全局重试策略。三个「跟着端点走」的层(建连/空响应/同
-// provider 安全窗口)是 provider 的构建参数或调用参数，改完必须让缓存里的 provider
-// 重建；熔断参数则直接推给进程级 Registry。
+// pgSaveLLMRetryPolicy はグローバル再試行ポリシーを保存する。「端点に従う」3層(接続/空レスポンス/同じ
+// provider の安全ウィンドウ)は provider の構築引数または呼び出し引数で、変更後はキャッシュ内の provider を
+// 再構築する必要がある；サーキットブレーカーの引数はプロセス単位の Registry へ直接渡す。
 func (s *Server) pgSaveLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -1938,9 +1938,9 @@ func (s *Server) pgActivateProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// pgLLMPoolStatus reports the failover ("轮询") switches, the resolved chain order
+// pgLLMPoolStatus reports the failover ("順次切り替え") switches, the resolved chain order
 // and every profile's circuit-breaker state — what the LLM page renders as the
-// "轮询顺序" strip and the per-card health badges.
+// "切り替え順序" strip and the per-card health badges.
 func (s *Server) pgLLMPoolStatus(w http.ResponseWriter, r *http.Request) {
 	if s.pg(w) == nil {
 		return
@@ -1949,7 +1949,7 @@ func (s *Server) pgLLMPoolStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgLLMPoolReset clears a tripped profile's circuit breaker so the next call
-// tries it again immediately ("立即恢复"). id=0 clears every profile.
+// tries it again immediately ("今すぐ復旧"). id=0 clears every profile.
 func (s *Server) pgLLMPoolReset(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -2111,7 +2111,7 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": false, "error": lastErr})
 }
 
-// --- prompt template helpers (Go text/template + catalog 白名单) ---
+// --- prompt template helpers (Go text/template + catalog 許可リスト) ---
 
 // globalPromptVars are runtime variables available to EVERY agent (built-in and
 // custom) regardless of its per-agent catalog. Each agent's render path fills them

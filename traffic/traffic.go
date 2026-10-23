@@ -1269,10 +1269,10 @@ func (t *Traffic) stageTreesForArchive(dirs, hosts []string, archiveID, taskID i
 		}
 		planned = append(planned, stagedTrafficPath{source: source})
 	}
-	// 归档路径即使一个历史 host 目录都没有(新装机的流量只落在 SQLite + _blobs)
-	// 也必须留下 journal：崩溃点若落在 PostgreSQL 提交与 SQLite 提交之间，重启后
-	// SQLite 事务被回滚，只有这份 journal 能让恢复流程补做 host 行的删除。少了它，
-	// 已转冷任务的独占流量会永久留在热库里。
+	// アーカイブ経路には、過去の host ディレクトリーが1つもなくても（新規インストールのトラフィックは SQLite + _blobs にのみ保存される）、
+	// journal を残す必要がある。クラッシュが PostgreSQL コミットと SQLite コミットの間で起きると、再起動後に
+	// SQLite トランザクションがロールバックされ、この journal だけが復旧処理に host 行の削除を補完させられる。これがないと、
+	// コールド化済みのタスク専用のトラフィックがホットデータベースに永久に残る。
 	uniqueHosts := uniqueArchiveHosts(hosts)
 	if len(planned) == 0 && len(uniqueHosts) == 0 {
 		return "", nil, nil
@@ -2037,7 +2037,7 @@ func (t *Traffic) Tools() []actool.CoreTool {
 			if len(rows) == 0 {
 				return actool.Text("一致するトラフィックはありません。"), nil
 			}
-			// 精简为最小索引：仅保留定位所需字段 + 响应码/长度，不带任何响应内容。
+			// 最小のインデックスに簡略化：特定に必要なフィールド + 応答コード/長さのみ保持し、応答内容は一切含めない。
 			type liteRow struct {
 				ID      string `json:"id"`
 				Method  string `json:"method"`

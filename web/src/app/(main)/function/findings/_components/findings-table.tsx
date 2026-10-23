@@ -56,7 +56,7 @@ export const FINDING_STATUSES: FindingStatus[] = [
 
 export const UNASSIGNED_TASK = "__unassigned__";
 
-// 行内编辑缓冲:当前展开行的名称/类别/严重等级。
+// 行内編集バッファー:現在展開中の行の名前/分類/重大度。
 export interface FindingEdit {
   name: string;
   vulnclass: string;
@@ -93,7 +93,7 @@ interface FindingsTableProps {
   selectedIds: Set<string>;
   onToggleSelected: (id: string, checked: boolean) => void;
   onToggleSelectedPage: (ids: string[], checked: boolean) => void;
-  /** 当前展开行的 findingRowKey;null = 全部收起。 */
+  /** 現在展開中の行の findingRowKey;null = すべて折りたたむ。 */
   expandedKey: string | null;
   onToggleRow: (finding: Finding) => void;
   reports: Record<string, FindingReport>;
@@ -106,12 +106,12 @@ interface FindingsTableProps {
   activeRetests: Record<string, ActiveFindingRetest>;
   onDeepen: (finding: Finding) => void;
   onDelete: (finding: Finding) => void;
-  /** 全选框的无障碍标签,平铺视图与分组视图措辞不同。 */
+  /** 全選択チェックボックスのアクセシビリティラベル。フラットビューとグループビューで文言が異なる。 */
   selectAllLabel?: string;
 }
 
-// FindingsTable 是发现列表的表格主体,平铺视图与按任务分组视图共用同一份行渲染
-// (勾选 / 行内展开 / 行内改名与改状态 / 复测 / 深入 / 删除),差异只在外层容器与分页。
+// FindingsTable は検出結果一覧の表本体で、フラットビューとタスク別グループビューが同じ行描画を共有する
+// (チェック / 行内展開 / 行内の名前と状態変更 / 再テスト / 深掘り / 削除)。違いは外側コンテナーとページ分割だけ。
 export function FindingsTable({
   items,
   selectedIds,
@@ -141,7 +141,7 @@ export function FindingsTable({
   }
 
   return (
-    /* 固定列宽保证展开内容不撑开表格；窄屏只在表格内部横向滚动。 */
+    /* 列幅を固定して展開内容が表を押し広げないようにする；狭い画面では表内だけを横スクロールする。 */
     <Table className="min-w-[60rem] table-fixed">
       <TableHeader>
         <TableRow>
@@ -327,11 +327,11 @@ export function FindingsTable({
               </TableRow>
               {open && (
                 <TableRow className="hover:bg-transparent">
-                  {/* whitespace-normal 覆盖 TableCell 默认的 nowrap,否则展开区文字
-                      被强制单行、直接溢出单元格。 */}
+                  {/* whitespace-normal で TableCell のデフォルトの nowrap を上書きする。そうしないと展開領域の文字が
+                      強制的に1行となり、セルから直接はみ出す。 */}
                   <TableCell colSpan={COLUMN_COUNT} className="bg-muted/30 whitespace-normal">
                     <div className="flex flex-col gap-2 px-2 py-1">
-                      {/* 行内编辑:名称/类别/严重等级,可改并保存(仅独立 finding 行)。 */}
+                      {/* 行内編集:名前/分類/重大度を変更・保存できる(独立した finding 行のみ)。 */}
                       {f.finding_id && edit && (
                         <div className="flex flex-wrap items-end gap-3 rounded-md border bg-background px-3 py-2.5">
                           <div className="flex min-w-[12rem] flex-1 flex-col gap-1">
@@ -398,7 +398,7 @@ export function FindingsTable({
                         {f.evidence}
                       </pre>
 
-                      {/* 详细报告(Markdown):展开时按 finding_id 懒加载,免进详情页即可查看。 */}
+                      {/* 詳細レポート(Markdown):展開時に finding_id で遅延読み込みし、詳細ページへ移動せず確認できる。 */}
                       {f.finding_id && (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -424,9 +424,9 @@ export function FindingsTable({
                             if (!rep.text.trim())
                               return <p className="text-xs text-muted-foreground">詳細レポートはありません。</p>;
                             return (
-                              // break-words 会继承到段落/列表,pre 另加
-                              // whitespace-pre-wrap 让代码块也换行——否则长代码行/长 URL
-                              // 会撑宽 colSpan 单元格,把整张表挤出横向滚动条。
+                              // break-words は段落/リストへ継承され、pre にはさらに
+                              // whitespace-pre-wrap を付けてコードブロックも折り返す——そうしないと長いコード行/長い URL が
+                              // colSpan セルを押し広げ、表全体に横スクロールバーが出る。
                               <div className="min-w-0 break-words rounded-md border bg-background px-3 py-2 [&_pre]:whitespace-pre-wrap">
                                 <Markdown text={rep.text} />
                               </div>

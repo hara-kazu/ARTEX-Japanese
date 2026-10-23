@@ -27,7 +27,7 @@ interface FindingRetestDialogProps {
   onStarted?: (retest: FindingRetest) => void;
 }
 
-// 仅在打开时挂载，关闭后清空说明；列表与详情共用提交锁及错误处理，启动后留在当前页。
+// 開くときだけマウントし、閉じた後は説明を消去する；一覧と詳細で送信ロックとエラー処理を共有し、開始後は現在のページに留まる。
 export function FindingRetestDialog({ findingId, findingName, onClose, onStarted }: FindingRetestDialogProps) {
   const notesId = React.useId();
   const [notes, setNotes] = React.useState("");

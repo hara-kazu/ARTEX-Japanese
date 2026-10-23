@@ -13,43 +13,43 @@ import (
 	"github.com/Autumn-27/artex/notify"
 )
 
-// 本文件是 IM 推送的渠道配置与事件层。投递任务的领取与状态流转见
+// このファイルは IM 通知のチャネル設定とイベント層。配信タスクの取得と状態遷移は
 // db/notification_delivery.go。
 //
-// 两条不变量，改这个文件时务必保持：
+// このファイルを変更する際は、次の2つの不変条件を必ず維持すること：
 //
-//  1. 写漏洞的事务(RecordFindingTx)只调用 InsertNotificationEventTx 做一次盲插，
-//     不读任何通知相关的表、不做过滤匹配。任何在这里引入的读操作都可能因为
-//     用户配错的过滤条件而污染甚至中止漏洞写入事务。
-//  2. 过滤匹配永不报错：配置畸形一律按「命中」处理(见 notify.Match)。宁可多推，
-//     不可漏推。
+//  1. 脆弱性を書き込むトランザクション(RecordFindingTx)は InsertNotificationEventTx のブラインド挿入を1回だけ呼び、
+//     通知関連テーブルを読まず、フィルター照合もしない。ここに読み取り処理を加えると、
+//     ユーザーの誤ったフィルター設定によって脆弱性の書き込みトランザクションを汚染、あるいは中止させる可能性がある。
+//  2. フィルター照合はエラーにしない：不正な設定は一律「一致」と扱う(notify.Match を参照)。余分な通知は許容しても、
+//     通知漏れは許容しない。
 
-// ErrNotificationChannelNotFound 渠道不存在。
+// ErrNotificationChannelNotFound はチャネルが存在しないことを表す。
 var ErrNotificationChannelNotFound = errors.New("通知チャンネルが存在しません")
 
-// 投递状态。
+// 配信状態。
 const (
-	NotifyStatePending = "pending" // 待发
-	NotifyStateSending = "sending" // 已被某个 dispatcher 领取，租约未到期
-	NotifyStateSent    = "sent"    // 已送达
-	NotifyStateFailed  = "failed"  // 重试耗尽或永久失败，可手动重发
-	NotifyStateSkipped = "skipped" // 渠道已停用，不再发送
+	NotifyStatePending = "pending" // 送信待ち
+	NotifyStateSending = "sending" // dispatcher が取得済みで、リース期限前
+	NotifyStateSent    = "sent"    // 配信済み
+	NotifyStateFailed  = "failed"  // 再試行上限または恒久的失敗で、手動再送可能
+	NotifyStateSkipped = "skipped" // チャネルが停止され、送信しない
 )
 
-// 推送模式。
+// 通知モード。
 const (
 	NotifyModeRealtime = "realtime"
 	NotifyModeDigest   = "digest"
 )
 
-// ValidNotifyMode 白名单校验推送模式（与 findings.status 同理：不用 DB CHECK，
-// 便于后续扩展）。
+// ValidNotifyMode は通知モードを許可リストで検証する（findings.status と同様に DB CHECK は使わず、
+// 今後の拡張を容易にする）。
 func ValidNotifyMode(m string) bool {
 	return m == NotifyModeRealtime || m == NotifyModeDigest
 }
 
-// NotificationChannel 是一个渠道实例配置。Config 与 Filter 保持原始 JSON，
-// 解析交给 notify 包——db 层不理解它们的字段含义。
+// NotificationChannel はチャネルインスタンスの設定。Config と Filter は元の JSON を保持し、
+// 解析は notify パッケージに任せ、db 層ではフィールドの意味を扱わない。
 type NotificationChannel struct {
 	ID     int64           `json:"id"`
 	Name   string          `json:"name"`
@@ -57,18 +57,18 @@ type NotificationChannel struct {
 	Mode   string          `json:"mode"`
 	Config json.RawMessage `json:"config"`
 	Filter json.RawMessage `json:"filter"`
-	// Enabled 用指针是为了区分「没传这个字段」与「显式传 false」——
-	// 前端开关控件只提交被改动的字段。
+	// Enabled をポインターにして「フィールド未送信」と「明示的な false」を区別する——
+	// フロントエンドのスイッチは変更したフィールドのみ送信する。
 	Enabled    *bool     `json:"enabled,omitempty"`
 	RatePerMin int       `json:"rate_per_min"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-// IsEnabled 返回渠道是否启用；Enabled 为 nil（未加载）时按启用处理。
+// IsEnabled はチャネルが有効かを返す；Enabled が nil（未読込）なら有効と扱う。
 func (c *NotificationChannel) IsEnabled() bool { return c.Enabled == nil || *c.Enabled }
 
-// NotificationEvent 是一条事件事实。
+// NotificationEvent はイベント事実1件。
 type NotificationEvent struct {
 	ID        int64           `json:"id"`
 	Kind      string          `json:"kind"`
@@ -89,8 +89,8 @@ func scanNotificationChannel(sc interface{ Scan(...any) error }) (*NotificationC
 	return &c, nil
 }
 
-// ListNotificationChannels 返回全部渠道实例，启用的排在前面、同级按 id。
-// 排序放在 SQL 里是为了让 UI 与 dispatcher 看到同一个稳定顺序。
+// ListNotificationChannels は全チャネルインスタンスを返し、有効なものを先頭に、同順位は id 順にする。
+// ソートを SQL で行い、UI と dispatcher が同じ安定した順序を見るようにする。
 func (d *DB) ListNotificationChannels(ctx context.Context) ([]*NotificationChannel, error) {
 	rows, err := d.QueryContext(ctx, `SELECT `+notificationChannelCols+` FROM notification_channels
 ORDER BY enabled DESC, id`)
@@ -109,7 +109,7 @@ ORDER BY enabled DESC, id`)
 	return out, rows.Err()
 }
 
-// NotificationChannelByID 取单个渠道。
+// NotificationChannelByID はチャネル1件を取得する。
 func (d *DB) NotificationChannelByID(ctx context.Context, id int64) (*NotificationChannel, error) {
 	row := d.QueryRowContext(ctx, `SELECT `+notificationChannelCols+` FROM notification_channels WHERE id=$1`, id)
 	c, err := scanNotificationChannel(row)
@@ -119,24 +119,24 @@ func (d *DB) NotificationChannelByID(ctx context.Context, id int64) (*Notificati
 	return c, err
 }
 
-// SaveNotificationChannel 新建或更新一个渠道。
+// SaveNotificationChannel はチャネルを新規作成または更新する。
 //
-// 更新时只覆盖调用方显式给出的字段（非 nil / 非空），这样前端可以提交局部
-// 修改的抽屉表单，而不必回传 config 里那些它没展示的字段——回传反而会造成
-// 「掩码值把真实密钥覆盖掉」的事故。
+// 更新時は呼び出し元が明示的に渡したフィールド（非 nil / 非空）のみ上書きし、フロントエンドが部分的に
+// 変更したドロワーのフォームを送信できるようにする。config 内の未表示フィールドを返送する必要をなくし、
+// 「マスク値が実際の秘密キーを上書きする」事故を防ぐ。
 func (d *DB) SaveNotificationChannel(ctx context.Context, c *NotificationChannel) (int64, error) {
 	if c.Mode == "" {
 		c.Mode = NotifyModeRealtime
 	}
-	// 这里刻意**不**对 0 做任何加工：0 是合法配置，含义是「不限流」。
+	// ここでは意図的に 0 を**一切**加工しない：0 は有効な設定で、「レート制限なし」を意味する。
 	//
-	// 曾经写成 `if c.RatePerMin <= 0 { c.RatePerMin = 默认值 }`，本意是「未指定时
-	// 给个安全默认」，但那把「显式设成 0」也一起吞掉了——文档、UI 提示与
-	// takeTokens 都把 0 解释为不限流，唯独这里悄悄改成 20（钉钉/企微/Telegram）
-	// 或 100（飞书），操作者以为放开了限流、实际被 20/分钟卡着且没有任何提示。
+	// 以前は `if c.RatePerMin <= 0 { c.RatePerMin = デフォルト値 }` と記述し、「未指定時に
+	// 安全なデフォルトを与える」意図だったが、「明示的な 0」も取り込んでしまった——ドキュメント、UI の説明と
+	// takeTokens はいずれも 0 を制限なしと解釈するのに、ここだけ 20（DingTalk/WeCom/Telegram）
+	// または 100（Feishu）に黙って変え、操作者は制限解除と思っても実際は 20/分に制限され、説明もなかった。
 	//
-	// 「未指定」与「显式 0」的区别只有调用方知道（请求体里字段缺省 vs 明确传 0），
-	// 所以默认值由 server 层在字段缺省时填，见 notifyCreateChannel。
+	// 「未指定」と「明示的な 0」の違いは呼び出し元だけが分かる（リクエスト本文で省略 vs 明示的な 0）ため、
+	// デフォルト値は server 層でフィールド省略時に設定する。notifyCreateChannel を参照。
 	if c.RatePerMin < 0 {
 		return 0, errors.New("レート制限は0以上にしてください")
 	}
@@ -168,10 +168,10 @@ WHERE id=$1`,
 	return c.ID, nil
 }
 
-// SetNotificationChannelEnabled 切换启停。
+// SetNotificationChannelEnabled は有効/無効を切り替える。
 //
-// 停用一个渠道时，把它尚未发出的投递一并标记为 skipped：否则重新启用后
-// 会突然收到一批「停用期间积压」的旧漏洞，时效已失且容易误判为新增。
+// チャネルを無効にする際は、未送信の配信も skipped にする：そうしないと再度有効にした後に
+// 「無効期間中に滞留した」古い脆弱性をまとめて受信し、鮮度がなく新規と誤認されやすい。
 func (d *DB) SetNotificationChannelEnabled(ctx context.Context, id int64, enabled bool) error {
 	return d.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		res, err := tx.ExecContext(ctx, `UPDATE notification_channels SET enabled=$2 WHERE id=$1`, id, enabled)
@@ -192,8 +192,8 @@ WHERE channel_id=$1 AND state IN ($4,$5)`,
 	})
 }
 
-// DeleteNotificationChannel 删除渠道。其投递历史随外键级联删除
-// （渠道配置都没了，历史无从解读）。
+// DeleteNotificationChannel はチャネルを削除する。配信履歴は外部キーに従って連鎖削除する
+// （チャネル設定自体がなくなると、履歴を解釈できない）。
 func (d *DB) DeleteNotificationChannel(ctx context.Context, id int64) error {
 	res, err := d.ExecContext(ctx, `DELETE FROM notification_channels WHERE id=$1`, id)
 	if err != nil {
@@ -205,23 +205,23 @@ func (d *DB) DeleteNotificationChannel(ctx context.Context, id int64) error {
 	return nil
 }
 
-// RecordNotificationEventTx 在调用方的事务里**尽力**写入一条推送事件。
+// RecordNotificationEventTx は呼び出し元のトランザクション内で通知イベント1件を**ベストエフォートで**書き込む。
 //
-// 这是漏洞写入路径上唯一的通知相关改动：一次 INSERT，不读任何表、不认识渠道、
-// 不跑过滤。事务提交即保证「漏洞落库」与「推送任务存在」原子一致，
-// 不存在提交成功却没入队、消息永久丢失的窗口。
+// 脆弱性書き込み経路の通知関連変更はこれだけ：INSERT 1回のみで、テーブルを読まず、チャネルを扱わず、
+// フィルターも実行しない。コミット時点で「脆弱性の保存」と「通知タスクの存在」が原子的に一致し、
+// コミット成功後にキュー未投入でメッセージが永久に失われる間隙をなくす。
 //
-// 两个关键设计，都不是随手写的：
+// 次の2つは意図した重要な設計：
 //
-//  1. **为什么用 SAVEPOINT**：PostgreSQL 里事务内任一语句报错会让整个事务进入
-//     aborted 状态，此后所有语句（含 COMMIT）一律失败。所以「忽略这条 INSERT
-//     的错误、让调用方继续提交」在 PG 里是做不到的——除非用保存点把错误隔离在
-//     这一条语句上。没有保存点，就只剩「整笔回滚」这一个选项。
+//  1. **SAVEPOINT を使う理由**：PostgreSQL はトランザクション内の任意の文が失敗すると、全体が
+//     aborted 状態になり、以降は全ステートメント（COMMIT も含む）が失敗する。そのため「この INSERT の
+//     エラーを無視し、呼び出し元にコミットを続行させる」ことは PG ではできず、セーブポイントでエラーを
+//     この文に隔離する必要がある。セーブポイントがなければ「全体をロールバック」しかない。
 //
-//  2. **为什么整笔回滚是错的**：推送是便利功能，漏洞记录才是产品本身。一个通知
-//     表的问题（旧库未迁移、磁盘瞬时故障）不该让高危漏洞存不进库。所以这里隔离
-//     错误、记日志、返回 false，让漏洞写入照常提交——代价是丢掉这一条推送。
-//     返回 bool 而非 error 是刻意的：调用方不该把它当作会影响写入成败的错误。
+//  2. **全体ロールバックが誤りである理由**：通知は便利機能で、脆弱性記録こそが製品そのもの。通知
+//     テーブルの問題（旧 DB の未移行、ディスクの一時障害）で高リスクの脆弱性を保存できなくしてはならない。そのためここでは
+//     エラーを隔離し、ログを記録して false を返し、脆弱性書き込みは通常どおりコミットする——代償として当該通知1件を失う。
+//     error でなく bool を返すのは意図的：呼び出し元は書き込み成否に影響するエラーとして扱わないこと。
 func RecordNotificationEventTx(ctx context.Context, tx *sql.Tx, kind string, findingID int64, snap notify.Snapshot) bool {
 	raw, err := json.Marshal(snap)
 	if err != nil {
@@ -235,19 +235,19 @@ func RecordNotificationEventTx(ctx context.Context, tx *sql.Tx, kind string, fin
 	if _, err := tx.ExecContext(ctx, `INSERT INTO notification_events(kind,finding_id,snapshot) VALUES($1,$2,$3)`,
 		kind, findingID, string(raw)); err != nil {
 		log.Printf("[notify] 通知イベントの書き込みに失敗 finding=%d（脆弱性の記録には影響しません）: %v", findingID, err)
-		// 回滚到保存点，把事务从 aborted 状态里救回来。
+		// セーブポイントへロールバックし、トランザクションを aborted 状態から回復させる。
 		if _, rbErr := tx.ExecContext(ctx, `ROLLBACK TO SAVEPOINT notify_event`); rbErr != nil {
 			log.Printf("[notify] セーブポイントへのロールバックに失敗 finding=%d: %v", findingID, rbErr)
 		}
 		return false
 	}
-	// 释放保存点，避免长事务里积攒无用的保存点。
+	// セーブポイントを解放し、長いトランザクションに不要なセーブポイントが蓄積することを防ぐ。
 	_, _ = tx.ExecContext(ctx, `RELEASE SAVEPOINT notify_event`)
 	return true
 }
 
-// AddNotificationEvent 是 InsertNotificationEventTx 的独立事务版本，供不在
-// 既有事务里的调用点使用（如渠道的「发送测试消息」，它没有真实 finding）。
+// AddNotificationEvent は InsertNotificationEventTx の独立トランザクション版で、既存の
+// トランザクション外の呼び出し箇所で使用する（チャネルの「テストメッセージ送信」など、実際の finding がない場合）。
 func (d *DB) AddNotificationEvent(ctx context.Context, kind string, findingID int64, snap notify.Snapshot) (int64, error) {
 	raw, err := json.Marshal(snap)
 	if err != nil {
@@ -259,19 +259,19 @@ func (d *DB) AddNotificationEvent(ctx context.Context, kind string, findingID in
 	return id, err
 }
 
-// FanOutPendingEvents 把尚未分派的漏洞事件按当前启用的渠道展开成投递任务，
-// 返回本轮处理的事件数与新建的投递数。
+// FanOutPendingEvents は未割当の脆弱性イベントを、現在有効なチャネルごとに配信タスクへ展開し、
+// 今回処理したイベント数と新規配信数を返す。
 //
-// 整轮操作在一个事务里：事件用 FOR UPDATE SKIP LOCKED 领取，多个进程同时跑
-// 也各自领到不同的行（项目里归档队列的领取用的是同一套手法，见
-// db/task_archives.go 的 completeNextArchiveJob）。
+// 全処理を1トランザクションで実行：イベントは FOR UPDATE SKIP LOCKED で取得し、複数プロセスが同時実行しても
+// それぞれ異なる行を取得する（プロジェクトのアーカイブキューも同じ取得手法を使用。以下参照：
+// db/task_archives.go の completeNextArchiveJob）。
 //
-// 过滤匹配刻意放在 Go 侧而非 SQL：渠道的过滤条件是一组可选字段的 JSONB，
-// 用 SQL 表达六种组合的匹配会让查询难以维护，而渠道数量是「人手配的几条」，
-// 全量加载后在内存里逐条比对更快也更好测。
+// フィルター照合は意図的に SQL ではなく Go 側に配置：チャネルのフィルター条件は任意フィールド群の JSONB で、
+// 6種類の組み合わせ照合を SQL で表現すると保守しにくくなる一方、チャネル数は「手動設定した数件」なので、
+// 全件読み込み後にメモリ内で個別照合する方が速く、テストもしやすい。
 //
-// 未命中任何渠道的事件同样会被标记 fanned_out ——否则它会永远留在待分派集合里，
-// 每个 tick 被重扫一遍。
+// どのチャネルにも一致しないイベントも fanned_out にする —— そうしないと未割当集合に永久に残り、
+// tick ごとに再走査される。
 func (d *DB) FanOutPendingEvents(ctx context.Context, limit int) (eventCount, deliveryCount int, err error) {
 	if limit <= 0 {
 		limit = 200
@@ -280,7 +280,7 @@ func (d *DB) FanOutPendingEvents(ctx context.Context, limit int) (eventCount, de
 	if err != nil {
 		return 0, 0, err
 	}
-	defer tx.Rollback() //nolint:errcheck // 提交成功后是 no-op
+	defer tx.Rollback() //nolint:errcheck // コミット成功後は no-op
 
 	channels, err := listEnabledNotificationChannelsTx(ctx, tx)
 	if err != nil {
@@ -302,11 +302,11 @@ WHERE NOT fanned_out ORDER BY id FOR UPDATE SKIP LOCKED LIMIT $1`, limit)
 			return 0, 0, err
 		}
 		var snap notify.Snapshot
-		// 快照是我们自己写的，理论上必定可解析；解析失败不阻断投递流程，
-		// 但这条事件会因字段全空而被所有带过滤条件的渠道跳过——宁可少推一条
-		// 也不让一个坏行卡死整个队列。
+		// スナップショットは自分たちで書き込むため理論上は解析可能なはずだが、解析失敗で配信フローを止めない。
+		// ただしこのイベントは全フィールドが空なので、フィルター条件付きの全チャネルでスキップされる——通知1件を失っても、
+		// 不正な1行でキュー全体を停止させない。
 		_ = json.Unmarshal(ev.Snapshot, &snap)
-		// kind 以行内值为准：快照里那份是渲染用的副本，可能被旧版本写过。
+		// kind は行の値を正とする：スナップショット側は描画用コピーで、旧版が書き込んだ可能性がある。
 		snap.Kind = ev.Kind
 		events = append(events, ev)
 		parsedSnaps = append(parsedSnaps, snap)
@@ -346,7 +346,7 @@ WHERE NOT fanned_out ORDER BY id FOR UPDATE SKIP LOCKED LIMIT $1`, limit)
 		}
 	}
 
-	// 标记本轮事件已分派。未命中任何渠道的事件也一起标记（见函数注释）。
+	// 今回のイベントを割当済みにする。どのチャネルにも一致しないイベントも対象（関数コメント参照）。
 	ids := make([]string, 0, len(events))
 	markArgs := make([]any, 0, len(events))
 	for _, ev := range events {
@@ -359,8 +359,8 @@ WHERE NOT fanned_out ORDER BY id FOR UPDATE SKIP LOCKED LIMIT $1`, limit)
 	return len(events), len(toInsert), tx.Commit()
 }
 
-// listEnabledNotificationChannelsTx 在事务里取启用中的渠道。数量很少，
-// 不做分页也不加缓存——缓存会引入「改了配置何时生效」这个额外的时序问题。
+// listEnabledNotificationChannelsTx はトランザクション内で有効なチャネルを取得する。数が少ないので、
+// ページ分割もキャッシュもしない——キャッシュは「設定変更がいつ反映されるか」という追加のタイミング問題を生む。
 func listEnabledNotificationChannelsTx(ctx context.Context, tx *sql.Tx) ([]*NotificationChannel, error) {
 	rows, err := tx.QueryContext(ctx, `SELECT id, name, kind, config, mode, filter, rate_per_min
 FROM notification_channels WHERE enabled ORDER BY id`)
@@ -379,11 +379,11 @@ FROM notification_channels WHERE enabled ORDER BY id`)
 	return out, rows.Err()
 }
 
-// NotificationAssetNames 把资产 id 解析成简短展示名，供推送消息使用。
+// NotificationAssetNames は資産 id を短い表示名に解決し、通知メッセージに使用する。
 //
-// 返回顺序与入参一致、长度可能小于入参（不存在的 id 被跳过）。保持入参顺序是
-// 为了让同一条漏洞的消息在多次投递里资产顺序稳定——否则重试后收到的消息里
-// 资产次序变了，会被误读成「资产变了」。
+// 戻り順は引数順と一致し、長さは短くなりうる（存在しない id をスキップ）。引数順を保つのは、
+// 同じ脆弱性の複数回配信で資産順序を安定させるため——再試行後のメッセージで
+// 資産順序が変わると、「資産が変わった」と誤解される。
 func (d *DB) NotificationAssetNames(ctx context.Context, ids []int64) ([]string, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -424,9 +424,9 @@ func (d *DB) NotificationAssetNames(ctx context.Context, ids []int64) ([]string,
 	return out, nil
 }
 
-// assetDisplayName 按资产类型挑选最具辨识度的标识。
-// 兜底返回空串，由调用方决定怎么呈现「名字取不到的资产」——本函数不臆造占位符，
-// 否则「资产#42」这种噪音会混进推送消息里，读者还以为是真实域名。
+// assetDisplayName は資産型ごとに最も識別しやすい情報を選ぶ。
+// フォールバックは空文字列で、「名前を取得できない資産」の表示は呼び出し元が判断する——この関数では仮の表示を捏造しない。
+// そうしないと「資産#42」のようなノイズが通知メッセージに混在し、読み手が実際のドメインと誤認する。
 func assetDisplayName(typ, domain, ip, url, appName, bundleID string) string {
 	pick := func(vals ...string) string {
 		for _, v := range vals {
@@ -450,17 +450,17 @@ func assetDisplayName(typ, domain, ip, url, appName, bundleID string) string {
 	}
 }
 
-// SetFindingStatusWithNotify 更新漏洞处置状态，并在同一事务里登记一条状态变更
-// 推送事件。
+// SetFindingStatusWithNotify は脆弱性の対応状態を更新し、同じトランザクションで状態変更の
+// 通知イベント1件を登録する。
 //
-// 返回 from=变更前的状态；found=漏洞是否存在；notified=事件是否登记成功。
+// 戻り値 from=変更前の状態；found=脆弱性が存在するか；notified=イベント登録成功か。
 //
-// 三条刻意的行为：
-//   - 状态未实际变化时不登记事件。前端抽屉重复提交同一个值、或自动化脚本
-//     幂等重放，都不该产出推送噪音。
-//   - 漏洞不存在时返回 found=false 且不做任何写入，由调用方翻译成 404。
-//   - 事件登记失败不影响状态更新（见 RecordNotificationEventTx 的保存点说明），
-//     所以 notified=false 时状态已经改成功了，调用方不应因此报错。
+// 意図した3つの動作：
+//   - 状態が実際に変わらない場合はイベントを登録しない。フロントエンドのドロワーから同値を再送したり、自動化スクリプトが
+//     冪等に再実行したりしても、通知ノイズを生じさせないこと。
+//   - 脆弱性がない場合は found=false を返し、一切書き込まず、呼び出し元が 404 に変換する。
+//   - イベント登録失敗は状態更新に影響しない（RecordNotificationEventTx のセーブポイントの説明を参照）ため、
+//     notified=false でも状態変更は成功しており、呼び出し元はエラーにしないこと。
 func (d *DB) SetFindingStatusWithNotify(ctx context.Context, id int64, status string) (from string, found bool, notified bool, err error) {
 	err = d.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		var txErr error
@@ -470,16 +470,16 @@ func (d *DB) SetFindingStatusWithNotify(ctx context.Context, id int64, status st
 	return from, found, notified, err
 }
 
-// SetFindingStatusTx 在**调用方的事务**内更新漏洞状态并登记状态变更推送事件。
+// SetFindingStatusTx は**呼び出し元のトランザクション**内で脆弱性状態を更新し、状態変更通知イベントを登録する。
 //
-// 抽成事务级函数是为了让所有改状态的路径共用同一套语义——此前只有
-// patchFinding 走带通知的版本，而**复测结论为「已修复」时**（finding_retests
-// 里那条 `UPDATE findings SET status=...`）是直接写库的，于是配了
-// `on_status_change` 的渠道对这类状态流转完全收不到推送：界面上状态悄悄变了，
-// 运维要到打开平台才发现。
+// トランザクション単位の関数に抽出し、すべての状態変更経路で同じ意味を共有する——以前は
+// patchFinding だけが通知付き版を使用し、**再テストの結論が「修正済み」の場合**（finding_retests
+// 内の `UPDATE findings SET status=...`）は直接 DB に書き込んでいたため、
+// `on_status_change` を設定したチャネルはこの種の状態遷移の通知を一切受信できず、画面の状態が黙って変わり、
+// 運用担当はプラットフォームを開いて初めて気付いていた。
 //
-// 返回 from=变更前状态、found=漏洞是否存在、changed=状态是否真的变了、
-// notified=事件是否登记成功（登记失败不影响状态更新，见 RecordNotificationEventTx）。
+// 戻り値 from=変更前の状態、found=脆弱性が存在するか、changed=状態が実際に変わったか、
+// notified=イベント登録成功か（登録失敗は状態更新に影響しない。RecordNotificationEventTx を参照）。
 func SetFindingStatusTx(ctx context.Context, tx *sql.Tx, id int64, status string) (from string, found bool, changed bool, notified bool, err error) {
 	var (
 		vulnclass, name, severity, summary string
@@ -497,8 +497,8 @@ FROM findings WHERE id=$1 FOR UPDATE`, id).
 	}
 	found = true
 	if from == status {
-		// 状态没有真的变化就不登记事件：重复提交同一个值、幂等重放都不该
-		// 产生推送噪音。
+		// 状態が実際に変わらない場合はイベントを登録しない：同値の再送、冪等な再実行で
+		// 通知ノイズを生じさせないこと。
 		return from, true, false, false, nil
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE findings SET status=$2 WHERE id=$1`, id, status); err != nil {
@@ -521,19 +521,19 @@ FROM findings WHERE id=$1 FOR UPDATE`, id).
 	return from, true, true, notified, nil
 }
 
-// NotificationStats 是通知页顶部的概览计数。
+// NotificationStats は通知ページ上部の概要件数。
 type NotificationStats struct {
 	Channels     int   `json:"channels"`
 	ChannelsOn   int   `json:"channels_on"`
 	Pending      int   `json:"pending"`
 	Failed       int   `json:"failed"`
 	SentToday    int   `json:"sent_today"`
-	BacklogAgeMS int64 `json:"backlog_age_ms"` // 最老的待发投递距今毫秒数
+	BacklogAgeMS int64 `json:"backlog_age_ms"` // 最古の送信待ち配信から現在までのミリ秒数
 }
 
-// NotificationStatsSnapshot 汇总通知系统的健康度。
-// BacklogAgeMS 是「推送是不是卡住了」最直接的指标——比 pending 计数有用得多，
-// 因为积压 3 条和积压 3 条的差别可以是从 3 秒到 3 小时。
+// NotificationStatsSnapshot は通知システムの健全性を集計する。
+// BacklogAgeMS は「通知が停止していないか」の最も直接的な指標で、pending 件数よりはるかに有用。
+// 3 件の滞留と 3 件の滞留でも、3 秒から 3 時間までの違いがありうるため。
 func (d *DB) NotificationStatsSnapshot(ctx context.Context) (*NotificationStats, error) {
 	var s NotificationStats
 	if err := d.QueryRowContext(ctx, `SELECT

@@ -208,7 +208,7 @@ func seedPrompts(pg *db.DB) {
 // edits survive restart) and wires the DB tools table into the agent runtime: at
 // tool-assembly time each built-in tool is filtered by its agent binding / enabled
 // flag and, if kept, wrapped so the model sees the DB-overridden description/schema
-// and缺省入参 get injected. MCP/skill/host tools have no row and pass through.
+// and既定の入力引数 get injected. MCP/skill/host tools have no row and pass through.
 func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 	agent.FindingTrafficBindingEnabled = func() bool { return pg.GetBool(settingAgentTrafficBinding, false) }
 	// Seed the built-in domain tools (first-insert only; DO NOTHING preserves edits).

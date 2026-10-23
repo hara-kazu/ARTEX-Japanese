@@ -6,12 +6,12 @@ import (
 	"github.com/Autumn-27/norma/harness"
 )
 
-// 收尾提示词(wrap-up / settlement prompt):当 agent 因【步数耗尽(MaxTurns)】或
-// 【超时(run_seconds/MaxDuration)】被终止时,SDK 的 settlement 阶段会注入这段提示,
-// 让 agent 先把已识别但未写回的内容落库、再输出一句总结,避免烂尾。
+// 終了プロンプト(wrap-up / settlement prompt):agent が【ステップ数上限(MaxTurns)】または
+// 【タイムアウト(run_seconds/MaxDuration)】で終了すると、SDK の settlement 段階がこのプロンプトを注入し、
+// agent に認識済みだが未書き戻しの内容を先に保存させ、その後1文の要約を出力させ、未完了を防ぐ。
 //
-// 每个 agent 的收尾提示词可在后台按需覆盖(存 agents.wrapup_prompt),留空则用这里的
-// 内置默认。仅【提示词正文】可编辑;禁用哪些工具、收尾自身给几轮预算属代码固定策略。
+// 各 agent の終了プロンプトは管理画面で必要に応じて上書き可能(agents.wrapup_prompt に保存)で、空ならここの
+// 組み込みデフォルトを使う。【プロンプト本文】のみ編集可能で、無効にするツールや終了段階のラウンド予算はコードの固定ポリシー。
 
 // WrapupOverride, if set, returns the stored wrap-up prompt for an agent key and
 // whether a non-empty one exists. Wired by the server to the agents table (like
@@ -23,16 +23,16 @@ var WrapupOverride func(agentKey string) (string, bool)
 // table. nil / ≤0 → the built-in per-agent default (wrapupTurnDefaults) is used.
 var WrapupMaxTurnsOverride func(agentKey string) (int, bool)
 
-// 内置默认收尾提示词,按 agent key 索引。worker 复用历史上硬编码的 settleWrapUpPrompt
-// (定义在 worker.go),planner/mainagent 各有一版;未命中的(自定义 agent)走通用兜底。
+// 組み込みのデフォルト終了プロンプトを agent key で索引化。worker は従来ハードコードされていた settleWrapUpPrompt を再利用し、
+// (worker.go で定義)、planner/mainagent は各々1版を持つ;未一致(カスタム agent)は汎用のフォールバックを使用。
 var wrapupDefaults = map[string]string{
 	"worker":    settleWrapUpPrompt,
 	"planner":   plannerWrapUpDefault,
 	"mainagent": mainAgentWrapUpDefault,
 }
 
-// wrapupTurnDefaults: 各 agent 收尾阶段【自身】的轮数预算内置默认(可被后台 >0 覆盖)。
-// 均给 10 轮,保证收尾阶段有足够步数落库。未命中走 genericWrapupTurns。
+// wrapupTurnDefaults: 各 agent の終了段階【自身】のラウンド予算の組み込みデフォルト(管理画面で >0 に上書き可能)。
+// いずれも 10 ラウンドを与え、終了段階で保存に十分なステップを確保する。未一致は genericWrapupTurns を使用。
 var wrapupTurnDefaults = map[string]int{
 	"worker":    10,
 	"planner":   10,
@@ -99,14 +99,14 @@ func wrapupSettlement(agentKey string, disabledTools []string) *harness.Settleme
 	}
 }
 
-// ---------- 任务级超时收尾词（见 docs/任务级超时与收尾设计.md）----------
+// ---------- タスク単位のタイムアウト終了プロンプト（docs/任务级超时与收尾设计.md を参照）----------
 //
-// 与 per-run 收尾词是【两套】：per-run 是"你这一次 run 的预算用完了"；任务超时是
-// "整个任务到点、即将结束"。语义常相反（尤其 planner：per-run 说"别停继续规划"，
-// 任务超时说"到点停止规划、做最后判定"）。只给 worker/planner 配置。
+// per-run 終了プロンプトとは【別系統】：per-run は"今回の run の予算を使い切った"で、タスクのタイムアウトは
+// "タスク全体が期限に達し、まもなく終了する"。意味はしばしば逆になる（特に planner：per-run は"止めずに計画を続ける"、
+// タスクのタイムアウトは"期限なので計画を止め、最終判定する"）。worker/planner のみ設定。
 
-// WrapupTaskTimeoutOverride / …TurnsOverride：任务超时收尾词与轮数的 DB 覆盖
-// （wire 到 agents.task_timeout_wrapup_prompt / _max_turns，仅 worker/planner）。
+// WrapupTaskTimeoutOverride / …TurnsOverride：タスクのタイムアウト終了プロンプトとラウンド数の DB 上書き
+// （agents.task_timeout_wrapup_prompt / _max_turns に wire、worker/planner のみ）。
 var (
 	WrapupTaskTimeoutOverride      func(agentKey string) (string, bool)
 	WrapupTaskTimeoutTurnsOverride func(agentKey string) (int, bool)
@@ -121,13 +121,13 @@ const workerTaskTimeoutDefault = "**タスク全体の制限時間に達した�
 
 const plannerTaskTimeoutDefault = "**タスク全体の制限時間に達したため、まもなく終了します**（このラウンドではなく、タスク全体が終了します）。現在の【すべて】の事実と検出結果に基づき、最後に目標を判定してください。証拠によって達成が証明された目標は、判定漏れがないよう prove_goal で met にしてください。**新しいインテントを作成しないでください**（ここで割り当てても実行されません）。判定が終わったら終了し、要約文の出力は不要です。"
 
-// TaskTimeoutWrapupDefault 返回某 agent 的任务超时内置默认收尾词（供后台占位/恢复默认）。
+// TaskTimeoutWrapupDefault は agent のタスクのタイムアウト用組み込みデフォルト終了プロンプトを返す（管理画面の仮表示/デフォルト復元用）。
 func TaskTimeoutWrapupDefault(agentKey string) string {
-	return taskTimeoutWrapupDefaults[agentKey] // 未配置(mainagent/chat)返回空串
+	return taskTimeoutWrapupDefaults[agentKey] // 未設定(mainagent/chat)は空文字列を返す
 }
 
-// resolveTaskTimeoutWrapup：DB 覆盖(非空) > 内置默认。空串表示该 agent 无任务超时词
-// （非 worker/planner），此时调用方应回退 per-run 词。
+// resolveTaskTimeoutWrapup：DB 上書き(非空) > 組み込みデフォルト。空文字列はその agent にタスクのタイムアウト文がないことを表し、
+// （worker/planner 以外）、この場合は呼び出し元が per-run 文に戻すこと。
 func resolveTaskTimeoutWrapup(agentKey string) string {
 	if WrapupTaskTimeoutOverride != nil {
 		if t, ok := WrapupTaskTimeoutOverride(agentKey); ok && strings.TrimSpace(t) != "" {
@@ -143,28 +143,28 @@ func resolveTaskTimeoutTurns(agentKey string) int {
 			return v
 		}
 	}
-	return resolveWrapupTurns(agentKey) // 默认沿用 per-run 轮数
+	return resolveWrapupTurns(agentKey) // デフォルトでは per-run のラウンド数を継続
 }
 
 // wrapupSettlementForTask builds settlement for a worker/planner run that is aware
 // of the task deadline. See §5 of the design doc:
-//   - clamped=true  → 本次 run 被任务 deadline 夹逼：因 Timeout 收尾=任务到点→任务超时词；
-//     因 MaxTurns 收尾=夹逼窗口内步数先耗尽、任务还剩几分钟→回落 per-run 词。
-//   - clamped=false → 任务还早：两种 reason 都用 per-run 词（即退化为 wrapupSettlement）。
+//   - clamped=true  → 今回の run はタスクの deadline で制限：Timeout による終了=タスク期限到達→タスクのタイムアウト文；
+//     MaxTurns による終了=制限ウィンドウ内で先にステップ数が尽き、タスクは数分残る→per-run 文に戻す。
+//   - clamped=false → タスク期限には余裕：どちらの reason も per-run 文を使用（wrapupSettlement と同じに退化）。
 //
-// 交给 harness 的 PromptByReason 在收尾时按【实际】reason 现场挑，无 build 时错配。
+// harness に渡す PromptByReason が終了時に【実際】の reason に応じて選び、build 時の不一致を防ぐ。
 func wrapupSettlementForTask(agentKey string, disabledTools []string, clamped bool) *harness.Settlement {
 	perRun := resolveWrapup(agentKey)
 	st := &harness.Settlement{
-		Prompt:        perRun, // 兜底(也是非 clamped 时两种 reason 的取值)
+		Prompt:        perRun, // フォールバック(非 clamped 時の両方の reason の値でもある)
 		DisabledTools: disabledTools,
 		MaxTurns:      resolveWrapupTurns(agentKey),
 	}
 	if clamped {
 		if tt := resolveTaskTimeoutWrapup(agentKey); tt != "" {
 			st.PromptByReason = map[harness.TerminalReason]string{
-				harness.ReasonTimeout:  tt,     // 任务到点
-				harness.ReasonMaxTurns: perRun, // 步数先耗尽、任务还剩时间
+				harness.ReasonTimeout:  tt,     // タスク期限到達
+				harness.ReasonMaxTurns: perRun, // ステップ数が先に尽き、タスク時間は残っている
 			}
 			st.MaxTurns = resolveTaskTimeoutTurns(agentKey)
 		}

@@ -10,24 +10,24 @@ import (
 	"testing"
 )
 
-// 本文件补齐邮件渠道的协议级测试。在此之前 email.Send 的覆盖率是 0——
-// 整条 SMTP 路径没有任何用例跑过，而它恰恰是六个渠道里协议面最大、
-// 最容易出错的一个（握手、认证、信封、DATA 阶段各有各的失败语义）。
+// このファイルはメールチャネルのプロトコルレベルのテストを補う。以前の email.Send のカバレッジは 0 で、
+// SMTP 経路全体を実行するケースは1つもなかったが、これは6つのチャネルの中でプロトコルの範囲が最も広く、
+// 最も誤りやすいものだった（ハンドシェイク、認証、エンベロープ、DATA の各段階で失敗の意味が異なる）。
 //
-// 这里用自建的最小 SMTP 服务器驱动，而不是 mock 掉 net/smtp：
-// 邮件渠道的绝大部分风险就在「与真实 SMTP 服务器对话」这一步，
-// 把这一步 mock 掉等于不测。
+// ここでは net/smtp を mock するのではなく、自作の最小 SMTP サーバーで駆動する：
+// メールチャネルのリスクの大半は「実際の SMTP サーバーと通信する」段階にあり、
+// その段階を mock するとテストしていないのと同じため。
 
-// fakeSMTP 是一个刚好够用的 SMTP 服务器：能完成 greet/EHLO/AUTH/MAIL/RCPT/DATA/QUIT，
-// 并按用例要求对特定阶段返回指定应答码。
+// fakeSMTP は最低限の SMTP サーバー：greet/EHLO/AUTH/MAIL/RCPT/DATA/QUIT を完了でき、
+// ケースに応じて特定の段階で指定の応答コードを返す。
 type fakeSMTP struct {
 	ln net.Listener
 
-	// rcptReply 是 RCPT TO 的应答；默认 250。
+	// rcptReply は RCPT TO の応答。デフォルトは 250。
 	rcptReply string
-	// mailReply 是 MAIL FROM 的应答；默认 250。
+	// mailReply は MAIL FROM の応答。デフォルトは 250。
 	mailReply string
-	// advertiseAuth 为 true 时在 EHLO 里声明支持 AUTH PLAIN。
+	// advertiseAuth が true なら EHLO で AUTH PLAIN のサポートを宣言する。
 	advertiseAuth bool
 
 	mu       sync.Mutex
@@ -97,14 +97,14 @@ func (f *fakeSMTP) serve() {
 		f.record(line)
 		switch {
 		case strings.HasPrefix(line, "EHLO"), strings.HasPrefix(line, "HELO"):
-			// 不声明 STARTTLS：让代码走明文分支（测试目标是信封逻辑，不是 TLS）。
+			// STARTTLS は宣言しない：コードを平文分岐に進める（テスト対象は TLS ではなくエンベロープのロジック）。
 			w("250-fake.local")
 			if f.advertiseAuth {
 				w("250-AUTH PLAIN")
 			}
 			w("250 8BITMIME")
 		case strings.HasPrefix(line, "AUTH"):
-			// 简化处理：PLAIN 的初始应答可能跨多行，直接接受。
+			// 簡略化：PLAIN の初期応答は複数行の場合があるが、そのまま受け入れる。
 			w("235 2.7.0 Authentication successful")
 		case strings.HasPrefix(line, "MAIL FROM"):
 			w(f.mailReply)
@@ -159,13 +159,13 @@ func TestEmailSendDeliversFullMessage(t *testing.T) {
 	if _, err := (emailChannel{}).Send(context.Background(), cfg, singleMsg()); err != nil {
 		t.Fatalf("投递失败: %v", err)
 	}
-	// 信封阶段必须走到：发件人、两个收件人、DATA。
+	// エンベロープ段階を通過すること：送信者、2つの受信者、DATA。
 	for _, want := range []string{"MAIL FROM:<artex@example.com>", "RCPT TO:<a@example.com>", "RCPT TO:<b@example.com>", "DATA", "AUTH", "QUIT"} {
 		if !f.sawCommand(want) {
 			t.Errorf("SMTP 会话里缺少 %q，实际命令：%v", want, f.commands)
 		}
 	}
-	// 正文是 base64 的 HTML，且要带上真实的漏洞内容（编码后仍可辨认）。
+	// 本文は base64 の HTML で、実際の脆弱性の内容を含むこと（エンコード後も識別可能）。
 	body := f.body()
 	if body == "" {
 		t.Fatal("DATA 阶段没有收到正文")
@@ -176,14 +176,14 @@ func TestEmailSendDeliversFullMessage(t *testing.T) {
 	if !strings.Contains(body, "base64") {
 		t.Errorf("正文未按 base64 编码（长 HTML 行会破坏 SMTP 的 1000 字节行长限制）:\n%s", body)
 	}
-	// 多个收件人都要出现在 To 头里。
+	// 複数の受信者がすべて To ヘッダーに現れること。
 	if !strings.Contains(body, "a@example.com, b@example.com") {
 		t.Errorf("To 头未包含全部收件人:\n%s", body)
 	}
 }
 
 func TestEmailSendWithoutAuth(t *testing.T) {
-	// 未配账号时不应发 AUTH —— 有些中继会因此拒收。
+	// アカウント未設定時は AUTH を送信しないこと。これが理由で拒否するリレーもある。
 	f := newFakeSMTP(t)
 	cfg := emailCfg(t, f, nil)
 	if _, err := (emailChannel{}).Send(context.Background(), cfg, singleMsg()); err != nil {
@@ -194,8 +194,8 @@ func TestEmailSendWithoutAuth(t *testing.T) {
 	}
 }
 
-// TestEmailSendClassifiesSMTPReplies 是本次审计修复的直接验证：
-// 5xx 判永久失败、4xx（灰名单）判可重试。
+// TestEmailSendClassifiesSMTPReplies は今回の監査修正を直接検証する：
+// 5xx は永続的な失敗、4xx（グレーリスト）は再試行可能と判定する。
 func TestEmailSendClassifiesSMTPReplies(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -221,7 +221,7 @@ func TestEmailSendClassifiesSMTPReplies(t *testing.T) {
 			if got := IsPermanent(err); got != tc.permanent {
 				t.Fatalf("permanent 判定错误：期望 %v 得到 %v (%v)", tc.permanent, got, err)
 			}
-			// 服务器原文要保留，否则用户不知道该找服务器管理员还是改地址。
+			// サーバーの原文を保持すること。そうしないとユーザーはサーバー管理者に問い合わせるべきか、アドレスを変えるべきか分からない。
 			if !strings.Contains(err.Error(), strings.Fields(tc.rcptReply)[0]) && !strings.Contains(err.Error(), strings.Fields(tc.mailReply)[0]) {
 				t.Errorf("错误里应保留服务器的应答码: %v", err)
 			}
@@ -230,14 +230,14 @@ func TestEmailSendClassifiesSMTPReplies(t *testing.T) {
 }
 
 func TestEmailSendRefusesPlaintextCredentials(t *testing.T) {
-	// net/smtp 的 PlainAuth 拒绝在未加密连接上发凭据（除非目标是 localhost）。
-	// 这是**正确**的安全行为，不能被绕过；但要给出能指导用户修复的错误。
-	// 这里用一个非 localhost 的主机名触发它。
+	// net/smtp の PlainAuth は暗号化されていない接続での認証情報送信を拒否する（送信先が localhost の場合を除く）。
+	// これは**正しい**セキュリティ動作であり、回避してはならない。ただし、修正方法をユーザーに案内できるエラーを返す。
+	// ここでは localhost 以外のホスト名を使って発生させる。
 	f := newFakeSMTP(t)
 	f.advertiseAuth = true
 	_, port := f.hostPort(t)
 	cfg := map[string]any{
-		"host":     "smtp.example.com", // 非 localhost
+		"host":     "smtp.example.com", // localhost 以外
 		"port":     float64(port),
 		"from":     "a@example.com",
 		"to":       []any{"b@example.com"},
@@ -248,15 +248,15 @@ func TestEmailSendRefusesPlaintextCredentials(t *testing.T) {
 	if err == nil {
 		t.Skip("本机 DNS 解析到了本地服务器，跳过（不影响其它用例）")
 	}
-	// 连不上 或 被拒发凭据都算通过这条断言；关键是**不能**静默把密码发出去。
+	// 接続できない場合も認証情報送信を拒否された場合も、このアサーションは成功とする。要点はパスワードを黙って送信しては**ならない**こと。
 	if !IsPermanent(err) && !strings.Contains(err.Error(), "接続") {
 		t.Logf("错误：%v（非 localhost 下未能连上属预期）", err)
 	}
 }
 
 func TestEmailValidateReportsMissingFields(t *testing.T) {
-	// 邮件渠道的配置字段最多，遗漏任一个都会在投递时才暴露；这里逐个确认
-	// 校验能提前拦下。断言检查的是「错误信息提到了缺什么」。
+	// メールチャネルは設定フィールドが最も多く、どれが欠けても配信時まで発覚しない。ここでは1つずつ
+	// 検証で事前に阻止できることを確認する。アサーションでは「エラーメッセージが不足項目に言及しているか」を確認する。
 	cases := []struct {
 		name string
 		cfg  map[string]any
@@ -276,15 +276,15 @@ func TestEmailValidateReportsMissingFields(t *testing.T) {
 	}
 }
 
-// TestEmailConfigTolerance 覆盖配置读取的容错：JSONB 里数值是 float64，
-// 但用户在 UI 里可能把端口填成字符串；数组也可能是单个字符串。
+// TestEmailConfigTolerance は設定読み取りの許容性を検証する：JSONB の数値は float64 だが、
+// ユーザーは UI でポートを文字列として入力する可能性があり、配列も単一の文字列かもしれない。
 func TestEmailConfigTolerance(t *testing.T) {
 	cfg := map[string]any{
 		"host": "smtp.example.com",
-		"port": "587", // 字符串形式的端口
+		"port": "587", // 文字列形式のポート
 		"from": "a@b.c",
-		"to":   "d@e.f", // 单个字符串而非数组
-		"tls":  "true",  // 字符串形式的布尔
+		"to":   "d@e.f", // 配列ではなく単一の文字列
+		"tls":  "true",  // 文字列形式のブール値
 	}
 	if err := (emailChannel{}).Validate(cfg); err != nil {
 		t.Fatalf("应容忍字符串形式的数值: %v", err)
@@ -300,8 +300,8 @@ func TestEmailConfigTolerance(t *testing.T) {
 	}
 }
 
-// TestFilterValidateRejectsTypo 是审计修复的直接验证：
-// 门槛打错字必须在写入时被拦，否则过滤器会静默失效变成全推。
+// TestFilterValidateRejectsTypo は監査修正を直接検証する：
+// 閾値の誤字は書き込み時に阻止しなければならない。しないとフィルターが黙って無効化され、すべて配信されてしまう。
 func TestFilterValidateRejectsTypo(t *testing.T) {
 	good := []string{"", "low", "medium", "high", "critical"}
 	for _, s := range good {
@@ -309,28 +309,28 @@ func TestFilterValidateRejectsTypo(t *testing.T) {
 			t.Errorf("合法门槛 %q 被拒: %v", s, err)
 		}
 	}
-	// 这些是真实会发生的笔误——全部必须被拒。
+	// これらは実際に起こり得る誤記で、すべて拒否する必要がある。
 	for _, s := range []string{"hgih", "HIGH", "严重", "high ", "crit"} {
 		err := (Filter{MinSeverity: s}).Validate()
 		if err == nil {
 			t.Errorf("非法门槛 %q 应被拒绝（否则过滤器静默失效、变成全推）", s)
 			continue
 		}
-		// 错误信息要能指导用户改对。
+		// エラーメッセージはユーザーが正しく修正できるものであること。
 		if !strings.Contains(err.Error(), "low") || !strings.Contains(err.Error(), "critical") {
 			t.Errorf("错误信息应列出可选值，得到 %q", err.Error())
 		}
 	}
 }
 
-// TestFilterValidateIsWriteTimeOnly 锁住「写入严、读取宽」的分工：
-// 库里已有的坏值不能让渠道整个读不出来（那会让历史渠道突然全部停止推送）。
+// TestFilterValidateIsWriteTimeOnly は「書き込み時は厳格、読み取り時は寛容」という分担を固定する：
+// データベースにある不正な値のためにチャネル全体を読み取れなくしてはならない（既存チャネルすべてのプッシュが突然停止してしまう）。
 func TestFilterValidateIsWriteTimeOnly(t *testing.T) {
 	raw := []byte(`{"min_severity":"hgih"}`)
-	f := ParseFilter(raw) // 不报错
+	f := ParseFilter(raw) // エラーにしない
 	if f.MinSeverity != "hgih" {
 		t.Fatalf("读取路径应原样保留，得到 %q", f.MinSeverity)
 	}
-	// 且该渠道仍能对事件做出判定（不 panic、不阻塞）。
+	// さらに、このチャネルがイベントを判定できること（panic せず、ブロックしない）。
 	_ = Match(f, Snapshot{Kind: EventFindingCreated, Severity: "critical"})
 }

@@ -12,8 +12,8 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-// 平台操作工具(给内置 Auto agent 用):建/改 skill、自定义工具、MCP。都是 host 工具,
-// seed 进 tools 表、默认绑定 auto,经 hostTools 注入。复用现有 db/文件系统逻辑。
+// プラットフォーム操作ツール（組み込み Auto agent 用）：skill、カスタムツール、MCP の作成/変更。host ツールで、
+// tools テーブルへ seed、既定で auto へ関連付け、hostTools で挿入します。既存の db/ファイル処理を再利用。
 
 func (s *Server) platformTools() []actool.CoreTool {
 	return []actool.CoreTool{
@@ -38,7 +38,7 @@ var platformToolKeys = []string{
 // ---- assets ----
 
 // toolDeleteAssetsByHost hard-deletes every asset tied to one host (exact match).
-// Platform-level (not a per-task tool): operates on the global, cross-task asset库.
+// Platform-level (not a per-task tool): operates on the global, cross-task asset 格納先.
 func (s *Server) toolDeleteAssetsByHost() actool.CoreTool {
 	return wrTool("delete_assets_by_host",
 		"host の完全一致で資産を削除します。その host のドメイン / サブドメインと、配下のサービス（service）・エンドポイント（endpoint）が対象です。\n"+

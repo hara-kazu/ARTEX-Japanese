@@ -152,9 +152,9 @@ func ParseAutoScopeLine(line string) (ParsedScope, error) {
 	if looksLikeDomain {
 		return ParseScopeLine(raw)
 	}
-	// 备案号本身不含点号（如 京ICP备12345678号-1）。带点的文本多半掺了域名或版本号，
-	// 按 ICP 存下来只会得到一条永远匹配不上任何资产的死规则 —— ICP 归属走的是精确
-	// 相等比较（见 companies.go 的 kind='icp' 归属查询），所以这类文本归为关键词。
+	// 登録番号自体にはドットがない（例 京ICP备12345678号-1）。ドットを含む文字列はドメインやバージョン番号が混在することが多く、
+	// ICP として保存しても、どの資産にも一致しない無効なルールになる —— ICP の所属判定は厳密な
+	// 等値比較（companies.go の kind='icp' の所属クエリを参照）なので、このような文字列はキーワードに分類する。
 	lower := strings.ToLower(raw)
 	if !strings.ContainsAny(raw, ".．。") &&
 		(strings.Contains(lower, "icp") || strings.Contains(raw, "备案")) {

@@ -337,8 +337,8 @@ type RecordedFinding struct {
 	Traffic   *FindingTraffic `json:"traffic"`
 }
 
-// ctx 由调用方传入本次事务所用的上下文（而非在内部取 context.Background）：
-// 事务内新加的推送事件写入同样应受调用方的取消与超时约束。
+// ctx には呼び出し元が今回のトランザクションのコンテキストを渡す（内部で context.Background を取得しない）：
+// トランザクション内に追加する通知イベントの書き込みも、呼び出し元のキャンセルとタイムアウトの制約を受けること。
 func RecordFindingTx(ctx context.Context, tx *sql.Tx, in RecordFindingInput, prepared []PreparedTrafficEvidence) (*RecordedFinding, error) {
 	if err := LockTaskEvidenceTx(tx, in.TaskID); err != nil {
 		return nil, err
@@ -386,9 +386,9 @@ VALUES($1,'finding',$2,9,'confirmed',$3) RETURNING id`, in.ExplorationID, string
 VALUES(NULLIF($1,0),$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`, in.TaskID, out.NodeID, in.VulnClass, in.Name, in.Severity, in.Summary, in.Evidence, in.Worker, string(raw)).Scan(&out.FindingID); err != nil {
 		return nil, err
 	}
-	// 在**同一事务**里登记一条推送事件：提交即保证「漏洞落库」与「推送任务存在」
-	// 原子一致，不存在提交成功却没入队、消息永久丢失的窗口。
-	// 这里的失败被隔离在保存点上、不影响漏洞写入（见函数注释），因此忽略返回值。
+	// **同一トランザクション**内で通知イベント1件を登録し、コミット時点で「脆弱性の保存」と「通知タスクの存在」の
+	// 原子的な整合を保証し、コミット成功後にキュー未投入でメッセージが永久に失われる間隙をなくす。
+	// ここの失敗はセーブポイントで隔離され、脆弱性の書き込みに影響しない（関数コメント参照）ため、戻り値を無視する。
 	RecordNotificationEventTx(ctx, tx, notify.EventFindingCreated, out.FindingID, notify.Snapshot{
 		Kind:      notify.EventFindingCreated,
 		FindingID: out.FindingID,

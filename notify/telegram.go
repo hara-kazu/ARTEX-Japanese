@@ -9,27 +9,27 @@ import (
 	"strings"
 )
 
-// telegramTextLimit 是 Telegram sendMessage 的 text 字段上限（字符数）。
+// telegramTextLimit は Telegram sendMessage の text フィールドの上限（文字数）。
 const telegramTextLimit = 4096
 
-// telegramChannel 实现 Telegram Bot API。
+// telegramChannel は Telegram Bot API を実装する。
 //
-// 平台特性：
-//   - 鉴权全部在 URL path 里（/bot<token>/sendMessage），无需加签。
-//   - 用 HTML 解析模式而不是 MarkdownV2：MarkdownV2 要求转义 `_*[]()~`>#+-=|{}.!`
-//     共 18 个字符，漏一个就整条消息被拒；HTML 只需转义 & < > 三个。
-//   - 业务错误同样藏在 HTTP 200 里，靠 ok 字段判断。
+// プラットフォームの特性：
+//   - 認証はすべて URL path 内（/bot<token>/sendMessage）で行い、署名は不要。
+//   - MarkdownV2 ではなく HTML 解析モードを使う：MarkdownV2 は `_*[]()~`>#+-=|{}.!` の
+//     合計 18 文字のエスケープを要求し、1文字でも漏れるとメッセージ全体が拒否される。HTML は & < > の3文字だけでよい。
+//   - 業務エラーも HTTP 200 に埋め込まれ、ok フィールドで判定する。
 type telegramChannel struct{}
 
 func (telegramChannel) Kind() string { return KindTelegram }
 
-// Telegram 单聊约 1 条/秒、群组 20 条/分钟。取保守值。
+// Telegram は個別チャットで毎秒約 1 件、グループで毎分 20 件。保守的な値を使う。
 func (telegramChannel) DefaultRatePerMin() int { return 20 }
 
-// Bot Token 是完整凭据；chat_id 只是收件人，不算秘密（拿到它没有 Token 也发不了消息）。
+// Bot Token は完全な認証情報。chat_id は受信者にすぎず秘密情報ではない（取得しても Token がなければメッセージを送信できない）。
 func (telegramChannel) SecretKeys() []string { return []string{"bot_token"} }
 
-// base_url 决定 Token 被发往哪个 API 端点（如自建反代），改它必须重新表态 Token。
+// base_url は Token の送信先 API エンドポイント（自前のリバースプロキシなど）を決め、変更時は Token の再明示が必要。
 func (telegramChannel) DestinationKeys() []string { return []string{"base_url"} }
 
 func (telegramChannel) Validate(cfg map[string]any) error {
@@ -77,16 +77,16 @@ func (c telegramChannel) Send(ctx context.Context, cfg map[string]any, m Message
 	if res.OK {
 		return kept, nil
 	}
-	// 429 是限流，退避后重试有效；其余（400 参数错、401 token 错、403 被拉黑、
-	// 404 chat 不存在）都是配置问题，重试不会自愈。
+	// 429 はレート制限で、バックオフ後の再試行が有効。それ以外（400 パラメーター誤り、401 token 誤り、403 ブロック済み、
+	// 404 chat 不存在）はすべて設定の問題であり、再試行しても自然に直らない。
 	if res.ErrorCode == 429 {
 		return 0, fmt.Errorf("Telegram のレート制限: %s", res.Description)
 	}
 	return 0, Permanent(fmt.Errorf("Telegram エラー %d: %s", res.ErrorCode, res.Description))
 }
 
-// telegramEndpoint 拼出 sendMessage 地址。base_url 留空时用官方 API，
-// 非空时用于自建 Bot API 反代（国内网络下的常见需求）。
+// telegramEndpoint は sendMessage アドレスを組み立てる。base_url が空なら公式 API を使い、
+// 空でなければ自前の Bot API リバースプロキシに使う（中国国内のネットワークで一般的な需要）。
 func telegramEndpoint(cfg map[string]any) (string, error) {
 	base := cfgString(cfg, "base_url")
 	if base == "" {
@@ -97,18 +97,18 @@ func telegramEndpoint(cfg map[string]any) (string, error) {
 	raw := base + "/bot" + token + "/sendMessage"
 	u, err := url.Parse(raw)
 	if err != nil {
-		// 不透传 err：地址里含 Bot Token，且此时连 addr 都不该回显。
+		// err はそのまま返さない：アドレスには Bot Token が含まれ、この時点では addr すら返してはならない。
 		return "", fmt.Errorf("API アドレスの結合に失敗しました（API アドレス: %s）", redactRequestTarget(base))
 	}
 	return u.String(), nil
 }
 
-// telegramHTML 渲染 HTML 正文，返回正文与实际写入的条目数（见 Channel.Send）。
+// telegramHTML は HTML 本文を描画し、本文と実際に書き込んだ項目数を返す（Channel.Send を参照）。
 func telegramHTML(m Message) (string, int) {
 	var b strings.Builder
 	b.WriteString("<b>" + telegramEscape(markdownTitle(m)) + "</b>\n")
 	if m.Batch {
-		// Telegram 的上限是**字符数**，所以打包也按字符计量（runeSize）。
+		// Telegram の上限は**文字数**なので、詰める際も文字で計量する（runeSize）。
 		footer := ""
 		if m.HomeURL != "" {
 			footer = fmt.Sprintf("\n\n<a href=\"%s\">プラットフォームですべて表示</a>", telegramEscapeAttr(m.HomeURL))
@@ -148,10 +148,10 @@ func telegramHTML(m Message) (string, int) {
 	return TruncateHTML(b.String(), telegramTextLimit), 1
 }
 
-// telegramReservedRunes 预留给消息标题与可能出现的截断提示（按字符计）。
+// telegramReservedRunes はメッセージタイトルと、必要な場合の切り詰め通知のために確保する（文字単位）。
 const telegramReservedRunes = 160
 
-// telegramBatchLine 渲染汇总里的一条（未转义，由调用方统一转义）。
+// telegramBatchLine は集約内の1項目を描画する（エスケープ前で、呼び出し元がまとめてエスケープする）。
 func telegramBatchLine(it Item, idx int) string {
 	if a := assetLine(it.Assets, maxAssetsShown); a != "" {
 		return fmt.Sprintf("%d. %s · %s — %s", idx, SeverityLabel(it.Severity), it.Title(), a)
@@ -159,8 +159,8 @@ func telegramBatchLine(it Item, idx int) string {
 	return fmt.Sprintf("%d. %s · %s", idx, SeverityLabel(it.Severity), it.Title())
 }
 
-// telegramBatchTitle 渲染汇总消息的标题行。条数用的是**本条实际包含**的条数，
-// 而不是本批总数——否则读者会以为消息头写的数字就是全部。
+// telegramBatchTitle は集約メッセージのタイトル行を描画する。件数は**このメッセージに実際に含まれる**件数を使い、
+// バッチ全体の総数ではない。そうしないと読み手は先頭の数値を全件数と思ってしまう。
 func telegramBatchTitle(m Message, items []Item, total int) string {
 	title := fmt.Sprintf("脆弱性のまとめ · 合計%d件", total)
 	if extra := total - len(items); extra > 0 {
@@ -172,9 +172,9 @@ func telegramBatchTitle(m Message, items []Item, total int) string {
 	return title
 }
 
-// telegramEscape 转义 HTML 文本内容。
-// Telegram 只认这三种实体，转义后 &amp; 之类的已有实体会被二次转义——这正是
-// 期望行为：我们要显示的是原始字符，不是让用户注入 HTML。
+// telegramEscape は HTML テキスト内容をエスケープする。
+// Telegram はこの3種類の実体参照のみ認識し、&amp; などの既存の実体参照は二重にエスケープされるが、これこそ
+// 期待する動作である。元の文字を表示したいのであり、ユーザーに HTML を注入させたいわけではない。
 func telegramEscape(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -182,8 +182,8 @@ func telegramEscape(s string) string {
 	return s
 }
 
-// telegramEscapeAttr 转义 HTML 属性值。在文本转义之外还要处理引号——
-// URL 里带引号会提前闭合 href 属性，把后面的内容变成注入点。
+// telegramEscapeAttr は HTML 属性値をエスケープする。テキストのエスケープに加えて引用符も処理する必要がある。
+// URL に引用符が含まれると href 属性が早く閉じ、後ろの内容が注入箇所になってしまうため。
 func telegramEscapeAttr(s string) string {
 	s = telegramEscape(s)
 	s = strings.ReplaceAll(s, "\"", "&quot;")

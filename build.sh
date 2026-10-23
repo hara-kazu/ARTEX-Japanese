@@ -173,8 +173,8 @@ package_binary() {
   rm -rf "$package_root" "$archive"
   mkdir -p "$package_root"
   cp "$binary" "$package_root/"
-  # 守护启动脚本是正式入口：页面上的一键更新要靠它在进程退出后重新拉起，
-  # 直接跑 artex 本体的话更新完就再也起不来了。按目标系统只带对应的那一份。
+  # 監視起動スクリプトが正式な入口：画面のワンクリック更新はプロセス終了後の再起動をこれに依存し、
+  # artex 本体を直接実行すると更新後に再起動できない。対象システムに対応するものだけを同梱する。
   if [ "$goos" = "windows" ]; then
     cp start.bat "$package_root/"
   else

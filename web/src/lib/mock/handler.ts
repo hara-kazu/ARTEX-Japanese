@@ -1,6 +1,6 @@
-// Mock 路由：把 (method, path) 映射到 lib/mock/data 的静态数据。
-// 未命中的一律返回安全默认（[] / {} / {ok:true}），保证任何页面都不崩。
-// 只在 NEXT_PUBLIC_MOCK=1 时经由 api.ts 的 http() 短路进入这里。
+// Mock ルート：(method, path) を lib/mock/data の静的データへマッピングする。
+// 一致しなければすべて安全な既定値（[] / {} / {ok:true}）を返し、どのページもクラッシュしないようにする。
+// NEXT_PUBLIC_MOCK=1 の場合のみ api.ts の http() から短絡してここへ入る。
 
 import {
   classifyCompanyScopeLine,
@@ -51,10 +51,10 @@ const mockConversations = structuredClone(D.conversations);
 const mockRetests: FindingRetest[] = [];
 const mockRetestMessages: Record<number, Activity[]> = {};
 
-// ── 关联流量证据(finding traffic) ─────────────────────────────────────────────
-// 后端把请求/响应快照独立存到 evidence 表,前端详情页用 FindingTrafficPanel 展示。
-// demo 里为部分漏洞预置绑定,快照直接引用 mock 抓包(data.traffic.exchanges),
-// 其余漏洞返回空绑定。缺了这套路由,详情页会因读到空对象、访问 bindings.length 崩整页。
+// ── 関連トラフィック証拠(finding traffic) ─────────────────────────────────────────────
+// バックエンドはリクエスト/レスポンスのスナップショットを独立した evidence テーブルに保存し、フロントエンドの詳細ページは FindingTrafficPanel で表示する。
+// demo では一部の脆弱性に初期関連付けを用意し、スナップショットは mock キャプチャ(data.traffic.exchanges)を直接参照し、
+// 他の脆弱性は空の関連付けを返す。このルート群がないと、詳細ページが空オブジェクトを読んで bindings.length にアクセスしページ全体がクラッシュする。
 const mockExchangeById = new Map((D.traffic.exchanges ?? []).map((exchange) => [exchange.id, exchange]));
 
 interface MockBindingSeed {
@@ -63,8 +63,8 @@ interface MockBindingSeed {
   note?: string;
 }
 
-// 每条漏洞预置的流量证据(finding id → 绑定的抓包)。选取与漏洞语义对应的请求,
-// 让 demo 详情页的「关联流量」区块看起来真实。
+// 各脆弱性の初期トラフィック証拠(finding id → 紐付くキャプチャ)。脆弱性の意味に対応するリクエストを選び、
+// demo 詳細ページの「関連トラフィック」ブロックを現実的に見せる。
 const mockFindingTrafficSeeds: Record<string, MockBindingSeed[]> = {
   "f-1": [{ traffic_id: "x-2", role: "proof", note: "q パラメーターのインジェクション payload に対し、MSSQL のエラーが返る。" }],
   "f-2": [
@@ -82,7 +82,7 @@ const mockFindingTrafficSeeds: Record<string, MockBindingSeed[]> = {
   "f-17": [{ traffic_id: "x-19", role: "proof", note: "psexec で svc_deploy として DC01 にログイン。" }],
 };
 
-// demo 用固定报文正文,避免详情页 Request/Response 空白。
+// demo は固定のメッセージ本文を使い、詳細ページの Request/Response が空白になるのを避ける。
 const mockEvidenceBodies: Record<string, { req: string; resp: string }> = {
   "x-2": {
     req: "q=1' AND 1=CONVERT(int,@@version)--",
@@ -103,7 +103,7 @@ const mockEvidenceBodies: Record<string, { req: string; resp: string }> = {
   "x-19": { req: "[psexec] acme/svc_deploy@10.10.10.10", resp: "[*] Got SYSTEM on DC01" },
 };
 
-// 运行期状态:finding id → 绑定列表(可增删改序,demo 内存态)。首次访问按种子初始化。
+// 実行時の状態:finding id → 関連付け一覧(追加・削除・順序変更可能、demo のメモリー状態)。初回アクセス時にシードで初期化する。
 const mockFindingTraffic: Record<string, FindingTrafficBinding[]> = {};
 const mockFindingTrafficVersion: Record<string, number> = {};
 let mockBindingSeq = 900;
@@ -115,7 +115,7 @@ function mockBuildSnapshot(trafficId: string): TrafficEvidenceSnapshot {
   try {
     if (exchange) pathAndQuery = new URL(exchange.url).pathname + new URL(exchange.url).search;
   } catch {
-    // 保底用根路径。
+    // フォールバックはルートパス。
   }
   const body = mockEvidenceBodies[trafficId];
   return {
@@ -157,7 +157,7 @@ function mockTrafficSummary(findingID: string): FindingTraffic {
   const bindings = mockTrafficBindings(findingID).map((binding, index) => ({
     ...binding,
     position: index,
-    // 列表/摘要接口剥掉报文头,与后端 trafficSummary 一致。
+    // 一覧/概要インターフェースはメッセージヘッダーを除き、バックエンドの trafficSummary と一致させる。
     snapshot: { ...binding.snapshot, req_head: "", resp_head: "" },
   }));
   const version = mockFindingTrafficVersion[findingID] ?? 1;
@@ -461,8 +461,8 @@ function mockAssetMatchesDSL(asset: Asset, dsl: string): boolean {
   return query.split(/\s+/).every((term) => haystack.includes(term));
 }
 
-// mockFilterFindings 应用发现页的公共筛选(严重度/状态/类型/任务/关键词),资产
-// 子树筛选另走 mockApplyAssetScope —— 与后端 FindingFilter.where() 的分工一致。
+// mockFilterFindings は検出結果ページの共通フィルター(重大度/状態/種類/タスク/キーワード)を適用し、資産の
+// サブツリーフィルターは別途 mockApplyAssetScope を使う —— バックエンドの FindingFilter.where() と同じ分担。
 function mockFilterFindings(q: URLSearchParams): (typeof mockFindings)[number][] {
   let list = mockFindings.filter((finding) => mockFindingMatchesQuery(finding, q.get("q")));
   const severity = q.get("severity");
@@ -487,15 +487,15 @@ function mockFindingMatchesQuery(finding: (typeof mockFindings)[number], query: 
   );
 }
 
-// ── 「按资产」视图 ────────────────────────────────────────────────────────────
-// 后端把树建在 db/finding_assets.go 里(只收有发现的资产 + 逐层补齐祖先,计数沿
-// 祖先链去重累加)。这里用同一套父子优先级在内存里重放一遍,让 demo 模式的层级、
-// 计数、子树筛选与真后端保持一致。
+// ── 「資産別」ビュー ────────────────────────────────────────────────────────────
+// バックエンドは db/finding_assets.go でツリーを構築する(検出結果のある資産のみ + 祖先を階層ごとに補い、件数は
+// 祖先チェーンに沿って重複排除して累積)。ここでは同じ親子の優先順位でメモリー上に再現し、demo モードの階層、
+// 件数、サブツリーフィルターを実際のバックエンドと一致させる。
 
 const UNASSIGNED_ASSET = "__none__";
 
 function mockAssetLabel(asset: (typeof mockAssets)[number]): string {
-  // 没有 URL 的服务补端口,否则标签会和宿主 IP/域名那行完全一样(与后端一致)。
+  // URL がないサービスにはポートを補い、ホスト IP/ドメインの行とラベルが完全一致するのを避ける(バックエンドと一致)。
   if (asset.type === "service" && !asset.url) {
     const host = asset.domain || asset.ip;
     if (host && asset.port) return `${host}:${asset.port}`;
@@ -503,7 +503,7 @@ function mockAssetLabel(asset: (typeof mockAssets)[number]): string {
   return asset.url || asset.domain || asset.ip || asset.app_name || `#${asset.id}`;
 }
 
-// mockAssetHost 与后端 hostPortOf 一致:优先 domain,其次 URL 里的 host,最后 ip。
+// mockAssetHost はバックエンドの hostPortOf と一致:domain を優先し、次に URL 内の host、最後に ip。
 function mockAssetHost(asset: (typeof mockAssets)[number]): { host: string; port: number } {
   let host = asset.domain ?? "";
   let port = asset.port ?? 0;
@@ -513,7 +513,7 @@ function mockAssetHost(asset: (typeof mockAssets)[number]): { host: string; port
       host = url.hostname.replace(/^\[|\]$/g, "");
       if (!port) port = Number(url.port) || (url.protocol === "https:" ? 443 : 80);
     } catch {
-      // 非法 URL 就退回 ip。
+      // 不正な URL は ip にフォールバックする。
     }
   }
   if (!host) host = asset.ip ?? "";
@@ -536,14 +536,14 @@ interface MockAssetTreeNode {
   last_found_at: string;
 }
 
-// mockBuildAssetTree 从一批(已按其它条件筛过的)发现构建资产树。
+// mockBuildAssetTree は(他の条件でフィルター済みの)検出結果群から資産ツリーを作る。
 function mockBuildAssetTree(list: (typeof mockFindings)[number][]): MockAssetTreeNode[] {
   const hit = new Set<number>();
   for (const finding of list) {
     for (const ref of finding.assets ?? []) hit.add(Number(ref.id));
   }
 
-  // 收集命中的资产 + 逐层补齐祖先(宿主 service / 子域名 / IP / 根域名)。
+  // 一致した資産を収集 + 階層ごとに祖先を補う(ホスト service / サブドメイン / IP / ルートドメイン)。
   const picked = new Map<number, (typeof mockAssets)[number]>();
   for (const asset of mockAssets) if (hit.has(asset.id)) picked.set(asset.id, asset);
   for (let round = 0; round < 4; round++) {
@@ -591,7 +591,7 @@ function mockBuildAssetTree(list: (typeof mockFindings)[number][]): MockAssetTre
     });
   }
 
-  // 父子关系:与 db/finding_assets.go 的 firstOf 优先级顺序一致。
+  // 親子関係:db/finding_assets.go の firstOf の優先順位と一致。
   const find = (predicate: (a: (typeof mockAssets)[number]) => boolean) => {
     const asset = [...picked.values()].find(predicate);
     return asset ? key(asset.id) : "";
@@ -625,7 +625,7 @@ function mockBuildAssetTree(list: (typeof mockFindings)[number][]): MockAssetTre
     }
   }
 
-  // 企业层:只给确实有归属的顶层资产(根域名 / IP / 应用)补,没有归属就自己是顶层。
+  // 企業階層:所属が実際にある最上位資産(ルートドメイン / IP / アプリケーション)だけに補い、所属がなければ自身が最上位。
   for (const node of [...nodes.values()]) {
     if (node.parent || !node.company_id) continue;
     if (!["root_domain", "ip", "app"].includes(node.kind)) continue;
@@ -651,7 +651,7 @@ function mockBuildAssetTree(list: (typeof mockFindings)[number][]): MockAssetTre
     parentOf.set(node.key, companyKey);
   }
 
-  // 计数:一条发现沿它每个资产的祖先链向上,收集去重后的 key 集合再逐个 +1。
+  // 件数:検出結果1件について各資産の祖先チェーンを上へたどり、重複排除した key 集合を集めて個別に +1。
   const unassigned: MockAssetTreeNode = {
     key: UNASSIGNED_ASSET,
     kind: "none",
@@ -699,8 +699,8 @@ function mockBuildAssetTree(list: (typeof mockFindings)[number][]): MockAssetTre
   return out;
 }
 
-// mockAssetScopeIds 把资产树节点 key 展开成整棵子树的资产 id 集合,与后端
-// applyAssetScope 同义。miss=true 表示该节点在当前筛选下不存在 → 结果恒空。
+// mockAssetScopeIds は資産ツリーノードの key をサブツリー全体の資産 id 集合へ展開し、バックエンドの
+// applyAssetScope と同じ意味。miss=true は現在のフィルターでそのノードがないことを示す → 結果は常に空。
 function mockAssetScopeIds(
   scope: string,
   list: (typeof mockFindings)[number][],
@@ -729,8 +729,8 @@ function mockAssetScopeIds(
   return { ids, none: false, miss: ids.size === 0 };
 }
 
-// mockApplyAssetScope 按 asset_scope 收窄一批发现。「未关联」同时收 assets 为空
-// 与指向已删资产的发现,和树上那个桶的口径一致。
+// mockApplyAssetScope は asset_scope で検出結果群を絞る。「未関連」は assets が空のものと、
+// 削除済み資産を指す検出結果を含み、ツリー上の同じ分類と基準を揃える。
 function mockApplyAssetScope(
   list: (typeof mockFindings)[number][],
   scope: string | null,
@@ -816,7 +816,7 @@ function mockProfileResolution(profileID: number | undefined, source: TaskLLMRes
 }
 
 // Mirrors the backend precedence in server/task_resolution.go:
-// Agent 绑定 → 任务 LLM 配置链 → 全局配置 → 环境配置。
+// Agent バインド → タスクの LLM 設定チェーン → グローバル設定 → 環境設定。
 function mockRoleResolution(task: Task, agentKey: "mainagent" | "planner" | "worker"): TaskLLMResolution {
   const agent = D.agents.find((item) => item.key === agentKey);
   if (agent?.llm_profile_id) {
@@ -1054,7 +1054,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     };
   }
 
-  // ── auth：让 demo 直接进主界面 ──
+  // ── auth：demo を直接メイン画面へ入れる ──
   if (path === "/auth/status") return { initialized: true };
   if (path === "/auth/login" || path === "/auth/init") return { token: "mock-demo" };
   if (path === "/auth/change-password") return { ok: true };
@@ -1462,7 +1462,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       }
       const numId = Number(id.replace(/\D/g, "")) || 0;
       if (b.mode === "hard") {
-        // 真删除:从列表移除,返回级联删除计数。
+        // 物理削除:一覧から除き、連鎖削除件数を返す。
         mockIntents.splice(index, 1);
         return {
           id: numId,
@@ -1475,7 +1475,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
           },
         };
       }
-      // 假删除(默认):置 deleted + 记删除原因,保留节点。
+      // 論理削除(デフォルト):deleted に設定 + 削除理由を記録し、ノードを保持する。
       intent.state = "deleted";
       intent.delete_reason = String(b.reason ?? "");
       return { id: numId, state: "deleted" };
@@ -1514,12 +1514,12 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     return { active: mockActiveTask };
   }
 
-  // ── 覆盖度 / 覆盖图 / 资产关联（任务维度）──
+  // ── カバレッジ / カバレッジグラフ / 資産関連付け（タスク単位）──
   if (seg[0] === "tasks" && seg[2] === "coverage" && seg.length === 3) return D.coverage;
   if (seg[0] === "tasks" && seg[2] === "coverage-graph") return D.coverageGraph;
   if (seg[0] === "tasks" && seg[2] === "asset-refs") return D.assetRefsFor(Number(q.get("asset_id") ?? 0));
 
-  // ── 任务测试范围（增删查）──
+  // ── タスクのテスト範囲（追加・削除・検索）──
   if (seg[0] === "tasks" && seg[2] === "scope" && seg.length === 3 && m === "GET") {
     return { scope: mockTaskScopes.get(seg[1]) ?? [] };
   }
@@ -1548,7 +1548,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     return { ok: true };
   }
 
-  // ── 全局 llm_usage 聚合（仪表盘新版视图，demo）──
+  // ── グローバル llm_usage 集約（ダッシュボード新版ビュー、demo）──
   if (path === "/tokens/usage")
     return {
       by_profile: [
@@ -1587,7 +1587,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       ],
     };
 
-  // ── 按模型 token 用量（demo：一条示例）──
+  // ── モデル別 token 使用量（demo：サンプル1件）──
   if (path === "/llm/records/by-model")
     return {
       models: [
@@ -1610,7 +1610,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       ],
     };
 
-  // ── 工作空间文件管理器（demo：静态示例树；写/建/删走下方写兜底 {ok:true}）──
+  // ── ワークスペースファイル管理（demo：静的なサンプルツリー；書き込み/作成/削除は下の書き込みフォールバック {ok:true}）──
   if (path === "/workspace/list") return D.workspaceList(q.get("path") ?? "");
   if (path === "/workspace/read") return D.workspaceRead(q.get("path") ?? "");
 
@@ -1847,7 +1847,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   if (path === "/exploration/frontier") return D.frontier;
   if (path === "/exploration/findings/stats") {
     const vulnclasses = Array.from(new Set(mockFindings.map((f) => f.vulnclass))).sort();
-    // 「按任务」下拉:有漏洞的任务 + 描述 + 条数(mock 任务 id 是字符串,直接当 id 用)。
+    // 「タスク別」ドロップダウン:脆弱性のあるタスク + 説明 + 件数(mock のタスク id は文字列で、そのまま id として使う)。
     const taskMap = new Map<string, { name: string; description: string; count: number }>();
     for (const f of mockFindings) {
       if (!f.task_id) continue;
@@ -2002,7 +2002,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       queued: false,
     };
   }
-  // 关联流量证据:列表 / 绑定 / 编辑 / 解绑 / 排序 / 单条报文详情(demo 内存态)。
+  // 関連トラフィック証拠:一覧 / 関連付け / 編集 / 解除 / ソート / 個別メッセージ詳細(demo のメモリー状態)。
   // seg = ["exploration","findings",<id>,"traffic", ...]
   if (seg[0] === "exploration" && seg[1] === "findings" && seg[3] === "traffic") {
     const findingID = seg[2];
@@ -2012,7 +2012,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       mockFindingTrafficVersion[findingID] = (mockFindingTrafficVersion[findingID] ?? 1) + 1;
     };
 
-    // 单条报文详情:GET /traffic/{binding_id}
+    // 個別メッセージ詳細:GET /traffic/{binding_id}
     if (seg.length === 5 && seg[4] !== "order" && m === "GET") {
       const binding = bindings.find((item) => item.id === seg[4]);
       if (!binding) throw new Error("証拠が存在しません");
@@ -2023,7 +2023,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
         response: mockEvidencePreview(body.resp),
       };
     }
-    // 报文正文分页:GET /traffic/{binding_id}/body —— demo 正文不截断,直接返回空续页。
+    // メッセージ本文のページ分割:GET /traffic/{binding_id}/body —— demo 本文は切り詰めず、空の続きページを直接返す。
     if (seg.length === 6 && seg[5] === "body" && m === "GET") {
       const binding = bindings.find((item) => item.id === seg[4]);
       if (!binding) throw new Error("証拠が存在しません");
@@ -2031,7 +2031,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       const side = q.get("side") === "request" ? body.req : body.resp;
       return mockEvidencePreview(side);
     }
-    // 绑定流量:POST /traffic
+    // トラフィック関連付け:POST /traffic
     if (seg.length === 4 && m === "POST") {
       const refs = Array.isArray(b.traffic_refs) ? (b.traffic_refs as MockBindingSeed[]) : [];
       for (const ref of refs) {
@@ -2050,14 +2050,14 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       bumpVersion();
       return mockTrafficSummary(findingID);
     }
-    // 排序:PUT /traffic/order
+    // ソート:PUT /traffic/order
     if (seg.length === 5 && seg[4] === "order" && m === "PUT") {
       const order = Array.isArray(b.binding_ids) ? (b.binding_ids as string[]) : [];
       bindings.sort((left, right) => order.indexOf(left.id) - order.indexOf(right.id));
       bumpVersion();
       return mockTrafficSummary(findingID);
     }
-    // 编辑说明 / 解绑:PATCH|DELETE /traffic/{binding_id}
+    // 説明編集 / 関連付け解除:PATCH|DELETE /traffic/{binding_id}
     if (seg.length === 5 && (m === "PATCH" || m === "DELETE")) {
       const index = bindings.findIndex((item) => item.id === seg[4]);
       if (index < 0) throw new Error("証拠が存在しません");
@@ -2070,10 +2070,10 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       bumpVersion();
       return mockTrafficSummary(findingID);
     }
-    // 列表:GET /traffic
+    // 一覧:GET /traffic
     return mockTrafficSummary(findingID);
   }
-  // 单条 finding:GET 详情 / PATCH 改状态/严重度/名称/类别(demo 直接改内存对象)。
+  // 単一 finding:GET 詳細 / PATCH 状態/重大度/名前/分類を変更(demo はメモリーオブジェクトを直接変更)。
   if (seg[0] === "exploration" && seg[1] === "findings" && seg.length === 3 && seg[2] !== "stats") {
     const f = mockFindings.find((x) => x.id === seg[2]);
     if (!f) return {};
@@ -2099,8 +2099,8 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     };
   }
   if (path === "/exploration/findings") {
-    // finding_id=id：真后端用独立表行 id 作为状态/详情句柄,mock 里用自身 id 顶上。
-    // report 仅详情接口返回,列表剥掉(与后端一致)。
+    // finding_id=id：実際のバックエンドは独立テーブルの行 id を状態/詳細のハンドルに使い、mock は自身の id で代用する。
+    // report は詳細インターフェースのみ返し、一覧では除く(バックエンドと一致)。
     const withFid = (f: (typeof mockFindings)[number]) => ({
       ...f,
       report: undefined,
@@ -2117,7 +2117,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
           ...(f.task_id !== task ? { inherited: true, source_task_id: f.task_id } : {}),
         }));
     }
-    // 全局:带 page/limit → 分页对象;否则裸数组(dashboard)。
+    // グローバル:page/limit あり → ページ分割オブジェクト;それ以外は配列そのまま(dashboard)。
     if (!q.has("page") && !q.has("limit")) return mockFindings.map(withFid);
     const sev = { critical: 4, high: 3, medium: 2, low: 1 } as const;
     const list = mockApplyAssetScope(mockFilterFindings(q), q.get("asset_scope"));
@@ -2156,8 +2156,8 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     };
   }
   if (path === "/exploration/graph") return D.explorationGraph;
-  // 播报板:和后端 /exploration/nodes 同语义 —— 按创建顺序(mock 里用 ts + id)分页,
-  // 并带上这一页涉及的边与边另一端的节点。
+  // 通知ボード:バックエンドの /exploration/nodes と同じ意味 —— 作成順(mock は ts + id を使用)でページ分割し、
+  // このページに関係するエッジとそのエッジの他端のノードも含める。
   if (path === "/exploration/nodes") {
     const all = D.explorationGraph.nodes;
     const kinds = new Set((q.get("kind") ?? "").split(",").filter(Boolean));
@@ -2172,7 +2172,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       .filter(
         (n) =>
           !needle ||
-          // 内容 / 来源 / 节点 id 任一命中即可(id 兼容「#41」写法)。
+          // 内容 / ソース / ノード id のいずれかに一致すればよい(id は「#41」表記にも対応)。
           `${n.payload ?? ""} ${n.origin} ${n.id}`.toLowerCase().includes(needle.replace(/^#/, "")),
       )
       .sort((a, b) => {
@@ -2190,7 +2190,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
         if (node) refs[id] = node;
       }
     }
-    // 顺带带上本页节点(含邻居)锚定的资产,供展开时展示。
+    // 展開時の表示用に、このページのノード(近傍を含む)に紐付く資産も一緒に返す。
     const assets: Record<string, ReturnType<typeof D.nodeAssetsFor>> = {};
     for (const id of new Set([...onPage, ...Object.keys(refs)])) {
       const anchored = D.nodeAssetsFor(id);
@@ -2226,7 +2226,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
     return { reply: "（demo）提案を高優先度のインテントとして追加しました。work agent ができるだけ早く実行します。", mode: "hint" };
   if (path === "/gc") return { removed: 0 };
 
-  // ── 工具执行历史 ──
+  // ── ツール実行履歴 ──
   if (path === "/commands" && m === "GET") return { commands: D.commandRecords, total: D.commandRecords.length };
   if (path === "/commands/stats" && m === "GET") {
     const tally = new Map<string, { tool: string; total: number; errors: number }>();
@@ -2378,7 +2378,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
   if (seg[0] === "mcp" && seg[2] === "refresh") return { tools: D.mcpToolsById[Number(seg[1])] ?? [] };
   if (seg[0] === "mcp" && seg.length === 2 && m === "DELETE") return { deleted: Number(seg[1]) };
 
-  // ── scopesentry（demo：未配置）──
+  // ── scopesentry（demo：未設定）──
   if (path === "/sync/scopesentry/status")
     return { exists: false, configured: false, enabled: false, reachable: false, tools: [] };
   if (path === "/sync/scopesentry/projects") return { projects: [], tag: {} };
@@ -2474,17 +2474,17 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       daily: [],
     };
 
-  // ── 旁路提问(/btw)：demo 无旁路会话 ──
-  // 必须显式命中：路径以 s 结尾会被下面的读兜底判成集合返回 []，items 就成了 undefined。
+  // ── サイド質問(/btw)：demo にサイドセッションなし ──
+  // 明示的な一致が必要：パスが s で終わると下の読み取りフォールバックが集合と判定して [] を返し、items が undefined になる。
   if (seg.at(-1) === "side-questions") {
     if (m === "GET") return { items: [], current: null, next_cursor: 0, snapshot: null };
     if (m === "POST") throw new Error("デモモードではサイド質問に対応していません");
   }
 
-  // ── 写操作兜底：成功但不落库 ──
+  // ── 書き込みフォールバック：成功するがデータベースに保存しない ──
   if (["POST", "PUT", "PATCH", "DELETE"].includes(m)) return { ok: true };
 
-  // ── 读兜底：集合类给 []，其余 {} ──
+  // ── 読み取りフォールバック：集合系には []、その他は {} ──
   return /(\/(tasks|profiles|conversations|rules|history|projects|tokens|agents|servers|skills|tools|findings|intents)s?$)|s$/.test(
     path,
   )

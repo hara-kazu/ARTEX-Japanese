@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import type { AssetInterceptKind, AssetInterceptRuleInput } from "@/lib/types";
 
-// 用 NativeSelect（原生 <select>）而非 shadcn Select：这个编辑器会用在 Sheet 抽屉内，
-// shadcn Select 的下拉 portal 到 body、点击外部会触发抽屉的「点击外部关闭」误关；原生下拉无此问题。
+// shadcn Select ではなく NativeSelect（ネイティブ <select>）を使う：このエディターは Sheet ドロワー内で使われ、
+// shadcn Select のドロップダウンは body へ portal され、外側クリックがドロワーの「外側クリックで閉じる」を発火して誤って閉じる；ネイティブにはこの問題がない。
 export const ASSET_INTERCEPT_KIND_OPTIONS: {
   value: AssetInterceptKind;
   label: string;
@@ -25,8 +25,8 @@ export const ASSET_INTERCEPT_KIND_OPTIONS: {
   { value: "cidr", label: "CIDR ネットワーク", placeholder: "192.168.0.0/16" },
 ];
 
-// AssetInterceptRulesEditor 是「拦截/允许规则」的受控多行编辑区（拦截block/允许allow +
-// 类型 + 匹配内容 + 备注），不自带持久化——由父组件决定何时提交。
+// AssetInterceptRulesEditor は「インターセプト/許可ルール」の制御された複数行編集領域（ブロックblock/許可allow +
+// 種類 + 一致内容 + 備考）で、永続化は内蔵せず——親コンポーネントが送信タイミングを決める。
 export function AssetInterceptRulesEditor({
   value,
   onChange,
@@ -48,7 +48,7 @@ export function AssetInterceptRulesEditor({
       {value.map((r, i) => {
         const ph = ASSET_INTERCEPT_KIND_OPTIONS.find((o) => o.value === r.kind)?.placeholder ?? "";
         return (
-          // biome-ignore lint/suspicious/noArrayIndexKey: 行无稳定 id，按索引受控即可
+          // biome-ignore lint/suspicious/noArrayIndexKey: 行に安定した id がなく、インデックスで制御すればよい
           <div key={i} className="flex items-center gap-2">
             <NativeSelect
               size="sm"

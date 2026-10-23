@@ -64,13 +64,13 @@ func preview(s string, n int) string {
 	return string(r)
 }
 
-// model_error（provider/API 故障：LLM 层瞬时重试耗尽，或流已开始后中途断流）
-// 收场的 work 不是「试过没做完」也不是真失败，而是外部抖动。默认把它当永久
-// blocked 会白丢一条意图，所以这里对该终态额外重跑几次，每次之间退避一下，给
-// provider 恢复的时间；重试期间若被暂停/终止/取消则立即让位给对应分支处理。
+// model_error（provider/API 障害：LLM 層の一時的な再試行を使い切るか、開始済みストリームが途中で切断）
+// で終わる work は「試したが未完了」や実際の失敗ではなく、外部の一時障害です。既定で永久的な
+// blocked にするとインテントを無駄に失うため、この最終状態だけを数回再実行し、間隔を空けて
+// provider の回復を待ちます。再試行中の一時停止/終了/取り消しは、対応する分岐へ即座に処理を譲ります。
 const (
-	modelErrorRetries      = 2               // model_error 收场后额外重试的次数
-	modelErrorRetryBackoff = 3 * time.Second // 每次重试前的退避
+	modelErrorRetries      = 2               // model_error で終了後の追加再試行回数
+	modelErrorRetryBackoff = 3 * time.Second // 各再試行前のバックオフ
 	workControlWaitTimeout = 30 * time.Second
 )
 
@@ -136,12 +136,12 @@ type Engine struct {
 
 	plannerRound sync.Map // taskID -> int, planner round counter (for UI round separators)
 
-	// 任务级超时(见 docs/任务级超时与收尾设计.md):
-	settling     sync.Map // taskID -> bool, 任务已进入收尾时序(停止派/领新意图)
-	deadline     sync.Map // taskID -> int64 unix, 绝对截止时刻(首次运行时盖章;0/缺省=不限)
-	stamped      sync.Map // taskID -> bool, first_run_at 是否已盖章(本进程内只盖一次)
-	inflight     sync.Map // taskID -> *int64, 在跑的 planner.Plan + worker.Execute 计数(用于 drain)
-	coordStarted sync.Map // taskID -> bool, deadline 协调器是否已启动(Run/reload 去重)
+	// タスク単位のタイムアウト（docs/任务级超时与收尾设计.md を参照）：
+	settling     sync.Map // taskID -> bool、タスクが終了処理へ移行済み（新しいインテントの割り当て/取得を停止）
+	deadline     sync.Map // taskID -> int64 unix、絶対終了時刻（初回実行時に記録。0/既定=無制限）
+	stamped      sync.Map // taskID -> bool、first_run_at を記録済みか（このプロセスでは一度だけ記録）
+	inflight     sync.Map // taskID -> *int64、実行中の planner.Plan + worker.Execute の件数（drain 用）
+	coordStarted sync.Map // taskID -> bool、deadline 調整処理を開始済みか（Run/reload の重複排除）
 
 	// resolve returns a task's dedicated planner/worker (wired by the server as the
 	// authoritative task-router). nil,nil means this task is deliberately unavailable
@@ -527,38 +527,38 @@ func (e *Engine) drainSteer(intentID int64) (string, bool) {
 // before each tool call it drains a queued course-correction (if any) and blocks the
 // call, handing the message back to the model — which re-plans its next step instead
 // of running the tool. No queued message → the guard behaves exactly as before.
-// 它同时负责「空转回合」的续跑，见 Stop。
+// 「空回りターン」の続行も担当します。Stop を参照。
 type steerHooks struct {
 	inner harness.HookRunner
 	drain func() (string, bool)
-	// nudges 是本条意图已注入的空转续跑次数，上限 limit。指针:harness 持有的是
-	// steerHooks 的值拷贝，计数必须共享同一份。
+	// nudges はこのインテントに挿入済みの空回り続行回数で、上限は limit。ポインター：harness が保持するのは
+	// steerHooks の値コピーのため、件数は同じものを共有する必要があります。
 	nudges *atomic.Int64
-	// limit 是空转续跑的次数上限，由 Engine.emptyTurnNudgeLimit() 从「空响应重试
-	// 次数」解析而来。<=0 = 不介入(用户显式关掉了这层)。
+	// limit は空回り続行の上限回数で、Engine.emptyTurnNudgeLimit() が「空応答の再試行
+	// 回数」から解決します。<=0 = 介入しません（ユーザーがこの層を明示的に無効化）。
 	limit int
-	// label 形如 "worker-1 · #42"，只用于日志。
+	// label は "worker-1 · #42" などで、ログ専用です。
 	label string
 }
 
-// 空转回合(只有思考、既无正文也无工具调用)续跑次数的默认值，与 SDK 空响应重试的
-// 内置默认(norma/llm/openai.go 的 emptyResponseRetries)保持一致——两层共用同一个
-// 旋钮，不配置时的行为也该对齐。解析见 Engine.emptyTurnNudgeLimit。
+// 空回りターン（思考だけで本文もツール呼び出しもない）の既定続行回数は、SDK の空応答再試行の
+// 組み込み既定値（norma/llm/openai.go の emptyResponseRetries）と同じです。両層で同じ
+// 設定を共有し、未設定時の動作もそろえます。解決は Engine.emptyTurnNudgeLimit を参照。
 //
-// 注意这个数是「一条意图的总量」，不是「连续几次」:harness 自身的 stopHookActive
-// 已经限死了连续空转只推一次——推完那一轮若还是空转，Stop 钩子不会再被调到，run 直接
-// 收场;只有真正发生过一次工具回合，配额才刷新(norma/harness/query.go:534)。所以这个
-// 闸挡的是「工具 → 空转 → 推 → 工具 → 空转」这种病态循环，别让它把意图预算耗光。
+// この数は「一つのインテントの総量」であり、「連続回数」ではありません。harness 自体の stopHookActive が
+// 連続する空回りを一回だけに制限します。その続行後も空回りなら Stop フックを再度呼ばず、run は直接
+// 終了します。実際にツールのターンが発生して初めて枠が戻ります（norma/harness/query.go:534）。したがって、
+// 「ツール → 空回り → 続行 → ツール → 空回り」という異常なループによるインテント予算の浪費を防ぎます。
 const defaultEmptyTurnNudges = 2
 
-// emptyTurnNudge 是空转回合注入的续跑指令。
+// emptyTurnNudge は空回りターンへ挿入する続行指示です。
 //
-// 这种回合在 harness 眼里是一次自然结束(stop_reason=end_turn 且无 tool_use)，五层
-// LLM 重试一层都不适用——它不是错误，是模型「想完了但没动手」。SDK 的空响应重试也
-// 够不着:它以「有没有 yield 过事件」判空，而思考增量本身就是事件(norma/llm/openai.go
-// 的 SEThinkingDelta)，所以 thinking-only 不算空。何况那层是原样重发整个 prompt，
-// 对这种由上下文形状决定的空转，重发只会让模型再想一遍。这里换成追加一条指令，让它
-// 带着已经产出的思考继续，输入变了才有理由给出不同的行为。
+// このターンを harness は自然終了（stop_reason=end_turn で tool_use なし）と見なし、五層の
+// LLM 再試行はすべて適用されません。エラーではなく、モデルが「考えたが行動しなかった」ためです。SDK の空応答再試行も
+// 対象外です。yield したイベントの有無で空を判定し、思考の差分自体がイベント（norma/llm/openai.go
+// の SEThinkingDelta）なので thinking-only は空ではありません。その層は prompt 全体をそのまま再送するため、
+// コンテキストの構成に起因する空回りでは、同じ思考を繰り返すだけです。ここでは指示を追加し、
+// 既に生成した思考で続行させます。入力を変えることで、異なる動作を期待できます。
 const emptyTurnNudge = "【空回りの注意】前のターンでは思考過程だけを出力し、回答本文もツールの呼び出しもありませんでした。" +
 	"つまり、そのターンでは成果が得られていません。先ほど考えた次の手順を直接実行し、ツールを呼び出すか、結論を文章で示してください。同じ思考を繰り返さないでください。"
 
@@ -592,10 +592,10 @@ func (h steerHooks) PostToolUse(ctx context.Context, name string, input, result 
 	}
 }
 
-// Stop 在 guard 原有语义之上补一层「空转回合」续跑:模型只输出了思考、既没给正文
-// 也没调工具时，harness 会把它当成自然结束并以空 summary 收场(query.go 的
-// ReasonCompleted + asst.Text())，一条本来还没做完的意图就这样断在半路。此时注入
-// 一条续跑指令，让模型带着已有思考接着走。
+// Stop は guard の元の意味に「空回りターン」の続行を追加します。モデルが思考だけを出し、本文も
+// ツールもなければ、harness は自然終了と扱い、空の summary で終了します（query.go の
+// ReasonCompleted + asst.Text()）。未完了のインテントが途中で止まるため、ここで
+// 続行指示を挿入し、既存の思考を使って続けさせます。
 func (h steerHooks) Stop(ctx context.Context, messages []llm.Message) (bool, []string, string) {
 	var (
 		prevent  bool
@@ -605,8 +605,8 @@ func (h steerHooks) Stop(ctx context.Context, messages []llm.Message) (bool, []s
 	if h.inner != nil {
 		prevent, blocking, msg = h.inner.Stop(ctx, messages)
 	}
-	// inner 已经决定硬停、或已经要注入自己的续跑消息 → 尊重它，不再叠加。
-	// limit<=0 = 用户把「空响应重试次数」配成了 -1，即显式关掉这层。
+	// inner が既に強制停止か独自の続行指示の挿入を決めていれば、それを尊重して追加しません。
+	// limit<=0 = ユーザーが「空応答の再試行回数」を -1 にし、この層を明示的に無効化しています。
 	if prevent || len(blocking) > 0 || h.nudges == nil || h.limit <= 0 || !isThinkingOnlyTurn(messages) {
 		return prevent, blocking, msg
 	}
@@ -641,9 +641,9 @@ func (e *Engine) emitActivity(t *Task, r db.Activity) db.Activity {
 	id, err := e.appendActivity(t, r)
 	if err != nil {
 		// NO LONGER SILENT: dropping a record breaks command↔result pairing in the
-		// trace — a tool_use whose tool_result was lost shows as "执行中" forever, and
-		// a lost 'result'/'round' record leaves the session with no summary ("无总结").
-		// Everything needed to分析根因 goes into ONE error-level line: reason class,
+		// trace — a tool_use whose tool_result was lost shows as "実行中" forever, and
+		// a lost 'result'/'round' record leaves the session with no summary ("要約なし").
+		// Everything needed to根本原因の分析 goes into ONE error-level line: reason class,
 		// summary preview, running drop count for this task, and — on the FK case — a
 		// live probe of WHY the parent exploration is unreachable.
 		n := e.bumpDrop(t.ID)
@@ -765,28 +765,28 @@ func (e *Engine) Run(ctx context.Context, t *Task) {
 		name := fmt.Sprintf("work#%d", i+1)
 		runTaskRoutine(rt, func(loopCtx context.Context) { e.workerLoop(loopCtx, t, name) })
 	}
-	e.startDeadlineCoordinator(ctx, t) // 任务级超时定时器(仅 timeout>0;去重)
-	// 仅在「完全没有活动意图(open+running)」时才 kick 首轮规划。带种子意图的任务:种子已
-	// 是 open,或已被上面刚起的 worker 抢先 claim 成 running——两种都算「有活干」,一律跳过
-	// 首轮 planner,worker 直接领种子意图开跑,跑完由 NotifyDone/心跳唤醒 planner。
-	// ⚠️ 不能用 Frontier(只数 open):worker 领取(open→running)与本检查存在竞态,会误 kick。
-	// 重启自动恢复时也可能只剩 running 意图,同样应跳过。
+	e.startDeadlineCoordinator(ctx, t) // タスク単位のタイムアウトタイマー（timeout>0 のみ、重複排除）
+	// 「活動中インテント（open+running）が皆無」のときだけ最初の計画を kick します。seed 付きタスクでは seed が既に
+	// open か、直前に起動した worker が先に claim して running になるため、どちらも「作業あり」と扱い、
+	// 最初の planner を必ず省略します。worker が seed を直接実行し、完了後に NotifyDone/ハートビートで planner を起動します。
+	// ⚠️ Frontier（open だけを数える）は使えません。worker の取得（open→running）と競合し、誤って kick します。
+	// 再起動の自動復元でも running のインテントだけが残り得るため、同様に省略します。
 	if has, _ := t.Store.HasActiveIntent(); !has {
 		t.Notify() // kick the first planning round (acted on once LLM is ready)
 	}
 }
 
-// plannerHeartbeatInterval 解析任务的 planner 心跳间隔。db.CreateTask 已归一
-// (低于 600 一律抬到 600);这里再兜一次底,防内存态异常值。
+// plannerHeartbeatInterval はタスクの planner ハートビート間隔を解決します。db.CreateTask が既に正規化し、
+// 600 未満はすべて 600 にします。ここでも補完し、メモリー内の異常値を防ぎます。
 func plannerHeartbeatInterval(t *Task) time.Duration {
 	sec := t.PlanHeartbeatSeconds
-	if sec < db.MinPlanHeartbeatSeconds { // 下限=默认=600(10min)
+	if sec < db.MinPlanHeartbeatSeconds { // 下限=既定=600（10min）
 		sec = db.MinPlanHeartbeatSeconds
 	}
 	return time.Duration(sec) * time.Second
 }
 
-// resetPlannerTimer 安全重臂一个可能已触发的 Timer(标准 Stop→drain→Reset 模式)。
+// resetPlannerTimer は発火済みかもしれない Timer を安全に再設定します（標準の Stop→drain→Reset）。
 func resetPlannerTimer(timer *time.Timer, d time.Duration) {
 	if !timer.Stop() {
 		select {
@@ -799,13 +799,13 @@ func resetPlannerTimer(timer *time.Timer, d time.Duration) {
 
 func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 	interval := plannerHeartbeatInterval(t)
-	// 心跳定时器在 loop 入口臂 = 从任务 start 计时:即使是跳过首轮 planner 的 seed 任务
-	// (Run 里 frontier 非空不 kick 首轮)、这里一直阻塞,心跳也会在「任务 start + interval」
-	// 触发第一轮规划。之后每次唤醒(边沿/心跳)都重臂 = 距上次任意规划触发的时长。
+	// loop 入口でハートビートタイマーを設定し、タスクの start から計測します。seed タスクで最初の planner を
+	// 省略しても（Run の frontier が空でなく kick しない）、ここで待ち続けていても、「タスク start + interval」で
+	// 最初の計画を起動します。以後はすべての起動（エッジ/ハートビート）で再設定し、直近の計画起動からの時間を測ります。
 	heartbeat := time.NewTimer(interval)
 	defer heartbeat.Stop()
 
-	// runRound 跑一轮规划(含 debounce 合并 + 各 guard)。src 仅用于日志区分触发来源。
+	// runRound は計画を一回実行します（debounce の統合と各 guard を含む）。src は起動元のログ識別専用です。
 	runRound := func(src string) {
 		// debounce: coalesce a burst of changes into one planning round
 		timer := time.NewTimer(e.debounce)
@@ -833,20 +833,20 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 		if isTerminalStatus(t.lifecycleSnapshot().Status) {
 			return
 		}
-		// 任务级超时收尾中:丢弃普通唤醒——worker 收尾写回、Resume 的 Notify 都不再
-		// 触发常规规划轮;终局那一轮由协调器(settleTask)直接驱动,不走这里。
+		// タスクのタイムアウト終了処理中は通常の起動を破棄します。worker の書き戻しや Resume の Notify でも
+		// 通常の計画を起動しません。最終の一回は調整処理（settleTask）が直接実行します。
 		if e.isSettling(t.ID) {
 			return
 		}
-		// goalless（人工直投）分支：任务已无 open 目标时 planner 不跑——跑了会重判
-		// met→cancelExec 杀掉用户经主 agent 直投的意图。是否结束改由 frontier 决定：
-		// 还有 open/running 意图 → 保持 running、静默等待；意图已全部跑干 → 落 done。
-		// 整段纯 Go、不触发任何 LLM 调用，也不打规划轮 marker。
+		// goalless（手動の直接投入）の分岐：open の目標がなければ planner は実行しません。実行すると達成を再判定し、
+		// met→cancelExec でユーザーがメイン agent から直接追加したインテントを終了するためです。終了判断は frontier が行い、
+		// open/running が残れば running を維持して待機し、すべて完了すれば done へ移行します。
+		// 全体が純粋な Go で、LLM 呼び出しも計画ターンの marker も発生しません。
 		if open, err := t.Store.HasOpenGoal(); err == nil && !open {
-			t.drainTriggers() // 丢弃累积的 done/finding 触发，避免 goalless 长会话里无界增长
+			t.drainTriggers() // 蓄積した done/finding の通知を破棄し、goalless の長いセッションでの無制限な増加を防ぎます。
 			if active, err := t.Store.HasActiveIntent(); err == nil && !active {
-				// frontier 抽干且无在跑意图 → 收尾。用 Guarded 版做 CAS，避免踩到并发的
-				// pause/delete/超时收尾的状态转换。
+				// frontier が空で実行中インテントもなければ終了処理。Guarded 版で CAS し、同時実行の
+				// pause/delete/タイムアウト終了処理の状態遷移を妨げないようにします。
 				if won, err := e.m.SetTaskStatusGuarded(t.ID, "done"); err != nil {
 					log.Printf("[goalless] task %s の終了処理で done の保存に失敗しました: %v", t.ID, err)
 				} else if won {
@@ -854,16 +854,16 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 						Summary: "すべての目標を達成し、直接割り当てたインテントの実行を完了しました。タスクを終了します"})
 				}
 			}
-			return // goalless 分支永不进入 planner.Plan
+			return // goalless の分岐は planner.Plan に入りません
 		}
 		if !e.beginTaskOperation(t.ID) {
 			return
 		}
 		defer e.decInflight(t.ID)
-		e.stampFirstRun(t) // 首次真正规划 → 盖 first_run_at + 算 deadline(仅带 timeout 的任务)
+		e.stampFirstRun(t) // 最初の実際の計画 → first_run_at を記録 + deadline を計算（timeout 付きタスクのみ）
 		e.touch(t.ID)
 		emit := func(r db.Activity) { e.emitActivity(t, r) }
-		ectx := e.clockCtx(e.execContextFor(ctx, t.ID), t, false) // cancellable by Pause; 带任务 deadline
+		ectx := e.clockCtx(e.execContextFor(ctx, t.ID), t, false) // cancellable by Pause; タスクの deadline 付き
 		if ectx.Err() != nil || e.IsDeleting(t.ID) {
 			return
 		}
@@ -884,13 +884,13 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 			log.Printf("[planner] task %s の計画でエラーが発生しました: %v", t.ID, err)
 		case met:
 			log.Printf("[planner] task %s の目標を達成済みと判定しました: %s", t.ID, reason)
-			// 所有目标达成 → 持久化任务状态为 done（前端 DTO 会优先展示该终态）。
+			// 全目標達成 → タスク状態を done として永続化（フロントエンドの DTO はこの最終状態を優先表示）。
 			if err := e.m.SetTaskStatus(t.ID, "done"); err != nil {
 				log.Printf("[planner] task %s の完了状態の保存に失敗しました: %v", t.ID, err)
 			}
-			// 任务已判完成 → 立刻取消在跑的 worker：它们手头的意图跑出来也没意义了。
-			// 下一轮 worker 循环撞终态门就不再领新意图;被取消的这批走下方"任务已完成"分支
-			// 归为 stopped(而非 blocked)。
+			// タスクが完了と判定済み → 実行中の worker を即座に取り消します。残りのインテントを実行しても意味がないためです。
+			// 次の worker ループは最終状態の検査で新規取得を止め、取り消された分は下の「タスク完了」の分岐で
+			// stopped に分類します（blocked ではありません）。
 			e.cancelExec(t.ID, agent.AbortGoalMet)
 		default:
 			log.Printf("[planner] task %s の計画が完了しました", t.ID)
@@ -903,12 +903,12 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 		case <-ctx.Done():
 			return
 		case <-t.notify:
-			runRound("edge") // worker 结束 / finding / kill / resume / seed 首轮
+			runRound("edge") // worker 終了 / finding / kill / resume / seed の初回
 		case <-heartbeat.C:
-			// 周期兜底:死锁兜底 + 唤醒去监督飞行中的 worker(steer/kill) + 周期复查。
+			// 定期的な補完：デッドロック対策 + 実行中 worker の監督（steer/kill）のための起動 + 定期再確認。
 			runRound("heartbeat")
 		}
-		// 每次唤醒(边沿或心跳)后重臂心跳:任意规划触发都重算这段静置计时。
+		// 各起動（エッジ/ハートビート）後に再設定：すべての計画起動で待機時間を計測し直します。
 		resetPlannerTimer(heartbeat, interval)
 	}
 }
@@ -940,13 +940,13 @@ func (e *Engine) workerLoop(ctx context.Context, t *Task, name string) {
 			if sleepCtx(ctx, 1000*time.Millisecond) {
 				return
 			}
-			continue // 任务超时收尾中:不再领新意图(在跑的自行收尾,协调器等其 drain)
+			continue // タスクのタイムアウト終了処理中は新しいインテントを取得しません（実行中のものが終了し、調整処理が drain を待つ）。
 		}
 		if isTerminalStatus(e.m.TaskStatus(t.ID)) {
 			if sleepCtx(ctx, 1000*time.Millisecond) {
 				return
 			}
-			continue // 任务已终态(done/failed/timeout):停止领取遗留意图,别在完成后空跑 frontier
+			continue // タスクが最終状態（done/failed/timeout）なら残ったインテントの取得を停止し、完了後の frontier の空回りを防ぎます
 		}
 		if !e.beginTaskOperation(t.ID) {
 			return
@@ -981,10 +981,10 @@ func (e *Engine) runWorkerStep(ctx context.Context, t *Task, name string, worker
 // cannot observe quiescence between the LLM return and the final DB writes.
 func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *agent.Worker, intent *db.Node, requestID, message string) bool {
 	hasChatMessage := message != ""
-	e.stampFirstRun(t) // 首次真正执行 → 盖 first_run_at + 算 deadline(仅带 timeout 的任务)
+	e.stampFirstRun(t) // 最初の実際の実行 → first_run_at を記録 + deadline を計算（timeout 付きタスクのみ）
 	e.touch(t.ID)
 	emit := func(r db.Activity) { e.emitActivity(t, r) }
-	ectx := e.clockCtx(e.execContextFor(ctx, t.ID), t, false) // cancellable by Pause; 带任务 deadline
+	ectx := e.clockCtx(e.execContextFor(ctx, t.ID), t, false) // cancellable by Pause; タスクの deadline 付き
 	if ectx.Err() != nil || e.IsDeleting(t.ID) {
 		if err := transitionIntentState(t.Store, intent.ID, "running", "open"); err != nil {
 			log.Printf("[worker %s] task %s のインテント #%d の取得後の差し戻しに失敗しました: %v", name, t.ID, intent.ID, err)
@@ -1004,8 +1004,8 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 	}
 	label := fmt.Sprintf("%s · #%d", name, iid)
 	workCtx = intercept.WithTaskContext(workCtx, t.ID, label, taskEmit)
-	// nudges 有意建在 model_error 重跑循环之外:空转续跑的上限是「这条意图」的总量，
-	// 重跑一轮不该把额度清零重来。
+	// nudges は意図的に model_error 再実行ループの外で作ります。空回り続行の上限は「このインテント」の総量であり、
+	// 再実行するたびに枠をゼロに戻してはいけません。
 	hooks := steerHooks{
 		inner:  t.Guard.Hooks(),
 		drain:  func() (string, bool) { return e.drainSteer(iid) },
@@ -1024,9 +1024,9 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		reason, wrote, err = worker.Execute(workCtx, name, wTaskID, e.m.assets, t.Store, intent, hooks, emit, e.m.enrich, t.NotifyFinding)
 	}
 	e.EndLLMCall(t.ID)
-	// model_error 收场 → 额外重跑几次（退避后再试）。仅在意图仍属本 work、任务
-	// 未暂停/未终止/未取消【且未进入收尾】时重试；否则让位给对应分支处理(收尾期不
-	// 再重试,避免退避挤占其他 worker 的优雅收尾窗口)。
+	// model_error で終了 → バックオフ後に数回追加実行します。インテントがこの work に属し、タスクが
+	// 一時停止/終了/取り消し済みでなく【終了処理にも入っていない】場合のみ再試行し、他は対応分岐へ譲ります（終了処理中は
+	// 再試行せず、バックオフが他の worker の正常な終了処理時間を消費しないようにします）。
 	maxRetries, retryBackoff := e.modelErrorRetryPolicy()
 	for attempt := 1; attempt <= maxRetries &&
 		retryableWorkerModelError(reason, err) &&
@@ -1034,7 +1034,7 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		log.Printf("[worker %s] task %s のインテント #%d が model_error で終了しました。%v 後に再試行します (%d/%d)",
 			name, t.ID, intent.ID, retryBackoff, attempt, maxRetries)
 		if sleepCtx(workCtx, retryBackoff) {
-			break // 退避期间被取消（终止/暂停）→ 交给下方分支处理
+			break // バックオフ中の取り消し（終了/一時停止）→ 下の分岐で処理
 		}
 		e.BeginLLMCall(t.ID)
 		if hasChatMessage {
@@ -1097,8 +1097,8 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		}
 		return true
 	}
-	// 任务超时收尾的硬兜底 cancel(非 pause、非 kill)取消了本 run → 归为 exhausted(已收尾),
-	// 不要误标 blocked。此时 worker 通常已在 settlement 阶段把结果写回。
+	// タスクのタイムアウト終了処理の最終 cancel（pause/kill 以外）がこの run を取り消した場合は exhausted（終了処理済み）へ分類し、
+	// blocked と誤認しません。この時点では通常、worker は settlement で結果を書き戻しています。
 	if ectx.Err() != nil && e.isSettling(t.ID) {
 		if err := transitionIntentState(t.Store, intent.ID, "running", "exhausted"); err != nil {
 			log.Printf("[worker %s] task %s のインテント #%d のタイムアウト終了処理の状態保存に失敗しました: %v", name, t.ID, intent.ID, err)
@@ -1107,8 +1107,8 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		e.touch(t.ID)
 		return true
 	}
-	// 任务已判完成(done via 常规路径)→ 上面 cancelExec 取消了本 run。意图结果已无意义,
-	// 标 stopped(不是 blocked),别污染已完成任务的意图状态。
+	// タスクは完了と判定済み（done via 通常経路）→ 上の cancelExec がこの run を取り消しました。インテントの結果は不要なので、
+	// stopped とし（blocked ではない）、完了済みタスクのインテント状態を汚しません。
 	if ectx.Err() != nil && isTerminalStatus(e.m.TaskStatus(t.ID)) {
 		if err := transitionIntentState(t.Store, intent.ID, "running", "stopped"); err != nil {
 			log.Printf("[worker %s] task %s のインテント #%d の最終停止状態の保存に失敗しました: %v", name, t.ID, intent.ID, err)
@@ -1130,8 +1130,8 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 	if err != nil {
 		log.Printf("[worker %s] intent %d: %v", name, intent.ID, err)
 	}
-	// terminal分流：撞步数上限 ≠ 完成。max_turns→exhausted（规划者据此知道这个方向
-	// 试过但没真正做完、需换角度，而非当成已覆盖永久跳过）；出错→blocked；正常→done。
+	// terminal の分類：ステップ上限への到達 ≠ 完了。max_turns→exhausted（計画担当へ、試したが
+	// 未完了なので別の角度が必要と伝え、カバー済みとして永久に省略させない）。エラー→blocked、正常→done。
 	state := "done"
 	switch {
 	case err != nil:

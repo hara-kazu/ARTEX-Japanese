@@ -159,10 +159,10 @@ function FindingDetailInner() {
 
       {/* Tab content */}
       <div className="flex-1 p-4 lg:p-6">
-        {/* 概览：左（摘要 + 证据）/ 右（状态区） */}
+        {/* 概要：左（要約 + 証拠）/ 右（状態領域） */}
         <TabsContent value="overview" className="mt-0">
           <div className="grid gap-4 lg:grid-cols-3">
-            {/* 左栏 */}
+            {/* 左列 */}
             <div className="flex flex-col gap-4 lg:col-span-2">
               <Card>
                 <CardHeader>
@@ -194,7 +194,7 @@ function FindingDetailInner() {
                 readOnly={finding.inherited}
                 onChanged={load}
               />
-              {/* 证据下方：详细报告(Markdown 渲染) */}
+              {/* 証拠の下：詳細レポート(Markdown レンダリング) */}
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle className="text-sm">詳細レポート</CardTitle>
@@ -215,20 +215,20 @@ function FindingDetailInner() {
               </Card>
             </div>
 
-            {/* 右栏：状态区 */}
+            {/* 右列：状態領域 */}
             <Card className="h-fit lg:sticky lg:top-24">
               <CardHeader>
                 <CardTitle className="text-sm">状態</CardTitle>
               </CardHeader>
               <CardContent className="divide-y">
-                {/* 漏洞 ID */}
+                {/* 脆弱性 ID */}
                 <FieldRow label="脆弱性 ID">
                   <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                     #{finding.id}
                   </code>
                 </FieldRow>
 
-                {/* 严重等级 */}
+                {/* 重大度 */}
                 <FieldRow label="重大度">
                   {finding.inherited ? (
                     <StatusBadge domain="severity" value={finding.severity} dot />
@@ -250,7 +250,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 处理状态 */}
+                {/* 処理状態 */}
                 <FieldRow label="処理状態">
                   {finding.inherited ? (
                     <StatusBadge domain="finding" value={finding.status} dot />
@@ -272,7 +272,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 漏洞类型 */}
+                {/* 脆弱性の種類 */}
                 <FieldRow label="脆弱性の種類">
                   {finding.vulnclass ? (
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{finding.vulnclass}</code>
@@ -281,7 +281,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 涉及资产 */}
+                {/* 関連資産 */}
                 <FieldRow label="関連する資産">
                   {finding.assets && finding.assets.length > 0 ? (
                     <div className="flex flex-wrap justify-end gap-1">
@@ -300,7 +300,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 所属任务 */}
+                {/* 所属タスク */}
                 <FieldRow label="所属タスク">
                   {finding.task_id ? (
                     <Link
@@ -316,7 +316,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 发现时间 */}
+                {/* 検出日時 */}
                 <FieldRow label="検出日時">
                   <span className="tabular-nums">{fmtTime(finding.ts)}</span>
                 </FieldRow>
@@ -325,7 +325,7 @@ function FindingDetailInner() {
           </div>
         </TabsContent>
 
-        {/* 链路图：从任务初始节点回溯到本漏洞节点的攻击链路 */}
+        {/* 経路グラフ：タスクの初期ノードからこの脆弱性ノードまでをたどる攻撃経路 */}
         <TabsContent value="lineage" className="mt-0">
           <FindingLineageView findingId={finding.id} />
         </TabsContent>

@@ -131,7 +131,7 @@ function groupByAgent(conversations: Conversation[], agentByKey: Map<string, Age
   return [...groups.values()];
 }
 
-// LiveBadge is the small pulsing "实时" chip reused from the task's main-agent
+// LiveBadge is the small pulsing "リアルタイム" chip reused from the task's main-agent
 // console — shown while a turn is streaming.
 function LiveBadge() {
   return (
@@ -169,7 +169,7 @@ function Composer({
   running?: boolean;
   onStop?: () => void;
   stopDisabled?: boolean;
-  // 方式1 文件上传:传了 onPickFiles 才显示回形针按钮 + 附件 chip 预览。
+  // 方式1 ファイルアップロード:onPickFiles を渡した場合のみクリップボタン + 添付 chip プレビューを表示する。
   attachments?: ChatAttachment[];
   onPickFiles?: (files: File[]) => void;
   onRemoveAttachment?: (path: string) => void;
@@ -178,7 +178,7 @@ function Composer({
 }) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const atts = attachments ?? [];
-  // 发送键位由系统设置决定（localStorage），默认 Enter 发送。
+  // 送信キーはシステム設定（localStorage）で決まり、デフォルトは Enter で送信する。
   const sendMode = useChatSendMode();
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (!shouldSubmitOnKey(e, sendMode)) return;
@@ -222,8 +222,8 @@ function Composer({
               multiple
               className="hidden"
               onChange={(e) => {
-                // FileList 与 input 元素活绑定:必须先快照成数组,再清空 value,
-                // 否则异步的 onPickFiles(比如草稿态要先建会话)恢复执行时会拿到空列表。
+                // FileList と input 要素は動的に結び付いている:先に配列へスナップショットしてから value を消す必要があり、
+                // そうしないと非同期の onPickFiles(下書き状態で先にセッションを作る場合など)が再開したときに空のリストを取得する。
                 const picked = Array.from(e.target.files ?? []);
                 e.target.value = ""; // allow re-picking the same file
                 if (picked.length > 0) onPickFiles(picked);
@@ -500,7 +500,7 @@ function ChatView({
   const [input, setInput] = React.useState(initial?.input ?? "");
   const [sending, setSending] = React.useState(false);
   const [stopping, setStopping] = React.useState(false);
-  // 方式1 文件上传:已上传的附件(落到 sessions/conv-<id>/uploads/),随下条消息一起发。
+  // 方式1 ファイルアップロード:アップロード済みの添付(sessions/conv-<id>/uploads/ に保存)を次のメッセージと一緒に送る。
   const [attachments, setAttachments] = React.useState<ChatAttachment[]>(initial?.attachments ?? []);
   const [uploading, setUploading] = React.useState(false);
   const cursorRef = React.useRef(0); // newest loaded id — incremental-tail anchor
@@ -687,7 +687,7 @@ function ChatView({
     let li = 0,
       lo = 0,
       lcr = 0;
-    let turns = 0; // agent 循环轮次 = 模型调用次数（每次一条 kind='usage'）
+    let turns = 0; // agent ループのラウンド数 = モデル呼び出し回数（毎回 kind='usage' が1件）
     for (const a of messages) {
       if (a.kind === "result") {
         i += a.input_tokens ?? 0;
@@ -1064,7 +1064,7 @@ export default function ChatPage() {
   const [renameText, setRenameText] = React.useState("");
   const [selectedConversationIds, setSelectedConversationIds] = React.useState<Set<number>>(() => new Set());
   // selectionMode gates the multi-select UI: off by default (clean list, no
-  // checkboxes); the header "多选" button turns it on, "完成" turns it off and
+  // checkboxes); the header "複数選択" button turns it on, "完了" turns it off and
   // clears the selection.
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
@@ -1198,7 +1198,7 @@ export default function ChatPage() {
     [visibleConversations, agentByKey],
   );
   // conversation agents: custom agents + conversational built-ins (role=assistant,
-  // e.g. Auto / 渗透测试). The orchestration built-ins (goals/planner/mainagent/worker)
+  // e.g. Auto / ペネトレーションテスト). The orchestration built-ins (goals/planner/mainagent/worker)
   // are task-specific and stay hidden from the chat page.
   const chatAgents = React.useMemo(() => agents.filter((a) => !a.builtin || a.role === "assistant"), [agents]);
   const agentFilterOptions = React.useMemo(() => {

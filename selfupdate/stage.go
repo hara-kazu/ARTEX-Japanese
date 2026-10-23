@@ -15,13 +15,13 @@ import (
 	"time"
 )
 
-// sumsAsset 是 release.yml 生成的校验和清单，覆盖 Release 里全部 zip。
+// sumsAsset は release.yml が生成するチェックサム一覧で、Release 内のすべての zip をカバーする。
 const sumsAsset = "SHA256SUMS"
 
-// maxBinarySize 限制解压出来的二进制体积，防止畸形 zip 把磁盘写满。
+// maxBinarySize は解凍したバイナリーのサイズを制限し、不正な zip によるディスクの使い切りを防ぐ。
 const maxBinarySize = 512 << 20 // 512 MiB
 
-// Phase 是升级过程中的阶段，直接用作 SSE 事件里的 phase 字段。
+// Phase は更新過程の段階で、SSE イベントの phase フィールドに直接使う。
 type Phase string
 
 const (
@@ -33,17 +33,17 @@ const (
 	PhaseFailed   Phase = "failed"
 )
 
-// Progress 由调用方提供，用来把进度推给前端。pct 仅在下载阶段有意义（0-100），
-// 其余阶段传 -1。
+// Progress は呼び出し元が提供し、進捗をフロントエンドにプッシュするために使う。pct はダウンロード段階のみ意味があり（0-100）、
+// それ以外の段階では -1 を渡す。
 type Progress func(ph Phase, pct int, msg string)
 
-// Stage 下载指定 Release 的当前平台发布包，校验后把新二进制暂存为 artex.new。
+// Stage は指定した Release の現在のプラットフォーム用の公開パッケージをダウンロードし、検証後に新バイナリーを artex.new として一時保存する。
 //
-// 走的是完整 zip 而不是裸二进制，理由有两个：现有 Release 的 SHA256SUMS 本来就
-// 只覆盖 zip，走 zip 不需要改 CI，也能兼容已经发布出去的历史版本；zip 里还带着
-// skills/，为将来同步内置 skill 留了口子。代价只是多下载 skills 那几百 KB。
+// 素のバイナリーではなく完全な zip を使う理由は2つ。既存の Release の SHA256SUMS はもともと
+// zip のみをカバーするため、zip を使えば CI の変更が不要で、公開済みの過去のバージョンにも対応できる。また zip には
+// skills/ も含まれ、将来の組み込み skill 同期の余地がある。代償は skills の数百 KB を余分にダウンロードするだけ。
 //
-// 函数返回即代表暂存完成，调用方随后优雅关闭并以 ExitRestart 退出。
+// 関数から戻れば一時保存完了で、呼び出し元は続いて正常にシャットダウンし、ExitRestart で終了する。
 func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion string, prog Progress) error {
 	if prog == nil {
 		prog = func(Phase, int, string) {}
@@ -72,8 +72,8 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		return fmt.Errorf("%s に %s が含まれていません。検証できない実行ファイルのインストールを拒否しました", sumsAsset, name)
 	}
 
-	// 临时文件全部落在目标目录里，保证最后的 rename 是同一文件系统内的原子操作
-	// （跨设备 rename 会失败，而 /tmp 常常是独立挂载点）。
+	// 一時ファイルはすべて送信先ディレクトリーに置き、最後の rename が同じファイルシステム内のアトミックな操作であることを保証する
+	// （デバイスをまたぐ rename は失敗し、/tmp は独立したマウントポイントであることが多い）。
 	zipPath := p.New + ".zip.part"
 	binPath := p.New + ".part"
 	defer func() {
@@ -100,8 +100,8 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		return fmt.Errorf("新しいバージョンを現在のシステムで実行できません：%w", err)
 	}
 
-	// 暂存件自己的 sha256 单独存一份：下次启动换装前还要再校验一次，
-	// 防止暂存后到重启前这段时间里文件被改动或写坏。
+	// 一時保存ファイル自身の sha256 は別に保存する。次回起動の置換前にも再度検証し、
+	// 一時保存後から再起動前までの間のファイルの変更や書き込み破損を防ぐため。
 	binSum, err := fileSHA256(binPath)
 	if err != nil {
 		return fmt.Errorf("新しい実行ファイルのチェックサム計算に失敗しました：%w", err)
@@ -119,7 +119,7 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		To:       strings.TrimPrefix(rel.TagName, "v"),
 		StagedAt: time.Now().Unix(),
 	}); err != nil {
-		// 标记只影响自动回滚能力，暂存件本身已就位，不因此中断升级。
+		// マーカーは自動ロールバック機能にのみ影響する。一時保存ファイル自体は配置済みなので、それを理由に更新を中断しない。
 		prog(PhaseStaged, -1, "警告：更新マーカーを書き込めませんでした。今回の更新では自動ロールバックを利用できません")
 	}
 
@@ -127,7 +127,7 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 	return nil
 }
 
-// fetchSums 下载并解析 SHA256SUMS，返回 文件名 → 十六进制摘要。
+// fetchSums は SHA256SUMS をダウンロードして解析し、ファイル名 → 16進数のダイジェストを返す。
 func fetchSums(ctx context.Context, c *http.Client, rel *Release) (map[string]string, error) {
 	asset, ok := rel.FindAsset(sumsAsset)
 	if !ok {
@@ -150,16 +150,16 @@ func fetchSums(ctx context.Context, c *http.Client, rel *Release) (map[string]st
 	return out, nil
 }
 
-// parseSums 解析 sha256sum 风格的清单，返回 文件名 → 十六进制摘要。
+// parseSums は sha256sum 形式の一覧を解析し、ファイル名 → 16進数のダイジェストを返す。
 //
-// 第一个字段必须是 64 位十六进制才收录。只按"恰好两个字段"判断是不够的——
-// 任意一行两个单词的说明文字都会被当成合法条目，把垃圾值塞进摘要表，
-// 真正的资产反而可能匹配到错误的摘要。
+// 最初のフィールドが 64 桁の16進数の場合のみ収録する。「ちょうど2フィールド」だけの判定では不十分で、
+// 任意の2単語の説明行を正当な項目とみなし、ダイジェスト表にごみの値を入れてしまい、
+// 実際のアセットが誤ったダイジェストと照合される可能性がある。
 func parseSums(raw string) map[string]string {
 	out := map[string]string{}
 	for line := range strings.Lines(raw) {
-		// 格式为 "<sha256>  <filename>"（sha256sum 用双空格；shasum 的二进制
-		// 模式会给文件名加 * 前缀）。
+		// 形式は "<sha256>  <filename>"（sha256sum は二重の空白、shasum のバイナリー
+		// モードではファイル名に * 接頭辞を付ける）。
 		fields := strings.Fields(strings.TrimSpace(line))
 		if len(fields) != 2 || !isHexSHA256(fields[0]) {
 			continue
@@ -187,7 +187,7 @@ func isHexSHA256(s string) bool {
 	return true
 }
 
-// download 把资产写入 dst，同时计算 SHA256 并按 Content-Length 汇报进度。
+// download はアセットを dst に書き込み、同時に SHA256 を計算して Content-Length に基づく進捗を報告する。
 func download(ctx context.Context, c *http.Client, a Asset, dst string, prog Progress) (string, error) {
 	body, err := get(ctx, c, a.downloadURL())
 	if err != nil {
@@ -215,7 +215,7 @@ func download(ctx context.Context, c *http.Client, a Asset, dst string, prog Pro
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// get 发起一个受白名单约束的 GET，返回响应体。
+// get は許可リストに制限された GET を実行し、応答ボディを返す。
 func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -238,10 +238,10 @@ func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, err
 	return resp.Body, nil
 }
 
-// extractBinary 从发布包里取出 artex 可执行文件。
+// extractBinary は公開パッケージから artex 実行ファイルを取り出す。
 //
-// 包内结构是 artex-<版本>-<os>-<arch>/artex，但这里按**基名**匹配而不是拼完整
-// 路径：版本号在包名里出现过一次，拼错一个字符就整个升级失败，按基名找更耐改。
+// パッケージ内の構造は artex-<バージョン>-<os>-<arch>/artex だが、ここでは完全なパスを組み立てず、**ベース名**で照合する。
+// バージョン番号はパッケージ名内にすでに1回現れており、1文字間違えると更新全体が失敗するため、ベース名で探すほうが変更に強い。
 func extractBinary(zipPath, dst string) error {
 	want := "artex"
 	if runtime.GOOS == "windows" {
@@ -284,8 +284,8 @@ func extractBinary(zipPath, dst string) error {
 	return fmt.Errorf("配布パッケージに %s が見つかりません", want)
 }
 
-// checkWritable 提前确认目录可写。没有这一步，非 root 运行、或二进制被放在系统
-// 目录时，会在下载完几十 MB 之后才在换装那一刻失败。
+// checkWritable はディレクトリーへの書き込み可否を事前に確認する。これがないと、root 以外での実行時やバイナリーがシステム
+// ディレクトリーにある場合、数十 MB のダウンロード完了後、置換の瞬間になって初めて失敗する。
 func checkWritable(dir string) error {
 	probe, err := os.CreateTemp(dir, ".artex-update-probe-*")
 	if err != nil {
@@ -297,7 +297,7 @@ func checkWritable(dir string) error {
 	return nil
 }
 
-// progressWriter 统计已写字节并限频汇报，避免每个 32KiB 分块都推一条 SSE。
+// progressWriter は書き込み済みバイトを集計して報告頻度を制限し、32KiB のブロックごとに SSE をプッシュするのを避ける。
 type progressWriter struct {
 	total   int64
 	written int64

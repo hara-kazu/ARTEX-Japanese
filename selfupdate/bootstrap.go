@@ -14,39 +14,39 @@ import (
 	"time"
 )
 
-// smokeEnv 让被冒烟测试拉起的子进程直接跳过 Bootstrap。
+// smokeEnv はスモークテストで起動した子プロセスに Bootstrap を直接スキップさせる。
 //
-// 严格来说不加也不会出事：子进程的 os.Executable() 是 artex.new，推导出来的
-// 全部路径都带 .new 前缀，碰不到真正的升级文件。但依赖这种巧合太脆弱，
-// 显式短路一目了然，也省掉子进程一次无谓的磁盘探测。
+// 厳密には付けなくても問題はない：子プロセスの os.Executable() は artex.new で、導出される
+// すべてのパスに .new 接頭辞が付き、実際の更新ファイルには触れない。ただし、この偶然に依存するのは脆弱すぎるため、
+// 明示的な短絡で分かりやすくし、子プロセスによる無駄なディスク探索も1回省く。
 const smokeEnv = "ARTEX_SELFUPDATE_SMOKE"
 
-// Action 是 Bootstrap 给 main 的指令。
+// Action は Bootstrap から main への指示。
 type Action int
 
 const (
-	// Continue：照常启动 server。
+	// Continue：通常どおり server を起動する。
 	Continue Action = iota
-	// Restart：立刻以 ExitRestart 退出，让守护脚本重新拉起。
+	// Restart：直ちに ExitRestart で終了し、監視スクリプトに再起動させる。
 	Restart
 )
 
-// State 描述本次启动时的升级状态，供 /api/update/check 如实告诉前端
-// "上一次升级是成功了还是被回滚了"。
+// State は今回起動時の更新状態を表し、/api/update/check がフロントエンドに
+// 「前回の更新が成功したか、ロールバックされたか」を正確に伝えるために使う。
 type State struct {
-	Pending     bool   // 换装后尚未确认稳定
-	RolledBack  bool   // 本次启动刚刚执行过自动回滚
-	FailedStage bool   // 暂存件校验/冒烟未通过，已丢弃
-	Detail      string // 面向用户的一句话说明
+	Pending     bool   // 置換後、安定動作が未確認
+	RolledBack  bool   // 今回の起動で自動ロールバックを実行済み
+	FailedStage bool   // 一時保存ファイルが検証/スモークテストに失敗し、破棄済み
+	Detail      string // ユーザー向けの1文の説明
 }
 
-// Bootstrap 在 main 的最开头运行，必须在任何监听端口、打开数据库之前调用。
+// Bootstrap は main の最初に実行し、ポート待ち受けやデータベースを開く前に呼び出す必要がある。
 //
-// 三种局面：
+// 3つの状況：
 //
-//	① 存在暂存件 artex.new  → 校验 + 冒烟，通过则换装并要求重启；不通过则丢弃继续跑旧版
-//	② 只剩标记文件          → 说明刚换装完，累计一次尝试；连续失败够多次则回滚
-//	③ 什么都没有            → 正常启动
+//	① 一時保存ファイル artex.new がある → 検証 + スモークテスト、成功なら置換して再起動を要求、失敗なら破棄して旧版を続行
+//	② マーカーファイルのみ残る          → 置換直後を示し、試行を1回加算。連続失敗が規定回数に達したらロールバック
+//	③ 何もない                          → 通常起動
 func Bootstrap() (Action, State) {
 	if os.Getenv(smokeEnv) != "" {
 		return Continue, State{}
@@ -68,11 +68,11 @@ func Bootstrap() (Action, State) {
 	return confirmOrRollback(p, m)
 }
 
-// applyStaged 处理"存在暂存件"的局面：校验通过就换装，失败就丢弃。
+// applyStaged は「一時保存ファイルがある」状況を処理する：検証成功なら置換し、失敗なら破棄する。
 //
-// 这里是整个升级链路唯一会覆盖可执行文件的地方，也是最后一道闸门——冒烟测试挡掉
-// 下载损坏、架构选错、动态链接缺失这类问题。一旦放行一个跑不起来的二进制，
-// 守护脚本会不知疲倦地反复拉起它，而 Go 代码根本没机会运行，自动回滚也就无从谈起。
+// ここは更新経路全体で実行ファイルを上書きする唯一の場所で、最後の関門でもある。スモークテストで
+// ダウンロード破損、アーキテクチャの選択誤り、動的リンクの不足などを防ぐ。実行できないバイナリーを許可すると、
+// 監視スクリプトが延々と再起動する一方、Go コードには実行機会がなく、自動ロールバックも不可能になる。
 func applyStaged(p Paths) (Action, State) {
 	m, _ := readMarker(p.Marker)
 
@@ -90,7 +90,7 @@ func applyStaged(p Paths) (Action, State) {
 		return Continue, State{FailedStage: true, Detail: "実行ファイルの置き換えに失敗しました：" + err.Error()}
 	}
 
-	// 换装成功。保留标记，交给下一次启动（跑的就是新版）确认是否稳定。
+	// 置換成功。マーカーを保持し、次回起動（新版が動く）で安定性を確認する。
 	m.Attempts = 0
 	if m.StagedAt == 0 {
 		m.StagedAt = time.Now().Unix()
@@ -102,17 +102,17 @@ func applyStaged(p Paths) (Action, State) {
 	return Restart, State{Pending: true}
 }
 
-// confirmOrRollback 处理"换装后的启动"：累计尝试次数，超限则把旧版换回来。
+// confirmOrRollback は「置換後の起動」を処理する：試行回数を加算し、上限超過なら旧版に戻す。
 //
-// 计数只在 Go 代码跑起来后才递增，所以它覆盖的是"能执行但初始化时崩溃"
-// （配置不兼容、端口被占、DB 迁移炸了）这类故障；"根本无法 exec" 由换装前的
-// 冒烟测试挡住，两者合起来才是完整的。
+// カウントは Go コードの起動後にのみ増えるため、「実行できるが初期化でクラッシュする」
+// （設定非互換、ポート使用中、DB マイグレーション失敗）などの障害をカバーする。「exec 自体が不可能」は置換前の
+// スモークテストで防ぎ、両者を合わせて初めて完全となる。
 func confirmOrRollback(p Paths, m marker) (Action, State) {
 	m.Attempts++
 	if m.Attempts > maxAttempts {
 		if err := rollback(p); err != nil {
-			// 回滚都失败了就别再重启了，否则会陷入无限重启。清掉标记，
-			// 让进程按当前状态起——起不来的话用户至少能在日志里看到原因。
+			// ロールバック自体が失敗したら、無限再起動を避けるため再起動しない。マーカーを消去し、
+			// 現状のままプロセスを起動する。起動できなくても、ユーザーは少なくともログで理由を確認できる。
 			log.Printf("[update] 新しいバージョンの起動に %d 回連続で失敗し、ロールバックにも失敗しました：%v", maxAttempts, err)
 			_ = os.Remove(p.Marker)
 			return Continue, State{Detail: "新しいバージョンの起動とロールバックに失敗しました：" + err.Error()}
@@ -130,10 +130,10 @@ func confirmOrRollback(p Paths, m marker) (Action, State) {
 	return Continue, State{Pending: true}
 }
 
-// Settle 确认新版本已稳定运行，清除升级标记。
+// Settle は新版の安定動作を確認し、更新マーカーを消去する。
 //
-// 由 main 在 HTTP 监听起来之后延迟调用：活过这段时间才算数，否则标记留在原地，
-// 下次启动继续累计尝试次数，直到触发回滚。
+// main が HTTP の待ち受け開始後、遅延して呼び出す。この時間を生き延びて初めて成功とし、それ以外はマーカーを残し、
+// 次回起動で試行回数の加算を続け、ロールバックを発生させる。
 func Settle() {
 	p, err := ResolvePaths()
 	if err != nil {
@@ -144,7 +144,7 @@ func Settle() {
 
 func settle(p Paths) {
 	if _, ok := readMarker(p.Marker); !ok {
-		return // 不是升级后的启动，无事可做
+		return // 更新後の起動でなければ、処理は不要
 	}
 	if err := os.Remove(p.Marker); err != nil && !errors.Is(err, os.ErrNotExist) {
 		log.Printf("[update] 更新マーカーの削除に失敗しました：%v", err)
@@ -153,10 +153,10 @@ func settle(p Paths) {
 	log.Printf("[update] 新しいバージョンが安定して動作したため、更新を完了しました（前のバージョンは %s に保持）", p.Old)
 }
 
-// SettleDelay 是判定"新版本活下来了"所需的运行时长。
+// SettleDelay は「新版が生き延びた」と判定するための稼働時間。
 const SettleDelay = 30 * time.Second
 
-// verifyStaged 校验暂存件：先比对 SHA256，再真正把它拉起来跑一次。
+// verifyStaged は一時保存ファイルを検証する：まず SHA256 を比較し、次に実際に起動して1回実行する。
 func verifyStaged(p Paths) error {
 	want, err := os.ReadFile(p.Sum)
 	if err != nil {
@@ -172,8 +172,8 @@ func verifyStaged(p Paths) error {
 	return smokeTest(p.New)
 }
 
-// smokeTest 用 -h 拉起新二进制，确认它在当前系统上真的能执行。
-// 这能挡掉下载截断、架构选错（exec format error）、缺依赖等一大类问题。
+// smokeTest は -h で新バイナリーを起動し、現在のシステム上で実行できることを確認する。
+// ダウンロードの切断、アーキテクチャの選択誤り（exec format error）、依存関係の不足など、多くの問題を防げる。
 func smokeTest(bin string) error {
 	if err := os.Chmod(bin, 0o755); err != nil {
 		return fmt.Errorf("実行権限の付与に失敗しました：%w", err)
@@ -197,12 +197,12 @@ func smokeTest(bin string) error {
 	return nil
 }
 
-// swap 把当前二进制换成暂存的新版本。
+// swap は現在のバイナリーを一時保存した新版に置き換える。
 //
-// Unix 和 Windows 都允许 rename 一个正在运行的可执行文件（Windows 禁止的是删除和
-// 覆盖，rename 不在其列），所以这里不需要分平台，也不需要先停掉自己。
+// Unix と Windows はどちらも実行中の実行ファイルの rename を許可する（Windows が禁止するのは削除と
+// 上書きで、rename は含まれない）。そのためプラットフォーム別の処理も、自分自身の事前停止も不要。
 func swap(p Paths) error {
-	// Windows 的 rename 不会覆盖已存在的目标，上一轮升级留下的 .old 必须先清掉。
+	// Windows の rename は既存の送信先を上書きしないため、前回更新で残った .old を先に消去する必要がある。
 	if err := os.Remove(p.Old); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("古いバックアップ %s の削除に失敗しました：%w", p.Old, err)
 	}
@@ -210,7 +210,7 @@ func swap(p Paths) error {
 		return fmt.Errorf("現在のバージョンのバックアップに失敗しました：%w", err)
 	}
 	if err := os.Rename(p.New, p.Current); err != nil {
-		// 换装失败但当前版本已经被挪走了，必须原样放回去，否则下次启动没有可执行文件。
+		// 置換に失敗し、現在の版をすでに移動していた場合は、元の場所にそのまま戻す必要がある。しないと次回起動時に実行ファイルがない。
 		if rerr := os.Rename(p.Old, p.Current); rerr != nil {
 			return fmt.Errorf("新しいバージョンの配置に失敗し（%v）、現在のバージョンの復元にも失敗しました：%w", err, rerr)
 		}
@@ -220,12 +220,12 @@ func swap(p Paths) error {
 	return nil
 }
 
-// rollback 把 swap 备份的旧版本换回来。
+// rollback は swap でバックアップした旧版に戻す。
 func rollback(p Paths) error {
 	if _, err := os.Stat(p.Old); err != nil {
 		return fmt.Errorf("復元できるバックアップ %s がありません：%w", p.Old, err)
 	}
-	// 把起不来的新版挪到 .failed 留作排查，而不是直接删掉。
+	// 起動できない新版は直接削除せず、調査用に .failed へ移動する。
 	failed := p.Current + ".failed"
 	_ = os.Remove(failed)
 	if err := os.Rename(p.Current, failed); err != nil {
@@ -237,8 +237,8 @@ func rollback(p Paths) error {
 	return nil
 }
 
-// Rollback 是 /api/update/rollback 的实现：主动退回上一版本。
-// 只做换装，重启同样交给守护脚本（调用方随后以 ExitRestart 退出）。
+// Rollback は /api/update/rollback の実装で、自発的に前の版へ戻す。
+// 置換のみ行い、再起動は同様に監視スクリプトに任せる（呼び出し元は続いて ExitRestart で終了する）。
 func Rollback() error {
 	p, err := ResolvePaths()
 	if err != nil {
@@ -251,7 +251,7 @@ func Rollback() error {
 	if err := smokeTest(p.Old); err != nil {
 		return fmt.Errorf("前のバージョンを実行できないため、ロールバックを拒否しました：%w", err)
 	}
-	// 交换当前与备份：回滚之后还能再滚回来。
+	// 現在版とバックアップを交換し、ロールバック後にまた戻せるようにする。
 	tmp := p.Current + ".swap"
 	_ = os.Remove(tmp)
 	if err := os.Rename(p.Current, tmp); err != nil {
@@ -268,7 +268,7 @@ func Rollback() error {
 	return nil
 }
 
-// HasBackup 报告是否存在可回滚的上一版本，供前端决定要不要显示回滚按钮。
+// HasBackup はロールバック可能な前の版の有無を返し、フロントエンドがロールバックボタンの表示を決めるために使う。
 func HasBackup() bool {
 	p, err := ResolvePaths()
 	if err != nil {

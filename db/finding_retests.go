@@ -160,8 +160,8 @@ func (d *DB) FindingRetestForConversation(ctx context.Context, conversationID in
 // FailPendingRetestForConversation seals a conversation's unfinished retest when
 // the runner could not even load it — the retest ID is unknown on that path, so
 // the conversation ID is the only handle. Without it a transient read error
-// leaves the row 'pending' forever: the findings list keeps showing 复测中 and
-// every later 发起复测 is deduped against a run that is not happening, with only
+// leaves the row 'pending' forever: the findings list keeps showing 再テスト中 and
+// every later 再テスト開始 is deduped against a run that is not happening, with only
 // a process restart (RecoverFindingRetests) able to clear it.
 func (d *DB) FailPendingRetestForConversation(conversationID int64, reason string) error {
 	_, err := d.Exec(`UPDATE finding_retests SET status='failed', error=$2, finished_at=now()
@@ -237,15 +237,15 @@ func (d *DB) FinishFindingRetest(id int64, status, reason string) error {
 		return err
 	}
 	if finalStatus == "completed" && verdict == "fixed" {
-		// 走带通知的版本，与人工在详情页改状态共用同一套语义。
+		// 通知付きの版を使用し、詳細ページでの手動状態変更と同じ意味にする。
 		//
-		// 此前这里是裸的 UPDATE：复测判「已修复」时状态确实变了，但配了
-		// on_status_change 的渠道完全收不到推送——状态在界面上悄悄变了，
-		// 运维要打开平台才知道。状态更新与推送事件必须一起落库，
-		// SetFindingStatusTx 内部处理了「状态没变就不登记」等细节。
-		// 用 context.Background()：本函数整条都是无 ctx 的旧风格（d.Begin()/
-		// tx.QueryRow/tx.Exec），没有可传递的取消信号，硬加一个 ctx 参数会
-		// 牵动 server 侧调用点与多处测试，超出本次改动的范围。
+		// 以前はここが単純な UPDATE で、再テストで「修正済み」と判断した際に状態は変わるが、
+		// on_status_change を設定したチャネルは通知を全く受信できず、状態が画面上で静かに変わり、
+		// 運用担当はプラットフォームを開かないと気付かなかった。状態更新と通知イベントは一緒に保存すること。
+		// SetFindingStatusTx は「状態不変なら登録しない」などの詳細を内部で処理する。
+		// context.Background() を使用:この関数全体が ctx なしの旧スタイル（d.Begin()/
+		// tx.QueryRow/tx.Exec）で、伝搬可能なキャンセル信号がないため、ctx 引数を無理に加えると
+		// server 側の呼び出し箇所と複数のテストに影響し、今回の変更範囲を超える。
 		if _, _, _, _, err := SetFindingStatusTx(context.Background(), tx, findingID, FindingFixed); err != nil {
 			return err
 		}

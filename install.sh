@@ -10,7 +10,7 @@ die(){  printf '\033[31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 ask(){  local p="$1" d="${2:-}" a; read -rp "$p${d:+ [$d]}: " a; echo "${a:-$d}"; }
 rand(){ head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24; }
 
-# ── docker 环境检测 / 自动安装 ───────────────────
+# ── docker 環境の検出 / 自動インストール ───────────────────
 ensure_docker(){
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     ok "docker と docker compose を検出しました"; return
@@ -30,7 +30,7 @@ ensure_docker(){
   esac
 }
 
-# ── ① 全部 Docker ───────────────────────────────
+# ── ① すべて Docker ───────────────────────────────
 install_docker(){
   ensure_docker
   if [ ! -f .env ]; then
@@ -52,7 +52,7 @@ install_docker(){
   info "ログを表示：docker compose logs -f artex"
 }
 
-# ── ② 本地编译运行 ──────────────────────────────
+# ── ② ローカルでビルドして実行 ──────────────────────────────
 install_local(){
   echo "データベースの導入方法："
   echo "  1) 既存の PostgreSQL に接続"
@@ -74,7 +74,7 @@ install_local(){
       DB_SSL="$(ask 'sslmode (disable/require)' disable)" ;;
   esac
 
-  # 生成 config.json
+  # config.json を生成
   cat > config.json <<JSON
 {
   "database": {
@@ -89,11 +89,11 @@ install_local(){
 JSON
   ok "config.json を作成しました"
 
-  # go 环境检查
+  # go 環境の確認
   command -v go >/dev/null 2>&1 || die "Go がありません。Go 1.26 以降をインストールしてください：https://go.dev/dl/"
   ok "Go: $(go version)"
 
-  # 内嵌前端需要 node 出静态产物
+  # フロントエンドの埋め込みには node で静的ファイルの生成が必要
   if command -v npm >/dev/null 2>&1; then
     info "フロントエンドの静的ファイルをビルドします…"
     ( cd web && npm ci && npm run build:static )

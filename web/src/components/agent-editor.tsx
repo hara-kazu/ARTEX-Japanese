@@ -28,12 +28,12 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Agent, AgentDetail, AgentTrigger, MCPServer, PromptVar, PromptVersion, Settings, SkillItem, Tool } from "@/lib/types";
 
-// Traffic tools are host tools gated by the global 流量捕获 switch: bindable, but
+// Traffic tools are host tools gated by the global トラフィックキャプチャ switch: bindable, but
 // only usable when capture is on. Keep this list in sync with traffic.SeedToolMetas.
 const TRAFFIC_TOOL_KEYS = new Set(["traffic_search", "traffic_get"]);
 
 // AgentEditor is the tabbed editor for one agent, used inside the agents-page
-// drawer (and reused full-page for deep links). Tabs: 配置与提示词 / MCP / Skill /
+// drawer (and reused full-page for deep links). Tabs: 設定とプロンプト / MCP / Skill /
 // Tools. Config + prompt save as before; visibility + tool bindings toggle live.
 export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?: () => void }) {
   const [detail, setDetail] = React.useState<AgentDetail | null>(null);
@@ -52,7 +52,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
   const [preview, setPreview] = React.useState("");
   const [maxTurns, setMaxTurns] = React.useState("0");
   const [runSecs, setRunSecs] = React.useState("600");
-  // "" = 跟随(未绑定)；否则为 profile id 字符串
+  // "" = 継承(未バインド)；それ以外は profile id の文字列
   const [llmProfileId, setLlmProfileId] = React.useState("");
   const [llmProfiles, setLlmProfiles] = React.useState<NonNullable<AgentDetail["llm_profiles"]>>([]);
   const [webSearch, setWebSearch] = React.useState(false);
@@ -61,7 +61,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
   const [wrapupDefault, setWrapupDefault] = React.useState("");
   const [wrapupTurns, setWrapupTurns] = React.useState("0");
   const [wrapupTurnsDefault, setWrapupTurnsDefault] = React.useState(5);
-  // 任务级超时收尾词(仅 worker/planner)
+  // タスク単位のタイムアウト終了プロンプト(worker/planner のみ)
   const [ttSupported, setTtSupported] = React.useState(false);
   const [ttWrapup, setTtWrapup] = React.useState("");
   const [ttWrapupDefault, setTtWrapupDefault] = React.useState("");
@@ -75,7 +75,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
     api.tools().then(setTools).catch(() => {});
     api.settings().then(setSettings).catch(() => {});
   }, []);
-  // global gates: traffic tools need 流量捕获, web search needs the master switch.
+  // global gates: traffic tools need トラフィックキャプチャ, web search needs the master switch.
   const captureOn = !!settings?.traffic_capture;
   const webSearchGlobalOn = !!settings?.web_search_enabled;
 
@@ -179,7 +179,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
   }
   async function saveConfig() {
     try {
-      // 只提交本 agent 实际展示的字段，避免把未显示项(如 goals 的 max_turns)覆盖成默认。
+      // この agent に実際に表示されるフィールドだけを送信し、未表示項目(goals の max_turns など)が既定値で上書きされるのを防ぐ。
       const patch: Parameters<typeof api.saveAgentConfig>[1] = {
         llm_profile_id: llmProfileId === "" ? null : Number(llmProfileId),
       };
@@ -243,7 +243,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         enabled: t.enabled,
       });
       toast.success(`${on ? "関連付けを解除しました：" : "関連付けました："}ツール「${t.key}」`);
-      onSaved?.(); // refresh the list so the card's 工具 count stays in sync
+      onSaved?.(); // refresh the list so the card's ツール count stays in sync
     } catch (e) {
       toast.error("ツールの関連付けの保存に失敗しました：" + (e as Error).message);
       reload();
@@ -260,9 +260,9 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
   // web search applies to every conversational/executing agent except the one-shot
   // goals decomposer; it's gated by the global master switch.
   const showWebSearch = agentKey !== "goals";
-  // interactive shell (持久 PTY 会话工具族) 同样对除 goals 外的 agent 开放;无全局门控。
+  // interactive shell (永続 PTY セッションツール群)も goals 以外の agent に公開し、グローバルの制御はない。
   const showInteractiveShell = agentKey !== "goals";
-  // 每个 agent(含 goals/mainagent)都跑在某个 LLM 上,故「默认模型」绑定对所有 agent 开放。
+  // 各 agent(goals/mainagent を含む)はすべて何らかの LLM で動作するため、「デフォルトモデル」のバインドは全 agent に公開する。
   const showLLM = true;
   // triggers (P3) only attach to custom agents.
   const isCustom = !!detail && !detail.agent?.builtin;
@@ -278,7 +278,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         {isCustom && <TabsTrigger value="triggers">発動条件</TabsTrigger>}
       </TabsList>
 
-      {/* 配置 + 提示词 */}
+      {/* 設定 + プロンプト */}
       <TabsContent value="prompt" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="grid gap-4">
           {(showLLM || showConfig || showWebSearch || showInteractiveShell) && (
@@ -442,7 +442,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
             </ul>
           </div>
 
-          {/* 查看版本 dialog */}
+          {/* バージョン表示 dialog */}
           <Dialog open={!!viewVer} onOpenChange={(o) => { if (!o) setViewVer(null); }}>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
@@ -481,7 +481,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
             </DialogContent>
           </Dialog>
 
-          {/* 版本对比 dialog */}
+          {/* バージョン比較 dialog */}
           <Dialog open={!!diffVer} onOpenChange={(o) => { if (!o) setDiffVer(null); }}>
             <DialogContent className="sm:max-w-3xl">
               <DialogHeader>
@@ -499,7 +499,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         </div>
       </TabsContent>
 
-      {/* 收尾提示词 */}
+      {/* 終了プロンプト */}
       <TabsContent value="wrapup" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="grid gap-3">
           <p className="text-muted-foreground text-xs leading-relaxed">
@@ -588,7 +588,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         </div>
       </TabsContent>
 
-      {/* MCP 可见性 */}
+      {/* MCP 可視性 */}
       <TabsContent value="mcp" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <p className="text-muted-foreground mb-3 text-xs">このAgentに公開する MCP サーバーを選択してください。</p>
         <div className="grid gap-2">
@@ -603,7 +603,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         </div>
       </TabsContent>
 
-      {/* Skill 可见性 */}
+      {/* Skill 可視性 */}
       <TabsContent value="skill" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <p className="text-muted-foreground mb-3 text-xs">このAgentに公開するSkillを選択してください。</p>
         <div className="grid gap-2">
@@ -618,13 +618,13 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         </div>
       </TabsContent>
 
-      {/* Tools 绑定 */}
+      {/* Tools バインド */}
       <TabsContent value="tools" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <p className="text-muted-foreground mb-3 text-xs">このAgentに関連付ける組み込みツールを選択してください。</p>
         <div className="grid gap-2">
           {tools.map((t) => {
             const isTraffic = TRAFFIC_TOOL_KEYS.has(t.key);
-            const gated = isTraffic && !captureOn; // traffic tools need 流量捕获 on
+            const gated = isTraffic && !captureOn; // traffic tools need トラフィックキャプチャ on
             return (
               <label
                 key={t.key}
@@ -661,7 +661,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
         </div>
       </TabsContent>
 
-      {/* 触发(P3, 仅自定义 agent) */}
+      {/* トリガー(P3、カスタム agent のみ) */}
       {isCustom && (
         <TabsContent value="triggers" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
           <AgentTriggersTab agentKey={agentKey} agent={detail?.agent} />
@@ -726,12 +726,12 @@ function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
 }
 
 // AgentTriggersTab manages a custom agent's P3 triggers: list + add + delete.
-// Each trigger fires (定时/发现finding/目标达成/任务超时/工具调用，可多选) → a new conversation runs
+// Each trigger fires (定期/検出finding/目標達成/タスクタイムアウト/ツール呼び出し、複数選択可) → a new conversation runs
 // in parallel with the base user message + auto context appended by the backend.
 function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent }) {
   const [triggers, setTriggers] = React.useState<AgentTrigger[]>([]);
   const [tools, setTools] = React.useState<Tool[]>([]);
-  // 触发后处理策略(每 agent);初值来自 agent detail,改动即保存。
+  // トリガー後の処理方針(agent ごと);初期値は agent detail から取得し、変更時に保存する。
   const [runMode, setRunMode] = React.useState<"serial" | "parallel">(agent?.trigger_run_mode ?? "serial");
   const [mergeMode, setMergeMode] = React.useState<"by_task" | "all" | "none">(agent?.trigger_merge_mode ?? "all");
   const [maxParallel, setMaxParallel] = React.useState(String(agent?.trigger_max_parallel ?? 5));
@@ -767,7 +767,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
   const [taskCreateMsg, setTaskCreateMsg] = React.useState("");
   const [toolNames, setToolNames] = React.useState<string[]>([]);
   const [saving, setSaving] = React.useState(false);
-  // null = 新增模式；非 null = 正在编辑该 id 的触发器。
+  // null = 新規追加モード；非 null = その id のトリガーを編集中。
   const [editingId, setEditingId] = React.useState<number | null>(null);
 
   const reload = React.useCallback(() => {
@@ -784,7 +784,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
     setToolNames((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
-  // resetForm 清空表单并回到「新增」模式。
+  // resetForm はフォームを消去して「新規追加」モードへ戻す。
   function resetForm() {
     setEditingId(null);
     setOnInterval(false);
@@ -803,7 +803,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
     setToolNames([]);
   }
 
-  // startEdit 把某条已有触发器灌进表单,进入「编辑」模式。
+  // startEdit は既存トリガーをフォームへ入れ、「編集」モードにする。
   function startEdit(t: AgentTrigger) {
     setEditingId(t.id);
     setOnInterval(t.interval_sec > 0);
@@ -822,7 +822,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
     setToolNames(t.tool_names ?? []);
   }
 
-  // submit 依 editingId 走「新增」或「保存修改」;编辑时保留该触发器的启用状态。
+  // submit は editingId に応じて「追加」か「変更を保存」を行う;編集時はそのトリガーの有効状態を保持する。
   async function submit() {
     const n = onInterval ? Math.max(1, Math.floor(Number(intervalSec) || 0)) : 0;
     if (n === 0 && !onFinding && !onGoalMet && !onTaskTimeout && !onToolCall && !onTaskCreate) {
@@ -916,7 +916,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
         トリガーで、このカスタム Agent を自動実行できます。発動するたびに<b>新しいチャットを作成</b>します（「チャット」画面に表示）。条件は複数選択可能です。基本メッセージの後に、発動理由と関連するタスク / finding / 目標を自動で追加します。
       </p>
 
-      {/* 触发后处理策略 */}
+      {/* トリガー後の処理方針 */}
       <div className="grid gap-3 rounded-md border p-3">
         <Label className="text-muted-foreground text-xs">発動後の処理ポリシー（キューと実行の統合方法）</Label>
         <div className="flex flex-wrap items-center gap-4">
@@ -992,7 +992,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
         </p>
       </div>
 
-      {/* 新增 / 编辑触发器 */}
+      {/* トリガーの追加 / 編集 */}
       <div className="grid gap-3 rounded-md border p-3">
         <Label className="text-muted-foreground text-xs">
           {editingId != null
@@ -1000,7 +1000,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
             : "トリガーを追加（条件ごとにユーザーメッセージを指定可能）"}
         </Label>
 
-        {/* 定时 */}
+        {/* 定期 */}
         <div className="grid gap-1.5">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={onInterval} onCheckedChange={(v) => setOnInterval(!!v)} /> 定期的に実行
@@ -1030,7 +1030,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
           )}
         </div>
 
-        {/* 目标达成 */}
+        {/* 目標達成 */}
         <div className="grid gap-1.5">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={onGoalMet} onCheckedChange={(v) => setOnGoalMet(!!v)} /> 目標の達成時に実行
@@ -1041,7 +1041,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
           )}
         </div>
 
-        {/* 任务超时 */}
+        {/* タスクタイムアウト */}
         <div className="grid gap-1.5">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={onTaskTimeout} onCheckedChange={(v) => setOnTaskTimeout(!!v)} /> タスクのタイムアウト時に実行
@@ -1052,7 +1052,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
           )}
         </div>
 
-        {/* 工具调用 */}
+        {/* ツール呼び出し */}
         <div className="grid gap-1.5">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={onToolCall} onCheckedChange={(v) => setOnToolCall(!!v)} /> ツール呼び出し時に実行
@@ -1083,7 +1083,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
           )}
         </div>
 
-        {/* 任务创建 */}
+        {/* タスク作成 */}
         <div className="grid gap-1.5">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={onTaskCreate} onCheckedChange={(v) => setOnTaskCreate(!!v)} /> タスクの作成時に実行
@@ -1106,7 +1106,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
         </div>
       </div>
 
-      {/* 已有触发器 */}
+      {/* 既存トリガー */}
       <div className="grid gap-2">
         <Label className="text-muted-foreground text-xs">既存のトリガー</Label>
         {triggers.length === 0 && <span className="text-muted-foreground text-xs">（なし）</span>}

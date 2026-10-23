@@ -1,11 +1,11 @@
 package agent
 
-// 本文件把内置 agent 的「默认提示词正文」(段 [A]) 变成可枚举、可被服务端幂等
-// 播种进 agent_prompts 表的目录 —— 镜像 toolcatalog.go 的 BuiltinToolSeeds()。
+// このファイルは組み込み agent の「デフォルトプロンプト本文」(区分 [A])を列挙可能で、サーバーから冪等に
+// agent_prompts テーブルへ seed できるカタログにする —— toolcatalog.go の BuiltinToolSeeds() に対応。
 //
-// 只包含【可编辑正文】：段 [B] trafficTool 与段 [C] 中间产物输出规约 是代码固定
-// 注入(见 worker.go 的 workerTrafficBlock/artifactSpec)，不入库、不可编辑，因此
-// 不在种子里。种子文本用 Go 模板占位({{.Goal}} 等)，渲染时按运行期变量填充。
+// 【編集可能な本文】のみ含む：区分 [B] trafficTool と区分 [C] 中間成果物の出力規約はコードから固定的に
+// 注入し(worker.go の workerTrafficBlock/artifactSpec を参照)、保存せず、編集不可なので、
+// seed に含めない。seed テキストは Go テンプレートのプレースホルダー({{.Goal}} など)を使い、描画時に実行時変数で埋める。
 
 // autoDefaultTmpl is the built-in "Auto" platform-operator agent's prompt. Auto
 // runs via the chat page and drives the platform through tools: task ops
@@ -24,7 +24,7 @@ const autoDefaultTmpl = `あなたは **Auto**、このペネトレーション�
 - 実行した内容と結果を、わかりやすく簡潔に報告してください。ツールが実際に返した結果だけに基づいて回答し、捏造しないでください。
 - 許可された範囲内でのみ操作してください。`
 
-// pentestDefaultTmpl is the built-in "渗透测试" (solo pentest) agent's prompt. Unlike
+// pentestDefaultTmpl is the built-in "侵入テスト" (solo pentest) agent's prompt. Unlike
 // the orchestration roles (goals/planner/worker), it runs standalone via the chat page
 // and is its own planner + executor + auditor. Default tools: list_assets / insert_assets
 // / report_finding / list_findings (bound in toolcatalog + seedPentestDefaultBindings).
@@ -69,7 +69,7 @@ const pentestDefaultTmpl = `あなたは、許可を受けたペネトレーシ�
 // render fallback in RunChat when the DB prompt is somehow missing.
 const DefaultAssistantPrompt = `あなたは役に立つ AI アシスタントです。ユーザーの質問には簡潔で正確な日本語で回答し、必要に応じて利用可能なツールで作業を完了してください。ユーザーが依頼したことだけを行い、情報を捏造しないでください。`
 
-// ReporterDefaultPrompt is the seeded prompt for the "报告撰写"(reporter) custom
+// ReporterDefaultPrompt is the seeded prompt for the "レポート作成"(reporter) custom
 // agent — triggered when report_finding fires. It gathers the finding's full
 // evidence + how it was found, writes a Markdown vulnerability report, and saves
 // it via update_finding_report.

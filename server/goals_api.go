@@ -9,12 +9,12 @@ import (
 	"github.com/Autumn-27/artex/db"
 )
 
-// 总览「目标管理」的人工 CRUD 接口。与 agent 侧的 set_goals 工具写同一批 goal 节点,
-// 但入口是人类在 UI 上直接增删改;新增/修改后复用「复活任务」逻辑(admitTask resume:
-// 终态→running、解除暂停、必要时排队),删除不复活(按产品决策)。每个变更 handler 都走
-// beginTaskOperation/decInflight,避免与任务删除竞态(与意图 CRUD 一致)。
+// 概要「目標管理」の手動 CRUD インターフェース。agent の set_goals と同じ goal ノードへ書きますが、
+// ここでは人間が UI で直接追加・削除・変更します。追加/変更後は「タスクの復活」（admitTask resume：
+// 最終状態→running、一時停止解除、必要なら待機）を再利用し、削除では復活させません（製品仕様）。各変更 handler は
+// beginTaskOperation/decInflight を使い、タスク削除との競合を防ぎます（インテント CRUD と同じ）。
 
-// listGoals 返回本任务的全部目标(text/vulnclass/state 拆好),供目标管理卡片渲染。
+// listGoals はこのタスクの全目標を返します（text/vulnclass/state を分離済み）。目標管理カードの描画用。
 func (s *Server) listGoals(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -29,8 +29,8 @@ func (s *Server) listGoals(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"goals": goalDTOs(goals)})
 }
 
-// addGoal 人工新增一个目标:落库(挂到任务根 spawns 下)→ 记一条「新增了目标」触发唤醒
-// planner → 复活任务,让规划者据新目标重判是否达成。
+// addGoal は目標を手動追加します。DB 保存（タスクのルートの spawns 配下）→「目標追加」を記録して
+// planner を起動 → タスクを復活させ、新目標に基づいて達成を再判定させます。
 func (s *Server) addGoal(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -68,8 +68,8 @@ func (s *Server) addGoal(w http.ResponseWriter, r *http.Request) {
 	if of, _ := t.Store.OriginFactID(); of > 0 && id > 0 {
 		_ = t.Store.Link(of, db.RelSpawns, id) // goal descends from the task root (origin fact)
 	}
-	t.NotifyGoal([]string{text}) // 记「人新增了目标:…」触发并唤醒 planner
-	s.reviveTask(t)              // 把已完成/暂停的任务拉回运行态继续跑
+	t.NotifyGoal([]string{text}) // 「人が目標を追加：…」を記録し、planner を起動
+	s.reviveTask(t)              // 完了済み/一時停止のタスクを実行中へ戻して続行
 	node, _ := t.Store.GetNode(id)
 	if node == nil {
 		writeErr(w, 500, "保存後に目標を読み取れませんでした")
@@ -78,8 +78,8 @@ func (s *Server) addGoal(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, goalDTO(node))
 }
 
-// editGoal 人工修改一个目标文本(及 vulnclass):改库 → 记「用户修改了目标由 old 变为 new」
-// 触发唤醒 planner → 复活任务,让规划者据新目标调整方向。
+// editGoal は目標本文（と vulnclass）を手動変更します。DB 更新 →「ユーザーが old から new へ変更」を
+// 記録して planner を起動 → タスクを復活させ、新目標に基づいて方向を調整させます。
 func (s *Server) editGoal(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -124,8 +124,8 @@ func (s *Server) editGoal(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	t.NotifyGoalEdited(oldText, text) // 记「人修改了目标由 old 变为 new」触发并唤醒 planner
-	s.reviveTask(t)                   // 与新增一致:复活任务据新目标重判
+	t.NotifyGoalEdited(oldText, text) // 「人が old から new へ目標を変更」を記録し、planner を起動
+	s.reviveTask(t)                   // 追加と同様にタスクを復活させ、新目標を再判定
 	updated, _ := t.Store.GetNode(gid)
 	if updated == nil {
 		writeErr(w, 500, "更新後に目標を読み取れませんでした")
@@ -134,8 +134,8 @@ func (s *Server) editGoal(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, goalDTO(updated))
 }
 
-// deleteGoal 人工删除一个目标(硬删除,级联删边/锚点):删库 → 记「用户删除了该目标 X」
-// 触发唤醒 planner 据此重判剩余目标。按产品决策,删除【不】复活任务。
+// deleteGoal は目標を手動削除します（物理削除、辺/アンカーを連鎖削除）。DB 削除 →「ユーザーが目標 X を削除」を
+// 記録して planner に残りの目標を再判定させます。製品仕様により削除ではタスクを復活【させません】。
 func (s *Server) deleteGoal(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -167,6 +167,6 @@ func (s *Server) deleteGoal(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	t.NotifyGoalDeleted(text) // 记「人删除了该目标:…」触发并唤醒 planner(不复活任务)
+	t.NotifyGoalDeleted(text) // 「人が目標を削除：…」を記録し、planner を起動（タスクは復活させない）
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }

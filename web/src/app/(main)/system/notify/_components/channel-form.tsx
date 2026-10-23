@@ -9,31 +9,31 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { NotificationFilter } from "@/lib/types";
 
-// asText / inputType 是本文件内的取值辅助（与控件渲染强相关），不放在 channel-fields。
+// asText / inputType はこのファイル内の値取得補助（コントロール描画と強く関連）で、channel-fields には置かない。
 import { type FieldDef, type FieldKind, SEVERITY_OPTIONS } from "./channel-fields";
 
-// asText 把任意配置值渲染成输入框可用的字符串。
-// config 来自 JSON，值可能是 string / number / boolean / array / null，
-// 这里只关心「能不能塞进文本框」，具体序列化由 buildConfig 负责。
+// asText は任意の設定値を入力欄で使える文字列にする。
+// config は JSON 由来で、値は string / number / boolean / array / null の場合があり、
+// ここでは「テキスト欄に入れられるか」だけを扱い、具体的なシリアライズは buildConfig が担当する。
 function asText(v: unknown): string {
   if (typeof v === "string") return v;
   if (v === null || v === undefined) return "";
   return String(v);
 }
 
-// inputType 把字段类型映射到 input 的 type 属性。
+// inputType はフィールドの種類を input の type 属性へマッピングする。
 function inputType(kind: FieldKind): "text" | "password" | "number" {
   if (kind === "password") return "password";
   if (kind === "number") return "number";
   return "text";
 }
 
-// ConfigField 按字段定义渲染对应的控件。
+// ConfigField はフィールド定義に応じて対応するコントロールを描画する。
 //
-// 掩码字段的处理是这里唯一的讲究：输入框**不显示**掩码值本身，只显示一行
-// 「已保存」提示。这样界面上就只有一个规则——框里有字就是用户填的，
-// 空框就是空值。若把 "__masked__:…abc123" 塞进输入框，用户会以为那是要自己
-// 删掉的占位文本，反而更容易误清凭据。
+// マスクフィールドの扱いだけが特別で、入力欄にはマスク値そのものを**表示せず**、1行の
+// 「保存済み」だけを表示する。これにより画面上のルールは1つとなり、欄に文字があればユーザーの入力、
+// 空欄なら空値になる。"__masked__:…abc123" を入力欄に入れると、ユーザーが自分で
+// 消すべきプレースホルダーテキストだと考え、認証情報を誤消去しやすくなる。
 export function ConfigField({
   def,
   value,
@@ -47,7 +47,7 @@ export function ConfigField({
 }) {
   const id = `n-cfg-${def.key}`;
   const raw = asText(value);
-  // 后端回显的掩码值：形如 "__masked__:…abc123"，尾部是原值的可辨识片段。
+  // バックエンドが返すマスク値："__masked__:…abc123" のような形で、末尾は元の値を識別できる断片。
   const masked = isSecret && raw.startsWith("__masked__");
   const maskedTail = masked ? (raw.split("…")[1] ?? "") : "";
 
@@ -81,8 +81,8 @@ export function ConfigField({
     );
   }
 
-  // 控件按字段类型分派。用 if 链而不是嵌套三元，是因为这里要区分四种控件，
-  // 三层三元读起来已经要停下来数括号了。
+  // コントロールはフィールドの種類で振り分ける。入れ子の三項演算子ではなく if チェーンを使うのは4種類を区別するためで、
+  // 3段の三項演算子では読むときに括弧を数える必要がある。
   function control() {
     if (def.kind === "textarea" || def.kind === "kv") {
       return (
@@ -135,7 +135,7 @@ export function ConfigField({
   );
 }
 
-// FilterSummary 把过滤条件摘要成一行，让卡片不用展开就能看出这个渠道推什么。
+// FilterSummary はフィルター条件を1行に要約し、カードを展開せずにそのチャネルの通知対象を分かるようにする。
 export function FilterSummary({ filter }: { filter: NotificationFilter }) {
   const parts: string[] = [];
   if (filter.min_severity) {

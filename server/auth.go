@@ -22,19 +22,19 @@ const (
 	jwtTTL         = 7 * 24 * time.Hour
 	keyChars       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	// 下限与 setup 页的前端校验一致——校验只放在前端等于没放，直接打 API 就能
-	// 绕过。上限是 bcrypt 的硬限制：超过 72 字节 GenerateFromPassword 会返回
-	// ErrPasswordTooLong，提前挡掉好过让用户收到一句含义不明的「密码加密失败」。
+	// 下限は setup ページのフロントエンド検証と同じです。フロントエンドだけの検証は、API の直接呼び出しで
+	// 回避できます。上限は bcrypt の固定制限で、72 バイトを超えると GenerateFromPassword が
+	// ErrPasswordTooLong を返すため、意味の不明確な「パスワードの暗号化に失敗」より先に拒否します。
 	minPasswordRunes = 8
 	maxPasswordBytes = 72
 )
 
-// errDataSourceUnavailable 是密码相关读操作失败时统一的回复。这些 handler 绝不能
-// 把"读不到"当成"没有设置"：authInit 曾因此在数据库报错时放行，让未认证请求覆盖
-// 掉已有的管理员密码。
+// errDataSourceUnavailable はパスワード関連の読み取り失敗時に共通で返す応答です。これらの handler は
+// 「読み取れない」を「未設定」と扱ってはいけません。以前の authInit は DB エラー時に通過させ、未認証の要求が
+// 既存の管理者パスワードを上書きできていました。
 const errDataSourceUnavailable = "データソースを一時的に利用できません。しばらくしてから再試行してください"
 
-// validatePassword 返回空串表示通过，否则返回可直接展示给用户的中文原因。
+// validatePassword は成功時に空文字列、それ以外はユーザーへ直接表示できる中国語の理由を返します。
 func validatePassword(pw string) string {
 	if utf8.RuneCountInString(pw) < minPasswordRunes {
 		return fmt.Sprintf("パスワードは%d文字以上にしてください", minPasswordRunes)
@@ -138,9 +138,9 @@ func (s *Server) requireAuth(h http.Handler) http.Handler {
 }
 
 // GET /api/auth/status — reports whether the admin password has been initialised.
-// 读失败必须回 503 而不是 initialized:false：前端在 initialized:false 时会把用户
-// 送到 /setup 去设置密码（login/page.tsx），把数据库故障包装成 200 等于把用户往
-// 覆盖已有密码的路上推。
+// 読み取り失敗時は initialized:false でなく 503 を返す必要があります。フロントエンドは initialized:false でユーザーを
+// パスワード設定用の /setup へ送るため（login/page.tsx）、DB 障害を 200 として返すとユーザーを
+// 既存パスワードの上書きへ誘導してしまいます。
 func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -185,9 +185,9 @@ func (s *Server) authInit(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, "パスワードの暗号化に失敗しました")
 		return
 	}
-	// 用 INSERT ... ON CONFLICT DO NOTHING 而不是 upsert：上面那次 GetSetting 只是
-	// 快速失败路径，真正"仅首次可设"的保证落在主键约束上。bcrypt 要跑几十毫秒，
-	// 这期间别的请求完全可能先把密码设好，而读检查本身也可能因故障而失效。
+	// upsert ではなく INSERT ... ON CONFLICT DO NOTHING を使います。上の GetSetting は
+	// 早期失敗の経路にすぎず、「初回だけ設定可能」は主キー制約で保証します。bcrypt は数十ミリ秒かかり、
+	// その間に他の要求が先に設定する可能性があり、読み取り検査自体も障害で失敗し得ます。
 	inserted, err := pg.InsertSettingIfAbsent(authPassKey, string(hash))
 	if err != nil {
 		writeErr(w, 500, "保存に失敗しました："+err.Error())

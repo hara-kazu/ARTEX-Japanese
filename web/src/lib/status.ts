@@ -1,5 +1,5 @@
 // Centralised status → color/label semantics, reused across the whole app.
-// Spec §8.3: 意图 / 覆盖 / 任务 / 严重度 each have a consistent color set.
+// Spec §8.3: インテント / カバレッジ / タスク / 重大度 each have a consistent color set.
 
 export type Tone = "neutral" | "blue" | "green" | "amber" | "red" | "rose" | "violet" | "slate";
 
@@ -9,7 +9,7 @@ export const toneClasses: Record<Tone, string> = {
   green: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   amber: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
   red: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
-  // rose 用作「严重」——实心高强调,视觉上明显高于「高危」的软红描边。
+  // rose は「重大」に使う——塗りつぶしで強く強調し、視覚的に「高リスク」の柔らかい赤の輪郭より明確に強くする。
   rose: "bg-rose-600 text-white border-rose-600 dark:bg-rose-600 dark:text-white",
   violet: "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20",
   slate: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -36,13 +36,13 @@ const intent: Record<string, StatusMeta> = {
   running: { label: "実行中", tone: "blue" },
   paused: { label: "一時停止中", tone: "amber" },
   done: { label: "完了", tone: "green" },
-  // blocked = 模型/API/网络故障重试用尽，这条意图基本没真正探成（非目标拦截）。
+  // blocked = モデル/API/ネットワーク障害で再試行を使い切り、このインテントはほぼ実際の探索に至っていない（ターゲットのブロックではない）。
   blocked: { label: "実行エラー", tone: "red" },
-  // exhausted = 达到步数/时间预算被中途掐断、只写回部分结果（非方向已探尽）。
+  // exhausted = ステップ数/時間予算に達して途中で打ち切られ、一部の結果だけを書き戻した（その方向を探索し尽くしたわけではない）。
   exhausted: { label: "予算切れ", tone: "violet" },
-  // stopped = 历史软删除状态（保留,历史数据）。
+  // stopped = 過去の論理削除状態（保持、過去データ）。
   stopped: { label: "停止済み", tone: "slate" },
-  // deleted = 用户假删除了该意图（保留节点与血缘，删除原因见 delete_reason 字段）。
+  // deleted = ユーザーがそのインテントを論理削除した（ノードと系譜を保持、削除理由は delete_reason フィールドを参照）。
   deleted: { label: "削除済み", tone: "slate" },
 };
 
@@ -99,8 +99,8 @@ const node: Record<string, StatusMeta> = {
   tombstoned: { label: "廃止", tone: "neutral" },
 };
 
-// 推送投递状态。sending 用 blue 而不是 amber：它不是「有问题」，
-// 而是「已被领取、正在发」，与 pending 的等待语义要能区分开。
+// 通知の配信状態。sending は amber ではなく blue を使う：「問題あり」ではなく、
+// 「取得済みで送信中」で、pending の待機という意味と区別できるようにする。
 const delivery: Record<string, StatusMeta> = {
   pending: { label: "送信待ち", tone: "amber" },
   sending: { label: "送信中", tone: "blue" },

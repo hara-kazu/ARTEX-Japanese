@@ -1,5 +1,5 @@
-// Package db is the PostgreSQL data source for ARTEX (取代旧 graph 单文件 SQLite)。
-// 它打开连接、应用 schema、并 seed 内置 agent 与变量目录。
+// Package db is the PostgreSQL data source for ARTEX (旧 graph の単一ファイル SQLite を置換)。
+// 接続を開き、schema を適用し、組み込み agent と変数カタログを seed する。
 package db
 
 import (
@@ -22,9 +22,9 @@ var schemaSQL string
 
 const schemaMigrationLockKey int64 = 7337741001
 
-// maxOpenConns 是连接池上限，见 Open 里的说明。取值远低于 PostgreSQL 默认的
-// max_connections=100，同时远高于应用自身的嵌套取连接深度（启动期的 schema
-// advisory lock 会在持有一条连接的同时让 seedBuiltins 另取连接），不会自锁。
+// maxOpenConns は接続プールの上限。Open の説明を参照。値は PostgreSQL のデフォルトの
+// max_connections=100 より十分低く、アプリ自身の入れ子の接続取得深度（起動時の schema
+// advisory lock は1つの接続を保持しながら seedBuiltins に別の接続を取得させる）より十分高いため、自己ロックしない。
 const maxOpenConns = 32
 
 var schemaDeadlockRetryDelays = [...]time.Duration{
@@ -138,12 +138,12 @@ func Open(dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	// database/sql 默认不限制连接数：池里没有空闲连接时会无条件新建，一路顶到
-	// PostgreSQL 的 max_connections（默认 100）才被拒，于是高峰期的查询拿到的是
-	// `FATAL: sorry, too many clients already` 这种**错误**。封顶之后超额查询改为
-	// 排队等待空闲连接——同样的负载下变成变慢而不是报错，调用方不必再去区分
-	// "读不到"和"没有"。maxOpenConns 要留出余量给 psql / reset-password.sh 以及
-	// 可能并存的其他实例；若 max_connections 调低过，这里也要跟着往下调。
+	// database/sql はデフォルトで接続数を制限しない：プールに空き接続がなければ無条件で新規接続を作成し、
+	// PostgreSQL の max_connections（デフォルト 100）に達して拒否されるため、高負荷時のクエリは
+	// `FATAL: sorry, too many clients already` という**エラー**を受け取る。上限を設けると超過したクエリは
+	// 空き接続を待つキューに入り、同じ負荷ではエラーから遅延に変わるため、呼び出し元は
+	// "読み取れない"と"存在しない"を区別する必要がなくなる。maxOpenConns は psql / reset-password.sh と
+	// 共存しうる別インスタンスの余裕を残すこと；max_connections を下げている場合は、ここも下げること。
 	sqlDB.SetMaxOpenConns(maxOpenConns)
 	sqlDB.SetMaxIdleConns(maxOpenConns)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
@@ -176,23 +176,23 @@ func Open(dsn string) (*DB, error) {
 type builtinAgent struct {
 	key, name, role, desc string
 	vars                  []promptVar
-	interactiveShell      bool // 建行时的默认交互式 shell 开关；ON CONFLICT 不覆盖用户后续手动开关
-	runSeconds            *int // 建行时的单次 run 墙钟上限(秒)；nil=用种子默认(1200)，0=不限时
+	interactiveShell      bool // 行作成時のデフォルトの対話型 shell スイッチ；ON CONFLICT はユーザーの後の手動切り替えを上書きしない
+	runSeconds            *int // 行作成時の1回の run の実時間上限(秒)；nil=seed のデフォルト(1200)を使用、0=時間制限なし
 }
 
 type promptVar struct{ name, desc, example, source string }
 
-// intp 返回 v 的指针，用于给 builtinAgent 可选字段(如 runSeconds)显式取值。
+// intp は v のポインターを返し、builtinAgent の任意フィールド(runSeconds など)に明示値を与える。
 func intp(v int) *int { return &v }
 
-// builtinAgents mirrors docs §5(a). 内置工具不入库；这里只 seed agent + 变量目录。
-// 注：planner/worker/mainagent/auto 的交互式 shell 默认由下方 interactive_shell_default_v1
-// 块统一置 true（尊重后续 toggle）；这里的 interactiveShell 只给需要「建行即默认开」的新 agent。
+// builtinAgents mirrors docs §5(a). 組み込みツールは DB に保存しない；ここでは agent + 変数カタログのみ seed する。
+// 注：planner/worker/mainagent/auto の対話型 shell は、下の interactive_shell_default_v1
+// ブロックで一律 true にする（後の toggle を尊重）；ここの interactiveShell は「行作成時からデフォルト有効」が必要な新しい agent 専用。
 var builtinAgents = []builtinAgent{
 	{"goals", "目標の分解", "goals", "テストの目標を、独立して検証できる複数のサブ目標に分解します。", []promptVar{
 		{"EngagementDescription", "タスクの説明（テスト対象 / 背景）", "example.com のサイトをテスト", "exploration"},
-		// Now 是全局 runtime 变量(见 server.globalPromptVars),不再在各 agent 目录里
-		// 重复定义,否则 withGlobalVars 追加时会与全局项撞名。
+		// Now はグローバル runtime 変数(server.globalPromptVars を参照)であり、各 agent のカタログに
+		// 重複定義しない。withGlobalVars で追加する際にグローバル項目と名前が重なるため。
 	}, false, nil},
 	{"planner", "計画", "planner", "状況を確認し、目標の達成を判定します。未探索の新しい方向がある場合に探索インテントを追加します（タスクごとに1つの計画ループ）。", []promptVar{
 		{"Goal", "タスク全体の目標", "example.com の管理者権限を取得", "exploration"},
@@ -207,9 +207,9 @@ var builtinAgents = []builtinAgent{
 		{"ProxyAddr", "記録プロキシのアドレス（if 分岐の条件にも使用）", "127.0.0.1:8080", "runtime"},
 		{"WorkerName", "worker の識別名（任意）", "worker-1", "runtime"},
 	}, false, nil},
-	// Auto:内置「平台操作」agent。不参与渗透编排循环,经对话页驱动,用工具操作平台。
+	// Auto:組み込みの「プラットフォーム操作」agent。侵入テストのオーケストレーションループには参加せず、対話ページから駆動し、ツールでプラットフォームを操作する。
 	{"auto", "Auto", "assistant", "プラットフォーム操作アシスタントです。ツールでタスク（作成 / 表示 / 一時停止 / ヒント）と資産を管理し、skill、カスタムツール、MCP を作成 / 変更します。", nil, false, nil},
-	// 渗透测试:内置「独立渗透」agent。经对话页驱动,一人从侦察到收尾走完整条渗透链,自己规划自己执行自己验证。默认开启交互式 shell。
+	// 侵入テスト:組み込みの「独立侵入テスト」agent。対話ページから駆動し、単独で偵察から終了まで侵入テストの全工程を行い、自ら計画、実行、検証する。対話型 shell はデフォルトで有効。
 	{"pentest", "ペネトレーションテスト", "assistant", "独立したペネトレーションテスト agent：一人で偵察→攻撃対象となる箇所の特定→詳細な悪用→検証→終了処理までの全経路を進め、自ら計画・実行・対抗的な検証を行います。", nil, true, intp(0)},
 }
 
@@ -238,8 +238,8 @@ ON CONFLICT (agent_id, var_name) DO UPDATE
 	}
 	// Drop catalog entries for variables that were renamed, so the white-list no
 	// longer advertises a name templates can't resolve (EngagementTitle→Description).
-	// 'Now' 从各 agent 目录提升为全局 runtime 变量后,旧库里 goals 仍残留一条 'Now'
-	// 会与全局项撞名(前端变量列表 key 重复);一并清掉。
+	// 'Now' を各 agent のカタログからグローバル runtime 変数に昇格した後、旧 DB の goals に残る 'Now' は
+	// グローバル項目と名前が重なる(フロントエンドの変数一覧の key が重複)ため、一緒に削除する。
 	if _, err := d.Exec(`DELETE FROM agent_prompt_vars WHERE var_name IN ('EngagementTitle', 'CoverageGaps', 'Now')`); err != nil {
 		return fmt.Errorf("cleanup renamed vars: %w", err)
 	}
@@ -252,8 +252,8 @@ ON CONFLICT (agent_id, var_name) DO UPDATE
 		}
 		_ = d.SetSetting("interactive_shell_default_v1", "true")
 	}
-	// Seed the built-in browser (Playwright) MCP once — DISABLED by default (用户
-	// 需要时自行启用), no proxy by default. The traffic-capture toggle injects/strips
+	// Seed the built-in browser (Playwright) MCP once — DISABLED by default (ユーザーが
+	// 必要時に自分で有効化), no proxy by default. The traffic-capture toggle injects/strips
 	// the recording proxy + CA at runtime (server.Manager.syncBrowserMCPProxy).
 	// Insert only if absent so we never clobber user edits (args/env/enabled/
 	// visibility) on restart.
@@ -359,7 +359,7 @@ func (d *DB) seedDefaultInterceptRules() error {
 		priority int
 	}
 	rules := []rule{
-		// ── 系统破坏性命令 (priority 100) ──────────────────────────────────
+		// ── システムの破壊的コマンド (priority 100) ──────────────────────────────────
 		{
 			name:     "[組み込み] 再帰的な強制削除 rm -rf",
 			target:   "tool_input",
@@ -441,7 +441,7 @@ func (d *DB) seedDefaultInterceptRules() error {
 			message:  "ファイアウォールルールの全削除（iptables -F / nft flush）は禁止されています",
 			priority: 100,
 		},
-		// ── 数据库破坏性操作 (priority 90) ─────────────────────────────────
+		// ── データベースの破壊的操作 (priority 90) ─────────────────────────────────
 		{
 			name:     "[組み込み] SQL DROP DATABASE / TABLE / SCHEMA",
 			target:   "tool_input",
@@ -478,11 +478,11 @@ func (d *DB) seedDefaultInterceptRules() error {
 			message:  "Redis の FLUSHALL / FLUSHDB は禁止されています。すべてのキャッシュデータを消去するおそれがあります",
 			priority: 90,
 		},
-		// ── HTTP 破坏性请求 (priority 80) ──────────────────────────────────
-		// Agent 发送 DELETE 请求的三种常见方式：
-		//   1. curl -X DELETE / --request DELETE（Bash 工具直接执行或写入脚本）
-		//   2. Python HTTP 客户端 .delete() 方法
-		//   3. JS/通用脚本里的 method: 'DELETE' / method="DELETE"
+		// ── HTTP の破壊的リクエスト (priority 80) ──────────────────────────────────
+		// Agent が DELETE リクエストを送る3つの一般的な方法：
+		//   1. curl -X DELETE / --request DELETE（Bash ツールから直接実行、またはスクリプトに記述）
+		//   2. Python HTTP クライアントの .delete() メソッド
+		//   3. JS/汎用スクリプト内の method: 'DELETE' / method="DELETE"
 		{
 			name:     "[組み込み] curl / wget による DELETE リクエスト",
 			target:   "tool_input",
@@ -536,7 +536,7 @@ ON CONFLICT DO NOTHING`,
 // seedDefaultInterceptRulesV2 migrates the two safety patterns that used to be
 // hard-coded in guard.go (destructive shell + data-exfil pipe) into ordinary
 // intercept rules. Gated by its own flag so it also lands on DBs that already ran
-// v1. Unlike the old guard.go floor, these are plain [内置] rules — the user can
+// v1. Unlike the old guard.go floor, these are plain [組み込み] rules — the user can
 // disable or delete them. The exfil rule ships DISABLED by default (its
 // curl/wget/nc pipe pattern mis-fires on legitimate CTF/pentest reverse-shell and
 // data-transfer pipes); enable it manually when exfil gating is actually wanted.

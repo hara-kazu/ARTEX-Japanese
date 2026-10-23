@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [readToEnd, setReadToEnd] = useState(false);
   const termsBodyRef = useRef<HTMLDivElement>(null);
 
-  // 滚动到条款底部（含无需滚动即可完整展示的情况）方可点击「同意」。
+  // 規約の末尾までスクロールした場合（スクロールなしで全体表示できる場合も含む）のみ「同意」をクリックできる。
   function handleTermsScroll() {
     const el = termsBodyRef.current;
     if (!el) return;
@@ -34,18 +34,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!termsOpen) return;
-    // 打开时重置，并处理内容本就不足一屏、无法触发滚动的场景。
+    // 開いたときにリセットし、内容が1画面未満でスクロールを発火できない場合も処理する。
     setReadToEnd(false);
     const el = termsBodyRef.current;
     if (el && el.scrollHeight <= el.clientHeight + 8) setReadToEnd(true);
   }, [termsOpen]);
 
   useEffect(() => {
-    // 已登录直接进主界面（静态导出下无 middleware 代劳这层跳转）。
+    // ログイン済みなら直接メイン画面へ入る（静的エクスポートでは middleware がこの遷移を代行しない）。
     const token = auth.getToken();
     if (token) {
-      // localStorage 可能仍有凭据但 cookie 已丢失。先同步，再发起全新请求，
-      // 避免服务端守卫或路由缓存把跳转送回仍处于 checking 状态的登录页。
+      // localStorage に認証情報が残っていても cookie が消えている場合がある。先に同期してから新規リクエストを送り、
+      // サーバーガードやルートキャッシュが、まだ checking 状態のログインページへ戻さないようにする。
       auth.setToken(token);
       window.location.replace("/function/tasks");
       return;

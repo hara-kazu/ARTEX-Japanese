@@ -1,14 +1,14 @@
 package notify
 
-// Snapshot 是 notification_events.snapshot 这一 JSONB 列的契约。写方是 db 层的
-// 漏洞落库事务，读方是 server 层的投递引擎与过滤匹配。定义放在本包是因为它是
-// 「通知领域」的载荷：db 只负责序列化，不理解字段含义。
+// Snapshot は notification_events.snapshot という JSONB 列の契約。書き込み側は db 層の
+// 脆弱性保存トランザクション、読み取り側は server 層の配信エンジンとフィルター照合。定義を本パッケージに置くのは、これが
+// 「通知ドメイン」のペイロードだから。db はシリアライズのみを担当し、フィールドの意味は解釈しない。
 //
-// 为什么冗余存漏洞字段而不在渲染时回查：漏洞事后会被改名、改级别、改状态，
-// 而推送内容应当反映**事发当时**的结论——回查会得到「事后被改成 low」的
-// 危险误导。另外 fan-out 与渲染因此不必 JOIN findings/tasks/assets 三张表。
+// 描画時に再取得せず脆弱性フィールドを重複保存する理由：脆弱性は後から名称、レベル、状態が変更されるが、
+// プッシュ内容は**発生時点**の結論を反映すべきで、再取得すると「後から low に変更された」という
+// 危険な誤解を招く。また、fan-out と描画で findings/tasks/assets の3つの表を JOIN する必要もなくなる。
 type Snapshot struct {
-	// 事件类型：finding_created / finding_status_changed
+	// イベントの種類：finding_created / finding_status_changed
 	Kind      string  `json:"kind"`
 	FindingID int64   `json:"finding_id"`
 	TaskID    int64   `json:"task_id"`
@@ -17,33 +17,33 @@ type Snapshot struct {
 	Severity  string  `json:"severity"`
 	Summary   string  `json:"summary"`
 	AssetIDs  []int64 `json:"asset_ids"`
-	// 仅 kind=finding_status_changed 时非空。
+	// kind=finding_status_changed の場合のみ空でない。
 	FromStatus string `json:"from_status,omitempty"`
 	ToStatus   string `json:"to_status,omitempty"`
 }
 
-// Item 是一条待推送的漏洞，供渠道渲染。
+// Item はプッシュ待ちの脆弱性1件で、チャネルの描画に使う。
 type Item struct {
 	FindingID int64
 	Name      string
 	VulnClass string
 	Severity  string
 	Summary   string
-	// Assets 是解析后的资产展示名（如域名/IP）。由 server 层填充——
-	// 本包不碰数据库，拿不到名字。
+	// Assets は解決済みのアセット表示名（ドメイン/IP など）。server 層が設定する。
+	// 本パッケージはデータベースに触れず、名前を取得できないため。
 	Assets []string
-	// DetailURL 是漏洞详情回链；为空表示未配 public_base_url，渲染时省略。
+	// DetailURL は脆弱性詳細へのリンク。空なら public_base_url 未設定を示し、描画時に省略する。
 	DetailURL string
-	// 状态变更事件专用；两项均非空时渲染成「待处理 → 已修复」。
+	// 状態変更イベント専用。両方空でなければ「未対応 → 修正済み」と描画する。
 	FromStatus string
 	ToStatus   string
 }
 
-// IsStatusChange 报告该条目是否为状态变更事件。
+// IsStatusChange は項目が状態変更イベントかどうかを返す。
 func (i Item) IsStatusChange() bool { return i.FromStatus != "" || i.ToStatus != "" }
 
-// Title 返回条目的展示标题：优先人工命名的 name，回退漏洞类型 vulnclass，
-// 两者都空时用一个占位符——绝不输出空标题。
+// Title は項目の表示タイトルを返す：手動で付けた name を優先し、なければ脆弱性の種類 vulnclass を使い、
+// 両方空ならプレースホルダーを使う。空のタイトルは決して出力しない。
 func (i Item) Title() string {
 	if i.Name != "" {
 		return i.Name
@@ -54,16 +54,16 @@ func (i Item) Title() string {
 	return "（名前のない脆弱性）"
 }
 
-// Message 是一次渠道发送的完整内容。
+// Message はチャネルによる1回の送信内容全体。
 type Message struct {
-	// 单条推送时长度为 1；汇总推送（digest）时为一整批。
-	// 空切片是非法的，调用方须保证至少一条。
+	// 単発プッシュでは長さ 1、集約プッシュ（digest）ではバッチ全体となる。
+	// 空のスライスは不正で、呼び出し元は少なくとも1件を保証する必要がある。
 	Items []Item
-	// Batch=true 时按汇总消息渲染（换标题、带上时间窗与条数）。
+	// Batch=true なら集約メッセージとして描画する（タイトルを変え、時間範囲と件数を含める）。
 	Batch bool
-	// WindowMinutes 是汇总周期（分钟），仅 Batch=true 时用于文案「近 N 分钟」。
-	// 刻意由配置显式传入而不是渲染时算 time.Since：渲染保持确定性，才好测。
+	// WindowMinutes は集約周期（分）で、Batch=true の場合のみ「直近 N 分」という文言に使う。
+	// 描画時に time.Since で計算せず、意図的に設定から明示的に渡す。描画の決定性を保つことでテストしやすくする。
 	WindowMinutes int
-	// HomeURL 是平台面板地址（全局 public_base_url）；空则不带面板入口。
+	// HomeURL はプラットフォームのダッシュボードアドレス（グローバルの public_base_url）。空ならダッシュボードへの入口を付けない。
 	HomeURL string
 }

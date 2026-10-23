@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// InsertSettingIfAbsent 是 auth.password_hash 的兜底：调用方的 GetSetting 检查可能
-// 因为数据库报错而失效，也可能被并发请求插队（bcrypt 要跑几十毫秒），所以"仅首次
-// 可设"的保证必须落在主键约束上，而不是上层的 if 判断。
+// InsertSettingIfAbsent は auth.password_hash の最終防御：呼び出し元の GetSetting 確認は
+// DB エラーで機能しない場合や、並行リクエストに割り込まれる場合がある（bcrypt は数十ミリ秒かかる）ため、"初回のみ
+// 設定可能"の保証は上位の if 判定ではなく主キー制約に委ねること。
 func TestInsertSettingIfAbsentDoesNotOverwrite(t *testing.T) {
 	d, err := Open(testDSN(t))
 	if err != nil {
@@ -16,7 +16,7 @@ func TestInsertSettingIfAbsentDoesNotOverwrite(t *testing.T) {
 	}
 	defer d.Close()
 
-	// 用测试专属 key，绝不碰开发库里真实的 auth.password_hash。
+	// テスト専用 key を使用し、開発 DB の実際の auth.password_hash には触れない。
 	key := fmt.Sprintf("test.insert_if_absent.%d", time.Now().UnixNano())
 	defer func() { _, _ = d.Exec(`DELETE FROM settings WHERE key=$1`, key) }()
 

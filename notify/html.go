@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-// 本文件渲染邮件的 HTML 正文。刻意用内联样式 + 简单表格布局而不是现代 CSS：
-// 邮件客户端（尤其 Outlook 与国内企业邮箱）对 <style> 块和 flex/grid 的支持
-// 差异极大，内联样式是唯一在各家都能正确显示的写法。
+// このファイルはメールの HTML 本文を描画する。現代的な CSS ではなく、意図的にインラインスタイル + 簡単な表レイアウトを使う：
+// メールクライアント（特に Outlook と中国国内の企業メール）は <style> ブロックと flex/grid のサポートに
+// 大きな差があり、インラインスタイルだけが各社で正しく表示できる書き方であるため。
 
-// htmlSeverityColor 返回级别对应的强调色，用于左侧色条与标题。
+// htmlSeverityColor はレベルに対応した強調色を返し、左側の色帯とタイトルに使う。
 func htmlSeverityColor(severity string) string {
 	switch severity {
 	case "critical":
@@ -25,12 +25,12 @@ func htmlSeverityColor(severity string) string {
 	}
 }
 
-// htmlTitle 返回邮件主题。
+// htmlTitle はメールの件名を返す。
 func htmlTitle(m Message) string {
 	return markdownTitle(m)
 }
 
-// htmlBody 渲染邮件正文 HTML。maxRunes<=0 表示不截断。
+// htmlBody はメール本文の HTML を描画する。maxRunes<=0 は切り詰めなしを示す。
 func htmlBody(m Message, maxRunes int) string {
 	var b strings.Builder
 	b.WriteString(`<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color:#262626;line-height:1.6;">`)
@@ -49,7 +49,7 @@ func htmlBody(m Message, maxRunes int) string {
 	return TruncateHTML(b.String(), maxRunes)
 }
 
-// htmlBatchIntro 渲染汇总邮件开头：条数与级别分布。
+// htmlBatchIntro は集約メールの冒頭を描画する：件数とレベル分布。
 func htmlBatchIntro(m Message) string {
 	var b strings.Builder
 	if m.WindowMinutes > 0 {
@@ -74,8 +74,8 @@ func htmlBatchIntro(m Message) string {
 	return b.String()
 }
 
-// htmlItem 渲染单个漏洞。full=true 时含摘要与回链（单条推送），
-// false 时压缩成一行（汇总列表）。
+// htmlItem は単一の脆弱性を描画する。full=true なら要約とリンクを含め（単発プッシュ）、
+// false なら1行に圧縮する（集約リスト）。
 func htmlItem(it Item, full bool) string {
 	color := htmlSeverityColor(it.Severity)
 	var b strings.Builder
@@ -122,8 +122,8 @@ func htmlItem(it Item, full bool) string {
 	return b.String()
 }
 
-// htmlEscape 转义 HTML 文本内容。漏洞标题与摘要来自被测目标与模型输出，
-// 是不可信内容——不转义就等于允许把任意 HTML（含外链图片）注入到邮件里。
+// htmlEscape は HTML テキスト内容をエスケープする。脆弱性のタイトルと要約はテスト対象とモデルの出力に由来する
+// 信頼できない内容で、エスケープしなければ任意の HTML（外部画像を含む）をメールに注入できてしまう。
 func htmlEscape(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -131,8 +131,8 @@ func htmlEscape(s string) string {
 	return s
 }
 
-// htmlEscapeAttr 转义 HTML 属性值（在文本转义之外额外处理引号，
-// 防止 URL 里的引号提前闭合 href 属性）。
+// htmlEscapeAttr は HTML 属性値をエスケープする（テキストのエスケープに加えて引用符も処理し、
+// URL 内の引用符で href 属性が早く閉じられるのを防ぐ）。
 func htmlEscapeAttr(s string) string {
 	s = htmlEscape(s)
 	s = strings.ReplaceAll(s, "\"", "&quot;")

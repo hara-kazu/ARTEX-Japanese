@@ -149,7 +149,7 @@ func (s *Server) applyTaskControlWithCause(t *Task, action string, pauseCause er
 	return out, nil
 }
 
-// intentSummaryOf 取意图 payload 里的 summary,供删除通知在意图节点消失(真删除)前留档。
+// intentSummaryOf は意図の payload から summary を取得し、意図ノード消失(物理削除)前に削除通知用の記録を残す。
 func intentSummaryOf(n *db.Node) string {
 	if n == nil {
 		return ""
@@ -201,12 +201,12 @@ func (s *Server) applyIntentControl(ctx context.Context, t *Task, iid int64, act
 		t.Notify()
 		out.State = "open"
 	case "cancel":
-		// 删除支持两种模式:
-		//   soft(默认,假删除):意图停到 state='deleted'、删除原因记入 delete_reason 字段,
-		//     保留意图节点与全部产出/血缘,不再在图上另挂 fact。
-		//   hard(真删除):物理删除该意图及"仅由它支撑"的独占子孙节点(级联到叶子),避免留下
-		//     孤立数据;共享节点、goal、任务根事实保留。
-		// 两种模式都用 cancelled 触发告知 planner(意图内容 + 删除原因),让它据此重规划。
+		// 削除は2モードに対応:
+		//   soft(デフォルト、論理削除):意図を state='deleted' に止め、削除理由を delete_reason フィールドに記録し、
+		//     意図ノードと全成果/系譜を保持し、グラフに fact を別途付けない。
+		//   hard(物理削除):意図と"その意図だけが支える"専有子孫ノードを物理削除(葉まで連鎖)し、
+		//     孤立データを防ぐ;共有ノード、goal、タスクのルート事実は保持。
+		// 両モードとも cancelled トリガーで planner に通知(意図内容 + 削除理由)し、再計画の根拠とさせる。
 		if node.State != "running" && node.State != "paused" && node.State != "open" {
 			return out, fmt.Errorf("割り当て待ち / 実行中 / 一時停止中のインテントのみ削除できます")
 		}
@@ -228,7 +228,7 @@ func (s *Server) applyIntentControl(ctx context.Context, t *Task, iid int64, act
 			s.cancelWorkerSide(t.ID, t.ExpID, iid)
 			t.NotifyCancelled(iid, summary, reason)
 			out.Deleted = &cleanup
-			out.State = "" // 节点已删除,前端据 Deleted 从列表移除
+			out.State = "" // ノードは削除済みで、フロントエンドは Deleted に従い一覧から除外する
 		} else {
 			if _, err := t.Store.SoftDeleteIntent(iid, reason); err != nil {
 				return out, err

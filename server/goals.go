@@ -18,13 +18,13 @@ type goalSpec struct {
 }
 
 // launchTask runs the shared post-creation sequence for a task created via ANY
-// path (HTTP createTask 或 orchestration spawn_task),避免两处复制粘贴:
-//  1. seed 根资产,喂给事件驱动 loop;
-//  2. 可选种子意图,worker 免等首轮 planner 直接开跑;
-//  3. 后台异步做目标分解(发「第 0 轮目标拆解」round + LLM 分解步骤 + 逐条 goal,页面可见),
-//     分解完再 engine.Run —— 引擎在 goal 节点就绪后才启动,避免 planner 抢在 goal 之前跑的竞态。
+// path (HTTP createTask または orchestration spawn_task)、二か所への複製を防ぎます：
+//  1. ルート資産を seed し、イベント駆動の loop へ渡す。
+//  2. 任意の seed インテントにより、worker が最初の planner を待たず直接実行。
+//  3. バックグラウンドで非同期に目標分解（「第 0 回の目標分解」round + LLM の分解ステップ + 各 goal を画面表示）。
+//     分解後に engine.Run。goal ノードの準備後にエンジンを起動し、planner が goal より先に実行する競合を防ぐ。
 //
-// 异步(goroutine)所以调用方立即返回,两条路径行为一致:秒建任务、后台拆目标。
+// 非同期（goroutine）なので呼び出し元へ即座に返り、両経路ともタスクを即作成して背後で目標を分解します。
 func (s *Server) launchTask(t *Task, seedText string, seedFirstIntent bool) {
 	if !s.engine.beginTaskOperation(t.ID) {
 		return
@@ -346,12 +346,12 @@ func (s *Server) reconcileConcurrency() {
 	}
 }
 
-// reviveTask 让一个已停下的任务重新跑起来:把终态(done/failed/timeout)拉回 running、
-// 解除暂停,并(重)启动引擎循环 + 唤醒。已在 running 且未暂停的任务:只剩 Run 里的一次
-// Notify,近乎无副作用。用于「主 agent set_goals 新增目标」和「重跑 blocked 意图」两处。
+// reviveTask は停止済みタスクを再実行します。最終状態（done/failed/timeout）を running へ戻し、
+// 一時停止を解除してエンジンのループを（再）起動し、通知します。既に running で停止中でもなければ、Run 内の
+// Notify だけで、ほぼ副作用はありません。「メイン agent の set_goals による目標追加」と「blocked インテントの再実行」で使用。
 //
-// 为什么必须显式复活:planner/worker 循环的终态门(engine.go)会吞掉普通 notify——光改
-// 图 + Notify 唤不醒已判完成的任务;重启后终态任务的 goroutine 也可能已不在,故还要 Run。
+// 明示的な復活が必要な理由：planner/worker の最終状態検査（engine.go）は通常の notify を無視し、
+// グラフ変更 + Notify だけでは完了済みタスクを起こせません。再起動後は goroutine もない可能性があるため Run も必要です。
 func (s *Server) reviveTask(t *Task) {
 	if t == nil {
 		return

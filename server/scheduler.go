@@ -50,7 +50,7 @@ func (sc *Scheduler) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			sc.s.reconcileConcurrency() // 并发上限:有空位就把排队任务补位启动
+			sc.s.reconcileConcurrency() // 同時実行上限：空きがあれば待機タスクを補充して開始
 			sc.step()
 		}
 	}

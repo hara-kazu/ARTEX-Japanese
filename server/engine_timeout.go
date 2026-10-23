@@ -12,18 +12,18 @@ import (
 	"github.com/Autumn-27/artex/db"
 )
 
-// 任务级超时协调器(见 docs/任务级超时与收尾设计.md §4/§8.5)。
-// 绝对墙钟:每个带 timeout 的任务一个定时 goroutine,到点驱动有序收尾时序:
-//   ① settling → ② worker 停领新意图 / ③ planner 丢弃普通 notify
-//   ④ 等在跑 worker drain(受 grace) → ⑤ 终局一轮 planner 判定 → ⑥ 定终态(带守卫)
+// タスク単位のタイムアウト調整処理（docs/任务级超时与收尾设计.md §4/§8.5 を参照）。
+// 実時間の絶対上限：timeout 付きタスクごとにタイマー goroutine を作り、時刻に達すると順序立てて終了処理：
+//   ① settling → ② worker が新しいインテントの取得を停止 / ③ planner が通常の notify を破棄
+//   ④ 実行中 worker の drain を待つ（grace 以内）→ ⑤ 最後の planner 判定 → ⑥ 保護付きで最終状態を決定
 
 const (
-	settleDrainGrace     = 90 * time.Second // 等在跑 worker 优雅收尾的上限;超过则硬 cancel
-	deadlinePollInterval = 2 * time.Second  // deadline 未盖章/LLM 未就绪时的轮询间隔
-	deadlineMaxSleep     = 30 * time.Second // 单次最长睡眠(便于周期复查终态)
+	settleDrainGrace     = 90 * time.Second // 実行中 worker の正常な終了処理の待機上限。超過すると強制 cancel
+	deadlinePollInterval = 2 * time.Second  // deadline の未記録/LLM 準備前のポーリング間隔
+	deadlineMaxSleep     = 30 * time.Second // 一回の最大待機時間（最終状態を定期確認するため）
 )
 
-// ---------- settling 状态 ----------
+// ---------- settling 状態 ----------
 
 func (e *Engine) isSettling(taskID string) bool {
 	v, _ := e.settling.Load(taskID)
@@ -37,7 +37,7 @@ func (e *Engine) markSettling(taskID string) bool {
 	return !loaded
 }
 
-// ---------- 在跑计数(worker.Execute + planner.Plan),用于 drain ----------
+// ---------- 実行中の件数（worker.Execute + planner.Plan）、drain 用 ----------
 
 func (e *Engine) inflightCounter(taskID string) *int64 {
 	v, _ := e.inflight.LoadOrStore(taskID, new(int64))
@@ -103,7 +103,7 @@ func (e *Engine) stampFirstRun(t *Task) {
 	dl, err := e.m.StampTaskFirstRun(t.ID)
 	if err != nil {
 		log.Printf("[deadline] task %s の first_run の記録に失敗しました: %v", t.ID, err)
-		e.stamped.Delete(t.ID) // 允许下次重试
+		e.stamped.Delete(t.ID) // 次回の再試行を許可
 		return
 	}
 	if dl > 0 {
@@ -123,7 +123,7 @@ func (e *Engine) clockCtx(base context.Context, t *Task, final bool) context.Con
 	return agent.WithTaskClock(base, agent.TaskClock{DeadlineUnix: dl, Final: final})
 }
 
-// ---------- 协调器 ----------
+// ---------- 調整処理 ----------
 
 // startDeadlineCoordinator launches the per-task deadline timer once (idempotent).
 // Called from Run() and from the restart reload path, so non-active timeout tasks
@@ -187,30 +187,30 @@ func (e *Engine) settleTask(ctx context.Context, t *Task) {
 	}
 	log.Printf("[deadline] task %s がタイムアウト上限に達したため、終了処理の手順に入ります", t.ID)
 
-	// ④ 等在跑 worker/planner drain(在跑 run 因夹逼的 MaxDuration 自行进收尾);
-	// 超过 grace 仍未清空 → 硬 cancel 该任务 exec ctx(settling-aware 分支正确归类)。
+	// ④ 実行中 worker/planner の drain を待つ（各 run は MaxDuration の制限で自ら終了処理へ入る）。
+	// grace 超過後も残っていればタスクの exec ctx を強制 cancel（settling-aware 分岐で正しく分類）。
 	hardStop := time.Now().Add(settleDrainGrace)
 	for e.inflightCount(t.ID) > 0 {
 		if time.Now().After(hardStop) {
 			log.Printf("[deadline] task %s の drain がタイムアウトしたため(%s)、実行中の run を強制的に取り消します", t.ID, settleDrainGrace)
 			e.cancelExec(t.ID, agent.AbortSettleDrainTimeout)
-			_ = sleepCtx(ctx, 3*time.Second) // 给 worker 分支一点时间落库/归类
+			_ = sleepCtx(ctx, 3*time.Second) // worker 分岐の DB 書き込み/分類を少し待つ
 			break
 		}
 		if sleepCtx(ctx, 500*time.Millisecond) {
-			return // 引擎整体关停
+			return // エンジン全体の停止
 		}
 	}
 
-	// ⑤ 终局一轮 planner(任务超时词,最后目标判定,不产新意图)。
+	// ⑤ 最後の planner（タスクのタイムアウト指示、最終目標判定、新規インテントなし）。
 	met := e.runFinalPlannerRound(ctx, t)
 	if !e.beginTaskOperation(t.ID) {
 		return
 	}
 	defer e.decInflight(t.ID)
 
-	// ⑥ 定终态(带守卫):met → done(completed);否则 timeout。若常规路径已先落 done,
-	// 守卫(SetTaskStatusGuarded)会拒绝覆盖,保留 completed 语义。
+	// ⑥ 保護付き最終状態：met → done（completed）、他は timeout。通常経路が先に done なら、
+	// 保護（SetTaskStatusGuarded）が上書きを拒否し、completed の意味を維持します。
 	status := "timeout"
 	if met {
 		status = "done"
@@ -246,7 +246,7 @@ func (e *Engine) runFinalPlannerRound(ctx context.Context, t *Task) (met bool) {
 		}
 		planner, _ = e.snapshotFor(t)
 	}
-	// 独立 ctx(不挂 execCancel,避免 pause/硬 cancel 打断这最后一轮),带 Final 注入任务超时词。
+	// 独立 ctx（最後のターンを pause/強制 cancel が中断しないよう execCancel に登録しない）。Final でタスクのタイムアウト指示を挿入。
 	fctx := e.clockCtx(ctx, t, true)
 	if !e.beginTaskOperation(t.ID) {
 		return false

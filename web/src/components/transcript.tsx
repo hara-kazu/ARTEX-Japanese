@@ -383,7 +383,7 @@ function ToolBlock({
   const rawCmd =
     use && use.summary.startsWith(toolName) ? use.summary.slice(toolName.length).trimStart() : (use?.summary ?? "");
   const cmd = toolInputText(toolName, rawCmd);
-  // status only — the full result lives behind the expand (【输出】), not previewed inline
+  // status only — the full result lives behind the expand (【出力】), not previewed inline
   const statusText = running ? "実行中…" : ok ? "✓" : "✕ 失敗";
 
   // key over the seqs we'd load; changes when the result (or command) arrives.
