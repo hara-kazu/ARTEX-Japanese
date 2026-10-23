@@ -483,7 +483,7 @@ func (s *Server) pgGetAgent(w http.ResponseWriter, r *http.Request) {
 	if sk == nil {
 		sk = []string{}
 	}
-	// 任意の LLM 設定一覧(id/name/model/デフォルトか)で、フロントエンドが "デフォルトモデル" ドロップダウンを描画する際に使用;現在の紐付けは agent.llm_profile_id を参照。
+	// 選択可能な LLM 設定一覧(id/name/model/デフォルトか)で、フロントエンドが "デフォルトモデル" ドロップダウンを描画する際に使用;現在の紐付けは agent.llm_profile_id を参照。
 	profs, _ := pg.ListProfiles()
 	llmProfiles := make([]map[string]any, 0, len(profs))
 	for _, p := range profs {

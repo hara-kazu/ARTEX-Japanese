@@ -732,7 +732,7 @@ WHERE t.active_llm_profile_id IS NULL
 -- タスクのテスト範囲（資産カバレッジの分母 + 許可境界）。
 --   自動入力(source='auto')：insertAssets 最上位で worker が明示的に挿入した資産の種類に応じて保守的な範囲を追加
 --     （root_domain→root_domain，subdomain/service/endpoint→subdomain(host)，ip→ip）；
---     side-effect で派生した資産は範囲外（フックは handler 最上位、派生は db 層内部）。
+--     side-effect で派生した資産は範囲に追加しない（フックは handler 最上位、派生は db 層内部）。
 --   agent 入力(source='agent')：add_task_scope で company/root_domain/subdomain/ip を追加。
 -- カバレッジ = active 行に一致する assets（分母）のうち、fact ノードが紐付いた割合（分子）。
 CREATE TABLE IF NOT EXISTS task_scope (

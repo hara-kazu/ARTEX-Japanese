@@ -351,7 +351,7 @@ func TestDigestBatchDueAndStableBatchID(t *testing.T) {
 		t.Fatalf("バッチの期限判定に失敗しました: %v", err)
 	}
 	if due {
-		t.Fatal("作成直後のバッチはすぐに期限切れになるべきではありません")
+		t.Fatal("作成直後のバッチはすぐに期限に達するべきではありません")
 	}
 
 	// 3件の配信の作成時刻をともに古くし、周期分蓄積したバッチを再現する。
@@ -363,7 +363,7 @@ func TestDigestBatchDueAndStableBatchID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !due {
-		t.Fatal("周期を超えたバッチは期限切れと判定するべきです")
+		t.Fatal("周期を超えたバッチは期限に達したと判定するべきです")
 	}
 
 	batch, err := d.ClaimDigestBatch(ctx, ch.ID, MaxDigestBatchSize, time.Minute)

@@ -100,7 +100,7 @@ func (g *Guard) applyIntercept(ctx context.Context, ev hook.Event) hook.Result {
 	}
 	switch dec.Action {
 	case "deny":
-		// 観測:deny に一致しても承認は阻止せず、denied を直接1件記録する（履歴/タスクのインターセプト画面に表示）。
+		// 観測:deny に一致した場合は承認待ちでブロックせず、denied を直接1件記録する（履歴/タスクのインターセプト画面に表示）。
 		g.interceptor.Log(ctx, intercept.ConvIDFromContext(ctx), dec, ev.ToolName, ev.Input, "denied")
 		return g.block(ev.ToolName, systemBlockMessage(dec.Message), "")
 	case "allow":

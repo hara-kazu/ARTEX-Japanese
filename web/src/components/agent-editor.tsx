@@ -503,7 +503,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
       <TabsContent value="wrapup" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="grid gap-3">
           <p className="text-muted-foreground text-xs leading-relaxed">
-            このAgentが<b>タイムアウト</b>または<b>ステップ数の上限</b>で終了した場合、この「終了処理用プロンプト」で終了処理を1ラウンド実行します。検出済みで未保存の内容を書き戻し、最後に1文で要約します。空欄で組み込みの既定値を使用します。
+            このAgentが<b>タイムアウト</b>または<b>ステップ数の上限</b>で終了した場合、この「終了処理用プロンプト」で終了処理を1ラウンド実行します。検出済みで未保存の内容を書き戻し、最後に1文で要約します（中途半端な終了を防ぐため）。空欄で組み込みの既定値を使用します。
           </p>
           <div className="flex items-center gap-2">
             <Label className="text-xs">終了処理用プロンプトの本文</Label>

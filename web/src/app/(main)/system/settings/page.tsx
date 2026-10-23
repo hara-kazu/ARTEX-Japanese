@@ -333,7 +333,7 @@ export default function SystemSettingsPage() {
               <br />
               <b>トラフィックのキャプチャ</b>が有効な場合、記録プロキシの<b>上流プロキシ</b>として使用します（通信をすべて記録してから送信）。キャプチャが無効の場合は、Agent の bash / WebFetch に直接設定します。ウェブ検索と LLM のプロキシとは独立しています。
               <br />
-              <b>ヒント</b>：socks5 は<b>キャプチャが無効</b>の場合、各コマンドラインツールの <code>ALL_PROXY</code> 対応に依存します（curl は対応、一部のツールは無視する可能性があります）。socks5 を主に使用する場合は、トラフィックのキャプチャを有効にすると、MITM が直接接続するため安定して適用できます。
+              <b>ヒント</b>：socks5 は<b>キャプチャが無効</b>の場合、各コマンドラインツールの <code>ALL_PROXY</code> 対応に依存します（curl は対応、一部のツールは無視する可能性があります）。socks5 を主に使用する場合は、トラフィックのキャプチャを有効にすることを推奨します。この経路では MITM が直接接続し、各ツールにプロキシを意識させず、安定して適用できます。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
