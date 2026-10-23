@@ -1469,7 +1469,7 @@ function archiveBlockReason(task: Task): string {
   if (task.queued) return "待機中のタスクは、先に一時停止してください";
   if (!ARCHIVABLE_STATUSES.has(task.status)) return "実行中または未終了のタスクは、先に一時停止してください";
   if (task.archive_blocked_by_task_id) {
-    return `タスクは未アーカイブのタスク #${task.archive_blocked_by_task_id} に直接継承されています。先に依存先のタスクをアーカイブしてください`;
+    return `タスクは未アーカイブのタスク #${task.archive_blocked_by_task_id} に直接継承されています。先にこのタスクに依存するタスクをアーカイブしてください`;
   }
   return "";
 }

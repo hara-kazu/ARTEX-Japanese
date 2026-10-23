@@ -6,7 +6,7 @@
 // チャネルの種類の表示名と紹介。文言だけに影響しバックエンドが知る必要はないため、フロントエンドに置く。
 export const KIND_LABEL: Record<string, string> = {
   dingtalk: "DingTalk",
-  feishu: "Lark",
+  feishu: "Feishu",
   wecom: "WeCom",
   webhook: "汎用 Webhook",
   telegram: "Telegram",

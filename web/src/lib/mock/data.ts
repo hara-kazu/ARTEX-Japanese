@@ -1987,7 +1987,7 @@ export const activity: Activity[] = [
     summary: "id の範囲を一括で列挙し、権限なくアクセス可能なデータ量を評価中です（ブロックを避けるため、まだエクスポートはしません）。",
   },
 
-  // work#3 · i3 管理画面のユーザーインターフェース列挙（running）
+  // work#3 · i3 管理画面のユーザー API 列挙（running）
   {
     seq: 60,
     worker: "work#3",

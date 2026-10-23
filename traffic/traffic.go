@@ -2011,7 +2011,7 @@ func (t *Traffic) Tools() []actool.CoreTool {
 			"properties": map[string]any{
 				"host":          map[string]any{"type": "string", "description": "ホストで絞り込みます（必須。例：'107.172.96.177'、'107.172.96.177:8082'、'http://107.172.96.177:8082/path'）"},
 				"contains":      map[string]any{"type": "string", "description": "URL の部分文字列で絞り込みます（任意。例：'api' / 'login'）"},
-				"body_contains": map[string]any{"type": "string", "description": "リクエスト／レスポンスのヘッダーと本文を全文検索します（任意、3 文字以上）。例：'password' / 'root:x:0' / '内部テスト'"},
+				"body_contains": map[string]any{"type": "string", "description": "リクエスト／レスポンスのヘッダーと本文を全文検索します（任意、3 文字以上）。例：'password' / 'root:x:0' / '内部ネットワークのテスト'"},
 				"limit":         map[string]any{"type": "integer", "description": "1 ページの件数。既定値は 3、最大 10"},
 				"page":          map[string]any{"type": "integer", "description": "0 から始まるページ番号。既定値は 0（ts の降順でページ分割）"},
 			},

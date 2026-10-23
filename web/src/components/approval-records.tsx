@@ -460,7 +460,7 @@ export function ApprovalDetail({
                       <section className="flex min-w-0 flex-col gap-3">
                         <h3 className="font-medium text-muted-foreground text-xs">表示可能なセッションのコンテキスト</h3>
                         <p className="text-muted-foreground text-xs">
-                          保存先： {fmtTime(audit.captured_at)} のセッション記録の抜粋。モデルが実際に使用した内容は「モデル審査の入力」を確認してください。
+                          保存日時： {fmtTime(audit.captured_at)} のセッション記録の抜粋。モデルが実際に使用した内容は「モデル審査の入力」を確認してください。
                         </p>
                         {audit.context_truncated ? (
                           <p className="text-muted-foreground text-xs">最近のコンテキストのみ保存し、一部を切り詰めています。</p>

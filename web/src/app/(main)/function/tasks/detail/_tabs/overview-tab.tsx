@@ -48,7 +48,7 @@ function fmtTokens(n: number): string {
   return String(n);
 }
 
-// キャッシュヒット率 = キャッシュ読み取り / 入力（InputTokens は cache_read の部分集合を含むため、比率は 0–100%）。
+// キャッシュヒット率 = キャッシュ読み取り / 入力（InputTokens は cache_read を部分集合として含むため、比率は 0–100%）。
 function cacheHitRate(cacheRead: number, input: number): string {
   if (input <= 0) return "—";
   return Math.round((cacheRead / input) * 100) + "%";

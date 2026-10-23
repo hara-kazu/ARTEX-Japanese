@@ -269,7 +269,7 @@ export default function NotifyPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">通知配信</h1>
           <p className="text-muted-foreground text-sm">
-            脆弱性の検出時に DingTalk / Lark / WeCom などへ通知します。チャンネルごとにタイミングと絞り込みを設定できます
+            脆弱性の検出時に DingTalk / Feishu / WeCom などへ通知します。チャンネルごとにタイミングと絞り込みを設定できます
           </p>
         </div>
         {meta && (

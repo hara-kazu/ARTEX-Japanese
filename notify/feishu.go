@@ -69,13 +69,13 @@ func (c feishuChannel) Send(ctx context.Context, cfg map[string]any, m Message) 
 		StatusMessage string `json:"StatusMessage"`
 	}
 	if err := json.Unmarshal(raw, &res); err != nil {
-		return 0, fmt.Errorf("Lark の応答を解析できません: %w (%s)", err, snippet(raw))
+		return 0, fmt.Errorf("Feishu の応答を解析できません: %w (%s)", err, snippet(raw))
 	}
 	if res.Code != 0 {
-		return 0, Permanent(fmt.Errorf("Lark エラー %d: %s", res.Code, res.Msg))
+		return 0, Permanent(fmt.Errorf("Feishu エラー %d: %s", res.Code, res.Msg))
 	}
 	if res.StatusCode != 0 {
-		return 0, Permanent(fmt.Errorf("Lark エラー %d: %s", res.StatusCode, res.StatusMessage))
+		return 0, Permanent(fmt.Errorf("Feishu エラー %d: %s", res.StatusCode, res.StatusMessage))
 	}
 	return kept, nil
 }

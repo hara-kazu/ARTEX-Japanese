@@ -329,7 +329,7 @@ func TestFilterValidateIsWriteTimeOnly(t *testing.T) {
 	raw := []byte(`{"min_severity":"hgih"}`)
 	f := ParseFilter(raw) // エラーにしない
 	if f.MinSeverity != "hgih" {
-		t.Fatalf("読み取り時はパスをそのまま保持するべきです。実際の値: %q", f.MinSeverity)
+		t.Fatalf("読み取り処理では値をそのまま保持するべきです。実際の値: %q", f.MinSeverity)
 	}
 	// さらに、このチャネルがイベントを判定できること（panic せず、ブロックしない）。
 	_ = Match(f, Snapshot{Kind: EventFindingCreated, Severity: "critical"})

@@ -60,7 +60,7 @@ func (a Asset) downloadURL() string {
 	return a.URL
 }
 
-// setUpdateAuth は固定の公開リポジトリーの HTTPS API にのみトークンを送る。添付ファイルが
+// setUpdateAuth は固定のリリース用リポジトリーの HTTPS API にのみトークンを送る。添付ファイルが
 // GitHub オブジェクトストレージへリダイレクトされる際は署名 URL を使い、Authorization を一緒に転送してはならない。
 func setUpdateAuth(req *http.Request) {
 	req.Header.Del("Authorization")

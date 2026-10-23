@@ -120,7 +120,7 @@ export function RetestsTab({ taskId }: { taskId: string }) {
               <Button
                 variant="outline"
                 size="icon-sm"
-                aria-label="前の脆弱性"
+                aria-label="前のページの脆弱性"
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
               >
@@ -132,7 +132,7 @@ export function RetestsTab({ taskId }: { taskId: string }) {
               <Button
                 variant="outline"
                 size="icon-sm"
-                aria-label="次の脆弱性"
+                aria-label="次のページの脆弱性"
                 disabled={page * PAGE_SIZE >= data.total}
                 onClick={() => setPage(page + 1)}
               >

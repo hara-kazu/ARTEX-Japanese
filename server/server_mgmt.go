@@ -1351,7 +1351,7 @@ func (s *Server) fsUploadSkill(w http.ResponseWriter, r *http.Request) {
 	}
 	if !validSkillName(name) {
 		writeErr(w, 400, "skill 名が無効です（SKILL.md の name フィールド）："+name+
-			"（≤64 文字。文字で始まり、小文字/数字/ハイフン、または中国語などの非 ASCII 文字のみ。空白、ピリオド、パス区切りは使用できません）")
+			"（≤64 文字。字母で始まり、小文字の英字/数字/ハイフン、または中国語などの非 ASCII の字母のみ。空白、ピリオド、パス区切りは使用できません）")
 		return
 	}
 

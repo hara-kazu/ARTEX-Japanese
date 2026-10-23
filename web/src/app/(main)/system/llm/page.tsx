@@ -52,7 +52,7 @@ const MAX_TOKENS_FIELDS: { value: string; label: string }[] = [
 // 他の2形式はそれぞれフィールド名が固定で選択肢は意味を持たないため、説明文で明示する。
 const MAX_TOKENS_FIELD_HINTS: Record<string, string> = {
   openai:
-    "上限に使用するキーです。max_tokens が標準で、多くの互換ゲートウェイが使用します。OpenAI 公式の推論モデル（o シリーズ / GPT-5）は max_completion_tokens のみ対応し、max_tokens を送ると unsupported_parameter エラーになります。",
+    "上限に使用するキーです。max_tokens が標準で、大半の互換ゲートウェイはこれだけを受け付けます。OpenAI 公式の推論モデル（o シリーズ / GPT-5）は max_completion_tokens のみ対応し、max_tokens を送ると unsupported_parameter エラーになります。",
   anthropic: "openai 形式のみ選択可能です。Anthropic のフィールド名は max_tokens 固定です。",
   "openai-responses": "openai 形式のみ選択可能です。Responses API のフィールド名は max_output_tokens 固定です。",
 };
