@@ -1305,7 +1305,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-24T09:12:25Z"),
     kind: "thinking",
     summary:
-      "graph_overview：goals には目標層が分割した g1「acme.com 管理画面の権限取得」と g2「ユーザーの機密データの読み取り」があり、いずれも open。facts=0、recent_facts は空で、worker の出力はまだありません。範囲内の資産はルートドメイン acme.com と C セグメント1つです。www / admin / api / shop / vpn の5入口を想定しています。グラフに fact がないため、初期インテントを具体化する最小限の読み取り専用調査だけを行い、plan 内で作業を実行しません。",
+      "graph_overview：goals には目標層が分割した g1「acme.com 管理画面の権限取得」と g2「ユーザーの機密データの読み取り」があり、いずれも open。facts=0、recent_facts は空で、worker の出力はまだありません。範囲内の資産はルートドメイン acme.com と C セグメント1つです。www / admin / api / shop / vpn の5入口を想定しています。グラフに fact がないため、初期インテントを具体化する【最小限の読み取り専用調査】だけを行い、plan 内で作業を実行しません。",
   },
   {
     seq: 1002,
@@ -1366,7 +1366,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-25T14:12:15Z"),
     kind: "thinking",
     summary:
-      "recent_facts を確認：workG が faGit「.git をダウンロード可能で、git-dumper でバックエンドのソースを復元」と faCreds「config.php に sa/Acme@2021 をハードコード（内部で共通の可能性）」を返しました。work#6 の識別結果 fa3 は「shop に Fastjson 1.2.24 があり、既知のデシリアライズ RCE が存在」です。新しい仕組みは、内部で DB パスワードを再利用できる可能性と、Fastjson の確立した RCE 手法です。既存の認証 / 注入とは異なる、shop の RCE から DMZ に進む経路が開けました。まず faGit の詳細で復元内容を確認します。",
+      "recent_facts を確認：workG が faGit「.git をダウンロード可能で、git-dumper でバックエンドのソースを復元」と faCreds「config.php に sa/Acme@2021 をハードコード（内部で共通の可能性）」を返しました。work#6 の識別結果 fa3 は「shop に Fastjson 1.2.24 があり、既知のデシリアライズ RCE が存在」です。【新しい仕組み】は、①内部で DB パスワードを再利用できる可能性と、②Fastjson の確立した RCE 手法です。既存の認証 / 注入とは【異なる】、shop の RCE から DMZ に進む経路が開けました。まず faGit の詳細で復元内容を確認します。",
   },
   {
     seq: 1102,
@@ -1556,7 +1556,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T00:26:10Z"),
     kind: "text",
     summary:
-      "g4 を完了し、外部 RCE → DMZ → 内部 → ドメインコントローラーの経路を確認しました。未調査の方向を確認すると、g2「ユーザーの機密データの読み取り」は未完了ですが、i3（管理画面のユーザー API）と i5（API IDOR）がカバーしており、どちらも running です。新しい独立した未調査の方向はないため、追加インテントは0件とし、i3 / i5 の出力を待ちます。",
+      "g4 を完了し、外部 RCE → DMZ → 内部 → ドメインコントローラーの経路を確認しました。未調査の方向を確認すると、g2「ユーザーの機密データの読み取り」は未完了ですが、i3（管理画面のユーザー API）と i5（API IDOR）がカバーしており、どちらも running です。【新しい独立した未調査の方向】はないため、追加インテントは0件とし、i3 / i5 の出力を待ちます。",
   },
 
   // ── 第 4 回 · 管理画面を攻略し、g2 を収束（2026-07-26 03:55）──
@@ -1573,7 +1573,7 @@ export const activity: Activity[] = [
     ts: T("2026-07-26T03:55:14Z"),
     kind: "thinking",
     summary:
-      "recent_facts を確認：work#2 が faCreds の Acme@2021 で admin 管理画面へのログインに成功（i2 done）し、管理権限を取得しました。g1 の条件を満たしたため、まず prove_goal で確定します。その後、g2「ユーザーの機密データの読み取り」を量的に検証します。i3 / i5 は API を調べただけで大量のデータは未取得のため、まだ条件を満たしていません。prove_goal は行わず、データ取得のインテントの優先度を上げて不足を補います。",
+      "recent_facts を確認：work#2 が faCreds の Acme@2021 で admin 管理画面へのログインに成功（i2 done）し、管理権限を取得しました。g1 の条件を満たしたため、まず prove_goal で確定します。その後、g2「ユーザーの機密データの読み取り」を【量的に検証】します。i3 / i5 は API を調べただけで大量のデータは未取得のため、まだ条件を満たしていません。prove_goal は【行わず】、データ取得のインテントの優先度を上げて不足を補います。",
   },
   {
     seq: 1402,

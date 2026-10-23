@@ -425,7 +425,7 @@ func (s *Server) toolGetTaskNodeDetail() actool.CoreTool {
 // task-agnostic, so this host tool needs no task_id / exploration store.
 func (s *Server) toolUpdateFindingReport() actool.CoreTool {
 	return wrTool("update_finding_report",
-		"登録済みの脆弱性の詳細レポートを作成・更新します。Markdown の全文で既存の内容を上書きします。finding_id には report_finding が返す id（\"finding recorded: <id>\" の数字）を指定してください。レポートには脆弱性の概要、影響とリスク、再現手順、証拠 / PoC、修正案を含めることを推奨します。",
+		"登録済みの脆弱性の【詳細レポート】を作成・更新します。Markdown の全文で既存の内容を上書きします。finding_id には report_finding が返す id（\"finding recorded: <id>\" の数字）を指定してください。レポートには脆弱性の概要、影響とリスク、再現手順、証拠 / PoC、修正案を含めることを推奨します。",
 		objSchema(map[string]any{
 			"finding_id":       map[string]any{"type": "integer", "description": "対象の脆弱性 id（report_finding が返す id）"},
 			"report":           strParam("詳細レポートの全文（Markdown 形式）"),
