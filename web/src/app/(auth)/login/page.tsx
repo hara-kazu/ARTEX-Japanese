@@ -131,14 +131,13 @@ export default function LoginPage() {
                 className="mt-0.5"
               />
               <Label htmlFor="agree-terms" className="text-sm font-normal leading-relaxed text-muted-foreground">
-                内容を読み、同意します
                 <button
                   type="button"
                   onClick={() => setTermsOpen(true)}
                   className="mx-0.5 font-medium text-primary underline-offset-4 hover:underline"
                 >
                   「利用上の注意」
-                </button>
+                </button>を読み、同意します
               </Label>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

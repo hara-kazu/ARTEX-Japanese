@@ -958,7 +958,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "i9",
       type: "intent",
-      payload: P({ summary: "足場をpivotして内部ホストを検出" }),
+      payload: P({ summary: "足場をpivotとして内部ホストを検出" }),
       priority: 8,
       state: "done",
       origin: "planner",
@@ -3160,11 +3160,7 @@ export function agentDetail(key: string): AgentDetail {
   const a = agents.find((x) => x.key === key) ?? agents[1];
   return {
     agent: a,
-    prompt: `あなたは ARTEX の「${a.name}」です。
-目標：{{.Goal}}
-資産の概要：{{.AssetSummary}}
-経路のヒント：{{.RouteHint}}
-以上に基づいて探索し、ツールで結果をグラフへ書き戻してください。`,
+    prompt: `あなたは ARTEX の「${a.name}」です。\n目標：{{.Goal}}\n資産の概要：{{.AssetSummary}}\n経路のヒント：{{.RouteHint}}\n以上に基づいて探索し、ツールで結果をグラフへ書き戻してください。`,
     variables: promptVars,
     versions: promptVersions,
     visibility: { mcp: [1, 2], skill: ["api-recon", "playwright-cli"] },

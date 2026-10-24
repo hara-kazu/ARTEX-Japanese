@@ -580,7 +580,7 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="text-[10px] text-muted-foreground">
-            入力 {fmtTokens(displayedTokens.input)}（キャッシュを含む {fmtTokens(displayedTokens.cacheRead)}）· 出力{" "}
+            入力 {fmtTokens(displayedTokens.input)}（キャッシュ {fmtTokens(displayedTokens.cacheRead)}を含む）· 出力{" "}
             {fmtTokens(displayedTokens.output)}
           </CardContent>
         </Card>

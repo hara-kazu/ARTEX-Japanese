@@ -156,8 +156,7 @@ function appendUploads(desc: string, atts: ChatAttachment[]): string {
     return `${desc.replace(/\s*$/, "")}\n${bullets}\n`;
   }
   const head = desc.trim() ? `${desc.replace(/\s*$/, "")}\n\n` : "";
-  return `${head}${UPLOAD_MARKER} worker は Read / Bash で次のパスを開けます：
-${bullets}\n`;
+  return `${head}${UPLOAD_MARKER} worker は Read / Bash で次のパスを開けます：\n${bullets}\n`;
 }
 
 // POLL_MS is the task-list refresh interval. Task state moves on the server (planner /
@@ -748,7 +747,7 @@ export default function TasksPage() {
       const ids = [...selectedIds];
       if (ids.length === 0 || movingCategory) return;
       if (ids.length > 100) {
-        toast.error("一度に変更できるタスクのカテゴリは100件までです");
+        toast.error("一度にカテゴリを変更できるタスクは100件までです");
         return;
       }
       setMovingCategory(true);

@@ -72,7 +72,7 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		return fmt.Errorf("%s に %s が含まれていません。検証できない実行ファイルのインストールを拒否しました", sumsAsset, name)
 	}
 
-	// 一時ファイルはすべて送信先ディレクトリーに置き、最後の rename が同じファイルシステム内のアトミックな操作であることを保証する
+	// 一時ファイルはすべて配置先ディレクトリーに置き、最後の rename が同じファイルシステム内のアトミックな操作であることを保証する
 	// （デバイスをまたぐ rename は失敗し、/tmp は独立したマウントポイントであることが多い）。
 	zipPath := p.New + ".zip.part"
 	binPath := p.New + ".part"

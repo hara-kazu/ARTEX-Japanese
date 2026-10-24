@@ -198,13 +198,13 @@ var builtinAgents = []builtinAgent{
 		{"Goal", "タスク全体の目標", "example.com の管理者権限を取得", "exploration"},
 		{"AssetSummary", "資産数 / 種類別の分布の要約（任意）", "domain:3 ip:5 site:2", "distilled"},
 	}, false, nil},
-	{"mainagent", "メイン", "main", "進捗を確認し、ユーザーの指示を hint や優先度の高いインテントとして反映します。", []promptVar{
+	{"mainagent", "メイン", "main", "人間とシステムのインターフェースとして、進捗を確認し、ユーザーの指示を hint や優先度の高いインテントとして反映します。", []promptVar{
 		{"Goal", "現在のタスクの目標", "example.com の管理者権限を取得", "exploration"},
 		{"AssetSummary", "開始時の状況の要約（任意）", "domain:3 ip:5", "distilled"},
 		{"FindingsSummary", "確認済みの脆弱性の要約（任意）", "high:1 medium:2", "distilled"},
 	}, false, nil},
-	{"worker", "実行", "worker", "1件のインテントを実行し、検出した事実 / 脆弱性をグラフに書き戻して停止します。", []promptVar{
-		{"ProxyAddr", "記録プロキシのアドレス（if 分岐の条件にも使用）", "127.0.0.1:8080", "runtime"},
+	{"worker", "実行", "worker", "1件のインテントを取得して実行し、検出した事実 / 脆弱性を知識グラフに書き戻して停止します。", []promptVar{
+		{"ProxyAddr", "記録プロキシのアドレス（if による2種類の文面の切り替えに使用）", "127.0.0.1:8080", "runtime"},
 		{"WorkerName", "worker の識別名（任意）", "worker-1", "runtime"},
 	}, false, nil},
 	// Auto:組み込みの「プラットフォーム操作」agent。侵入テストのオーケストレーションループには参加せず、対話ページから駆動し、ツールでプラットフォームを操作する。

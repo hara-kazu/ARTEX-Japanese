@@ -554,7 +554,7 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
 
-  // 日別にグループ化:通知ストリームを日付で区切り、長いタスクのページ移動時も「いつの出来事か」を分かるようにする。
+  // 日別にグループ化:通知ストリームを日付で区切り、長いタスクのページ移動時も「いつの出来事か」が分かるようにする。
   const groups: Array<{ day: string; rows: TaskNode[] }> = [];
   for (const node of items) {
     const ts = Date.parse(node.ts);

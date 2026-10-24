@@ -202,7 +202,7 @@ func smokeTest(bin string) error {
 // Unix と Windows はどちらも実行中の実行ファイルの rename を許可する（Windows が禁止するのは削除と
 // 上書きで、rename は含まれない）。そのためプラットフォーム別の処理も、自分自身の事前停止も不要。
 func swap(p Paths) error {
-	// Windows の rename は既存の送信先を上書きしないため、前回更新で残った .old を先に消去する必要がある。
+	// Windows の rename は既存の移動先を上書きしないため、前回更新で残った .old を先に消去する必要がある。
 	if err := os.Remove(p.Old); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("古いバックアップ %s の削除に失敗しました：%w", p.Old, err)
 	}

@@ -371,9 +371,7 @@ export default function SkillsPage() {
         const duplicateMessage = msg
           .replace(/^skill 已存在：/, "skill は既に存在します：")
           .replace(/（如需覆盖请确认后重试）$/, "（上書きする場合は確認後に再試行してください）");
-        if (window.confirm(`${duplicateMessage}
-
-同名のSkillを上書きしますか？`)) {
+        if (window.confirm(`${duplicateMessage}\n\n同名のSkillを上書きしますか？`)) {
           await uploadZip(file, true);
           return;
         }
