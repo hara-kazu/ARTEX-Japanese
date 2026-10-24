@@ -18,6 +18,6 @@
     }
   },
 
-  "_comment_skill_dir": "skill のルートディレクトリ（各サブディレクトリに1つの skill と SKILL.md を配置）。優先度：環境変数 ARTEX_SKILL_DIR > この値 > 標準の実行ファイルと同じ場所の skills/。空欄または項目を削除すると標準を使用します。相対パスは現在の作業ディレクトリを基準にします。",
+  "_comment_skill_dir": "skill のルートディレクトリ（各サブディレクトリに1つの skill と SKILL.md を配置）。優先度：環境変数 ARTEX_SKILL_DIR > この値 > 既定値（実行ファイルと同じ場所の skills/）。空欄または項目を削除すると標準を使用します。相対パスは現在の作業ディレクトリを基準にします。",
   "skill_dir": "/opt/artex/skills"
 }

@@ -191,7 +191,7 @@ func intp(v int) *int { return &v }
 var builtinAgents = []builtinAgent{
 	{"goals", "目標の分解", "goals", "テストの目標を、独立して検証できる複数のサブ目標に分解します。", []promptVar{
 		{"EngagementDescription", "タスクの説明（テスト対象 / 背景）", "example.com のサイトをテスト", "exploration"},
-		// Now はグローバル runtime 変数(server.globalPromptVars を参照)であり、各 agent のカタログに
+		// Now はグローバル runtime 変数(server.globalPromptVars を参照)であり、もはや各 agent のカタログに
 		// 重複定義しない。withGlobalVars で追加する際にグローバル項目と名前が重なるため。
 	}, false, nil},
 	{"planner", "計画", "planner", "状況を確認し、目標の達成を判定します。まだカバーされていない新しい方向が実際にある場合にのみ探索インテントを追加します（タスクごとに1つの計画ループ）。", []promptVar{

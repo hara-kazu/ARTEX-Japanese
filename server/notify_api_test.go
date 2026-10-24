@@ -724,7 +724,7 @@ func TestNotifyNoDeepLinkWithoutBaseURL(t *testing.T) {
 // TestNotifyDigestSegmentsAndDefersRemainder は「通知なく消える」問題の修正を示すエンドツーエンド検証。
 //
 // 集約メッセージは通知先の長さ上限（WeCom は 4096 バイト）に従い、一回に入らなければ**項目単位**で分割。
-// 含まれた分を到着済みにし、残りを待機列へ戻して次を待ちます。以前は全バッチを
+// 含まれた分を到着済みにし、残りを待機列へ戻して次を待ちます。以前はバッチ全体を
 // 成功にしたため、省略された分が本文にも失敗リストにもなく、履歴だけ成功となり、
 // 脆弱性を失っていました。
 //
@@ -741,7 +741,7 @@ func TestNotifyDigestSegmentsAndDefersRemainder(t *testing.T) {
 		"config": map[string]any{"webhook": hook.URL},
 	})
 	const total = 60
-	// 長いタイトルで、60 件が確実に 4096 バイトを超えて分割されるようにする。
+	// 長いタイトルで、60 件が確実に 4096 バイトを大幅に超えて分割されるようにする。
 	longName := strings.Repeat("超长漏洞名称", 6)
 	for i := 0; i < total; i++ {
 		f.record(t, longName+strconv.Itoa(i+1), "high")

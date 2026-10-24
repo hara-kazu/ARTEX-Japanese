@@ -640,7 +640,7 @@ func TestQueryByTask(t *testing.T) {
 	}
 }
 
-// タスク資産一覧はページ単位で取得し、固定件数で切り捨てない:60 件の資産を 25/ページですべて取得できること。
+// タスク資産一覧はページ単位で取得し、固定件数で切り捨てられることはなくなった:60 件の資産を 25/ページですべて取得できること。
 func TestQueryByTaskPaging(t *testing.T) {
 	d, av2, _ := testSetup(t)
 	defer d.Close()

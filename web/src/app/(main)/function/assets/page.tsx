@@ -324,7 +324,7 @@ export default function AssetsPage() {
           </span>
           {selected.size > 0 && (
             <Button variant="destructive" size="sm" onClick={() => openDelete(Array.from(selected) as number[])}>
-              <Trash2Icon className="size-3.5" /> 選択した項目を削除（{selected.size})
+              <Trash2Icon className="size-3.5" /> 選択した項目を削除 ({selected.size})
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>

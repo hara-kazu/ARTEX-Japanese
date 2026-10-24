@@ -567,7 +567,7 @@ func (s *Server) unbindGoalMetDefault() {
 // 「先に操作制約（set_constraints）を抽出してから分解」を追加しましたが、SeedPromptIfEmpty は初回挿入only で、旧 DB の
 // version 1 には届きません。版管理で【新しい版を追加】して切り替えます（ResetPromptToDefault）。
 // 旧版は履歴に保持し、カスタマイズしていたユーザーも復元できます。settings flag の保護で一度だけ実行し、
-// 既定の次回変更時は flag を bump します。新規 DB は不要です（SeedPromptIfEmpty が最新の既定を seed）。
+// 既定の次回変更時は flag を bump します。新規 DB ではこの処理は不要です（SeedPromptIfEmpty が最新の既定を seed）。
 func (s *Server) reseedGoalsPrompt() {
 	const flag = "goals_prompt_constraint_step_v1"
 	if v, _, _ := s.m.pg.GetSetting(flag); v == "true" {
@@ -596,7 +596,7 @@ func (s *Server) reseedGoalsPrompt() {
 // reseedMainAgentPrompt は mainagent を【現在のコードの既定】へ更新します。「全目標
 // 達成後に add_intent で直接追加するとき、正式な目標へ登録するか確認」という指示を追加しましたが、SeedPromptIfEmpty は初回挿入
 // only で旧版には届きません。版管理で【新しい版を追加】し、切り替えます（ResetPromptToDefault）。旧版は
-// 履歴に保持し、カスタマイズ済みのユーザーも復元できます。settings flag で一度だけ実行。新規 DB は不要
+// 履歴に保持し、カスタマイズ済みのユーザーも復元できます。settings flag で一度だけ実行。新規 DB ではこの処理は不要
 // （SeedPromptIfEmpty が最新既定を seed 済み）。reseedGoalsPrompt と同じ構造です。
 func (s *Server) reseedMainAgentPrompt() {
 	const flag = "mainagent_prompt_goalless_intent_v1"
@@ -627,7 +627,7 @@ func (s *Server) reseedMainAgentPrompt() {
 // 重複排除だけに限定。「カバレッジより深さ」「未達成で実行中インテントがなければ必ず作成」を追加し、否定の再検証に上限を設けます。
 // 実質的に変更するたびに下の flag（現在 v2）を bump し、旧 DB を再更新します。SeedPromptIfEmpty は初回挿入only のため、旧版へ反映できず、版管理で
 // 【新しい版を追加】して切り替えます（ResetPromptToDefault）。旧版は履歴へ保持し、カスタマイズ済みのユーザーも履歴から
-// 復元できます。settings flag により一度だけ実行。新規 DB は不要（SeedPromptIfEmpty が最新既定を seed 済み）。
+// 復元できます。settings flag により一度だけ実行。新規 DB ではこの処理は不要（SeedPromptIfEmpty が最新既定を seed 済み）。
 // reseedGoalsPrompt と同じ構造です。
 func (s *Server) reseedPlannerPrompt() {
 	const flag = "planner_prompt_compact_realistic_v2"
@@ -656,9 +656,9 @@ func (s *Server) reseedPlannerPrompt() {
 
 // reseedWorkerPrompt は worker を【現在のコードの既定】へ更新します。record_fact 節から「否定の結論は
 // 観測 + 暫定的な解釈」という一文を削除し、confidence（observed/inferred）を「このインテントの手段を試し切ったか」から分離（計画担当を誤解させやすいため）し、
-// facts 配列の分割も「完全に独立し統合不能」という少数の例外だけへ制限します。flag を v3 へ bump して旧 DB を更新。
+// facts 配列の分割も「完全に独立し統合不能」というごく少数の例外だけへ制限します。flag を v3 へ bump して旧 DB を更新。
 // SeedPromptIfEmpty は初回挿入only のため、版管理で【新しい版を追加】して切り替え、復元用に旧版を履歴へ残します。
-// settings flag で一度だけ実行。新規 DB は不要。reseedGoalsPrompt と同じ構造です。
+// settings flag で一度だけ実行。新規 DB ではこの処理は不要。reseedGoalsPrompt と同じ構造です。
 func (s *Server) reseedWorkerPrompt() {
 	const flag = "worker_prompt_compact_v4"
 	if v, _, _ := s.m.pg.GetSetting(flag); v == "true" {

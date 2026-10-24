@@ -266,7 +266,7 @@ function SyncWorkbench() {
   const chosenTypes = ASSET_TYPES.filter((t) => assetTypes[t.key]).map((t) => t.key);
 
   const runSync = async () => {
-    if (selected.size === 0) return toast.error(`1つ以上選択してください${dimension === "project" ? "プロジェクト" : "タスク"}`);
+    if (selected.size === 0) return toast.error(`${dimension === "project" ? "プロジェクト" : "タスク"}を1つ以上選択してください`);
     if (chosenTypes.length === 0) return toast.error("資産の種類を1つ以上選択してください");
     setSyncing(true);
     setResult(null);

@@ -363,7 +363,7 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 	}
 	out["goals"] = gsum
 	// hints: 人/メイン agent が add_hint でグラフに付けた戦略ヒント；folded in so the
-	// planner reads them every round when generating intents (さもないと書くだけで読まない)。
+	// planner reads them every round when generating intents (さもないと書くだけで読まない).
 	hints, _ := t.ts.ListByKind(db.KindHint, 50)
 	hsum := make([]map[string]any, 0, len(hints))
 	for _, h := range hints {
@@ -539,7 +539,7 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 				}
 			}
 			if hosts, err := t.as.HostsByTaskWithSources(t.taskID); err == nil {
-				// ホスト総数のみを渡し、host 一覧を graph_overview に展開しない（大規模範囲のタスクでは毎回
+				// ホスト総数のみを渡し、host 一覧を graph_overview に展開しなくなった（大規模範囲のタスクでは毎回
 				// 大量の文字列を繰り返し持ち、計画判断での価値は限定的）；具体的なホストは必要に応じて list_assets で検索。
 				m["host_count"] = len(hosts)
 			}

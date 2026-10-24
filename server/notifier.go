@@ -426,7 +426,7 @@ func (n *Notifier) renderBatch(ctx context.Context, deliveries []*db.Notificatio
 func (n *Notifier) itemFor(ctx context.Context, snap notify.Snapshot, baseURL string) (notify.Item, error) {
 	assets, err := n.pg.NotificationAssetNames(ctx, snap.AssetIDs)
 	if err != nil {
-		// 資産名を読めない方が通知を受け取れないより軽微なので、名前の解析失敗は通知を止めず、
+		// 資産名を読めない方が通知を受け取れないよりはるかに軽微なので、名前の解析失敗は通知を止めず、
 		// メッセージ内の資産が一行減るだけとします。
 		log.Printf("[notify] 資産名の解析に失敗しました finding=%d: %v", snap.FindingID, err)
 	}

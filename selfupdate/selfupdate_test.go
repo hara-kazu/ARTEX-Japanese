@@ -254,7 +254,7 @@ func TestConfirmCountsAttemptsThenRollsBack(t *testing.T) {
 		t.Fatal("旧バージョンにロールバック済みであるべきです")
 	}
 	if _, err := os.Stat(p.Marker); !os.IsNotExist(err) {
-		t.Error("ロールバック後はマーカーを削除すべきです。そうでなければロールバックを繰り返します")
+		t.Error("ロールバック後はマーカーを削除すべきです。そうでなければロールバックを無限に繰り返します")
 	}
 	// 起動できないバージョンは調査用に残し、直接削除しない。
 	if _, err := os.Stat(p.Current + ".failed"); err != nil {

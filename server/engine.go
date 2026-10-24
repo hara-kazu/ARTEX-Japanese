@@ -482,7 +482,7 @@ func transitionIntentState(store *db.ExplorationStore, intentID int64, expected,
 		return err
 	}
 	if !changed {
-		return fmt.Errorf("%w：インテント%dは%s状態ではありません", db.ErrIntentStateConflict, intentID, expected)
+		return fmt.Errorf("%w：インテント%dは%s状態ではなくなっています", db.ErrIntentStateConflict, intentID, expected)
 	}
 	return nil
 }
@@ -546,9 +546,9 @@ type steerHooks struct {
 // 設定を共有し、未設定時の動作もそろえます。解決は Engine.emptyTurnNudgeLimit を参照。
 //
 // この数は「一つのインテントの総量」であり、「連続回数」ではありません。harness 自体の stopHookActive が
-// 連続する空回りを一回だけに制限します。その続行後も空回りなら Stop フックを再度呼ばず、run は直接
+// 連続する空回りへの続行指示の注入を一回だけに制限します。その続行後も空回りなら Stop フックを再度呼ばず、run は直接
 // 終了します。実際にツールのターンが発生して初めて枠が戻ります（norma/harness/query.go:534）。したがって、
-// 「ツール → 空回り → 続行 → ツール → 空回り」という異常なループによるインテント予算の浪費を防ぎます。
+// 「ツール → 空回り → 続行 → ツール → 空回り」という異常なループがインテント予算を使い切るのを防ぎます。
 const defaultEmptyTurnNudges = 2
 
 // emptyTurnNudge は空回りターンへ挿入する続行指示です。
@@ -834,7 +834,7 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 			return
 		}
 		// タスクのタイムアウト終了処理中は通常の起動を破棄します。worker の書き戻しや Resume の Notify でも
-		// 通常の計画を起動しません。最終の一回は調整処理（settleTask）が直接実行します。
+		// 通常の計画を起動しません。最終の一回は調整処理（settleTask）が直接実行し、ここは通りません。
 		if e.isSettling(t.ID) {
 			return
 		}
@@ -1194,7 +1194,7 @@ func (e *Engine) runDetachedIntent(ctx context.Context, t *Task, intentID int64,
 		return err
 	}
 	if !changed {
-		return fmt.Errorf("%w：インテントは paused 状態ではありません", db.ErrIntentStateConflict)
+		return fmt.Errorf("%w：インテントは paused 状態ではなくなっています", db.ErrIntentStateConflict)
 	}
 	node.State, node.Owner = "running", "chat"
 	// Record the human turn as a visible activity BEFORE the run starts, so it is

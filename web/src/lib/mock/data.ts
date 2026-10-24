@@ -1315,7 +1315,7 @@ export const activity: Activity[] = [
     tool: "bash",
     tool_use_id: "p0-probe",
     summary: "curl -sI https://acme.com; curl -sI https://admin.acme.com",
-    detail: "初期情報が少ないため、3回以内の読み取り専用調査で探索方向を調整します。列挙と検証は worker に任せます。",
+    detail: "初期情報がほとんどないため、3回以内の読み取り専用調査で探索方向を調整します。列挙と検証は worker に任せます。",
   },
   {
     seq: 1003,

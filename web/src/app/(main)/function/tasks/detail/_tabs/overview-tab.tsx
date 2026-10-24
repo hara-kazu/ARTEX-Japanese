@@ -1033,7 +1033,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
             ))}
             {blocked.length > 20 && (
               <p className="text-xs text-muted-foreground">
-                先頭20件のみ表示しています。「すべて再実行」で残りも処理できます {blocked.length - 20} 件。
+                先頭20件のみ表示しています。「すべて再実行」で残り {blocked.length - 20} 件を処理できます。
               </p>
             )}
           </CardContent>

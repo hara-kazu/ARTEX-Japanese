@@ -146,7 +146,7 @@ ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 
 ### このリポジトリの非公開 Release 更新元
 
-画面からのワンクリック更新では、[Hinln/ARTEX Releases](https://github.com/Hinln/ARTEX/releases) からバージョンの確認とダウンロードを行います。ソースのクローンや Git による更新も `Hinln/ARTEX` を使用し、元プロジェクトの Go module パスは維持します。
+画面からのワンクリック更新では、[Hinln/ARTEX Releases](https://github.com/Hinln/ARTEX/releases) からバージョンの確認とダウンロードを行うよう固定されています。ソースのクローンや Git による更新も `Hinln/ARTEX` を使用し、元プロジェクトの Go module パスは維持します。
 
 これは非公開リポジトリです。ARTEX を実行するバックエンドプロセスに `ARTEX_UPDATE_GITHUB_TOKEN` を設定してください。トークンに必要な権限は、このリポジトリの **Contents: read** だけです。トークンはバックエンドが Release の照会と添付ファイルのダウンロードに使用し、ブラウザーには送信しません。Git にコミットしないでください。
 
@@ -410,7 +410,7 @@ sequenceDiagram
   EV-->>P: 起動
   P->>DB: 状況を取得(graph_overview の先行取得 + coverage/scope)
   P->>FR: 0..N 個のインテントを追加(asset_ids 付き)
-  Note over P,FR: 多くの起動では0件を追加 — 新しい方向がなければ終了
+  Note over P,FR: 大半の起動では0件を追加 — 新しい方向がなければ終了
   W->>FR: claimNext で1つのインテントを取得
   W->>DB: インテントの asset_ids の元の資産を初期情報として取得
   W->>PX: 実際のツールを実行(Kali / Bash / HTTP)

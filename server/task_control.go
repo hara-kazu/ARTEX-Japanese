@@ -196,7 +196,7 @@ func (s *Server) applyIntentControl(ctx context.Context, t *Task, iid int64, act
 			return out, err
 		}
 		if !changed {
-			return out, fmt.Errorf("%w：インテントは paused 状態ではありません", db.ErrIntentStateConflict)
+			return out, fmt.Errorf("%w：インテントは paused 状態ではなくなっています", db.ErrIntentStateConflict)
 		}
 		t.Notify()
 		out.State = "open"

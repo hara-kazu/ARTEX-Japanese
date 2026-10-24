@@ -2118,7 +2118,7 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 // (see agent.nowStr, rendered fresh each turn), so a prompt may always reference
 // {{.Now}} — e.g. subtract it from a fixed start stamp to reason about elapsed time.
 var globalPromptVars = []db.PromptVar{
-	{Name: "Now", Description: "サーバーの現在時刻（実行ごとに更新。開始時刻との差から経過時間を算出できます）", Example: "2026-08-11 14:30:00 CST", Source: "runtime"},
+	{Name: "Now", Description: "サーバーの現在時刻（実行ごとに更新。固定した開始時刻との差から経過時間を算出できます）", Example: "2026-08-11 14:30:00 CST", Source: "runtime"},
 	{Name: "DataDir", Description: "サーバーのデータルート（全タスク / セッションの生成物を保存。各 agent は <DataDir>/<taskID> などのサブディレクトリに書き込みます）", Example: "/app/data", Source: "runtime"},
 }
 
