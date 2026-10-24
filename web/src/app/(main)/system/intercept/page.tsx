@@ -688,7 +688,7 @@ export default function InterceptPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[72px]">優先度</TableHead>
                   <TableHead>名前</TableHead>
-                  <TableHead className="w-[90px]">目標</TableHead>
+                  <TableHead className="w-[90px]">対象</TableHead>
                   <TableHead className="w-[80px]">種類</TableHead>
                   <TableHead>パターン</TableHead>
                   <TableHead className="w-[72px]">ポリシー</TableHead>

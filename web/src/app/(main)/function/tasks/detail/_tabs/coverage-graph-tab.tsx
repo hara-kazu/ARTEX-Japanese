@@ -220,7 +220,7 @@ function toG6Nodes(renderNodes: RenderNode[]): G6NodeDatum[] {
         fold: true,
         tested: false,
         inScope: false,
-        lbl: `ほかに ${rn.hidden.length} 件${kindMeta[rn.kind].label}`,
+        lbl: `ほかに ${rn.hidden.length} 件の${kindMeta[rn.kind].label}`,
         size: 24,
       };
     }

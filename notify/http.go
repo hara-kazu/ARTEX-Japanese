@@ -76,7 +76,7 @@ func blockInternalDial(_, address string, _ syscall.RawConn) error {
 		return fmt.Errorf("送信先アドレス %q を解析できません", host)
 	}
 	if isBlockedDialIP(ip) {
-		return fmt.Errorf("ローカル / リンクローカルアドレス %s への配信を拒否しました（必要な場合は %s=1 を設定）", ip, AllowLocalTargetsEnv)
+		return fmt.Errorf("ローカル / リンクローカルアドレス %s への配信を拒否しました（ローカルサービスへの配信が本当に必要な場合は %s=1 を設定）", ip, AllowLocalTargetsEnv)
 	}
 	return nil
 }

@@ -2117,13 +2117,13 @@ export function SessionsTab({ taskId }: { taskId: string }) {
               <AlertDialogDescription className="break-words whitespace-normal">
                 {deleteMode === "hard" ? (
                   <>
-                    <strong>完全削除</strong>このインテントと、<strong>これだけに依存する</strong>
+                    <strong>完全削除</strong>では、このインテントと、<strong>これだけに依存する</strong>
                     下流ノードを物理的に削除します（孤立データを残さないよう末端まで連鎖）。共有ノード、目標、タスクのルートの事実は保持します。
                     <strong>この操作は元に戻せません。</strong>計画エージェントに削除を通知し、再計画します。
                   </>
                 ) : (
                   <>
-                    <strong>論理削除</strong>このインテントを「削除済み」にして理由を記録します。インテントのノード、実行記録、登録済みの事実と脆弱性は<strong>すべて保持します</strong>。計画エージェントに、ユーザーによる削除とその理由を通知し、再計画します。
+                    <strong>論理削除</strong>では、このインテントを「削除済み」にして理由を記録します。インテントのノード、実行記録、登録済みの事実と脆弱性は<strong>すべて保持します</strong>。計画エージェントに、ユーザーによる削除とその理由を通知し、再計画します。
                   </>
                 )}
               </AlertDialogDescription>

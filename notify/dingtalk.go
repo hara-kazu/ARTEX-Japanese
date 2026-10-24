@@ -154,7 +154,7 @@ func validateHTTPURL(raw string) error {
 		return errors.New("ホスト名がありません")
 	}
 	if ip := net.ParseIP(u.Hostname()); ip != nil && isBlockedDialIP(ip) && !allowLocalTargets() {
-		return fmt.Errorf("ローカル / リンクローカルアドレス %s への配信を拒否しました（必要な場合は %s=1 を設定）", ip, AllowLocalTargetsEnv)
+		return fmt.Errorf("ローカル / リンクローカルアドレス %s への配信を拒否しました（ローカルサービスへの配信が本当に必要な場合は %s=1 を設定）", ip, AllowLocalTargetsEnv)
 	}
 	return nil
 }

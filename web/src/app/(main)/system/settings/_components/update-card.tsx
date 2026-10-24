@@ -305,8 +305,8 @@ export function UpdateCard() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          ワンクリック更新は監視スクリプトによる再起動が必要です。次のスクリプトで <span className="font-mono">start.sh</span>（Windows は
-          <span className="font-mono"> start.bat</span>）ARTEX を起動してください。artex 本体を直接実行した場合、終了後に自動再起動しません。
+          ワンクリック更新は監視スクリプトによる再起動が必要です。<span className="font-mono">start.sh</span>（Windows は
+          <span className="font-mono"> start.bat</span>）で ARTEX を起動してください。artex 本体を直接実行した場合、終了後に自動再起動しません。
         </p>
       </CardContent>
     </Card>
