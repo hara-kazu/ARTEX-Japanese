@@ -62,7 +62,7 @@ func TestDoJSONClassifiesHTTPStatus(t *testing.T) {
 					tc.status, tc.permanent, got, err)
 			}
 			// エラーにステータスコードが現れる必要がある。ないとユーザーは自分の誤設定か相手の障害か判断できない。
-			// Go の英語の StatusText ではなく数値を検証する：本パッケージの文言は中国語であり、
+			// Go の英語の StatusText ではなく数値を検証する：本パッケージの文言は日本語であり、
 			// （プロジェクトの他の部分と同じ）、数値こそが言語に依存せず安定して検証できる部分である。
 			if !strings.Contains(err.Error(), strconv.Itoa(tc.status)) {
 				t.Errorf("エラー情報には HTTP 状態コード %d を含めるべきです。実際の値: %v", tc.status, err)

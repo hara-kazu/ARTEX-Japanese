@@ -17,7 +17,7 @@ import (
 // Go の archive/zip の組み込み展開器は Store(0) と Deflate(8) の2種類のみで、別の方式では
 // "zip: unsupported compression algorithm" を返す。圧縮ソフトはデフォルト以外の設定で別方式をよく使用するため、
 // (7-Zip の bzip2、WinZip の zstd)、純粋な Go で解ける2種類をここで追加する；本当に展開できないものは
-// (Deflate64 / LZMA / XZ / PPMd / 暗号化アーカイブ)は展開前に中国語で説明し、下位の
+// (Deflate64 / LZMA / XZ / PPMd / 暗号化アーカイブ)は展開前に日本語で説明し、下位の
 // エラーをそのままユーザーへ投げない。
 const (
 	zipMethodStore     = 0

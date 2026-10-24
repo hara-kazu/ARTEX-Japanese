@@ -42,7 +42,7 @@ var severityRank = map[string]int{
 // SeverityRank はレベルの序数を返す。不明なレベルは 0。
 func SeverityRank(severity string) int { return severityRank[severity] }
 
-// SeverityLabel は emoji 付きの中国語のレベル名を返し、メッセージタイトルとカードの配色に使う。
+// SeverityLabel は emoji 付きの日本語のレベル名を返し、メッセージタイトルとカードの配色に使う。
 // 不明なレベルはそのまま返し、推測して作らない。
 func SeverityLabel(severity string) string {
 	switch severity {
@@ -59,7 +59,7 @@ func SeverityLabel(severity string) string {
 	}
 }
 
-// StatusLabel は対処状態を中国語に訳し、状態変更メッセージに使う。
+// StatusLabel は対処状態を日本語に訳し、状態変更メッセージに使う。
 func StatusLabel(status string) string {
 	switch status {
 	case "pending":

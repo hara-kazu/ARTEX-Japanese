@@ -11,7 +11,7 @@ import (
 // 「対象資産」のドメイン/IP/URL を有効なルールと照合する。agent ツール（add_intent、
 // insert_assets）が意図の送信 / 資産の挿入前に呼び出し、一致すれば拒否する。
 
-// AssetInterceptKindLabel は kind の中国語ラベルを返し、agent への説明メッセージに使用する。
+// AssetInterceptKindLabel は kind の日本語ラベルを返し、agent への説明メッセージに使用する。
 func AssetInterceptKindLabel(kind string) string {
 	switch kind {
 	case "exact_domain":

@@ -34,7 +34,7 @@ const (
 // 既存の管理者パスワードを上書きできていました。
 const errDataSourceUnavailable = "データソースを一時的に利用できません。しばらくしてから再試行してください"
 
-// validatePassword は成功時に空文字列、それ以外はユーザーへ直接表示できる中国語の理由を返します。
+// validatePassword は成功時に空文字列、それ以外はユーザーへ直接表示できる日本語の理由を返します。
 func validatePassword(pw string) string {
 	if utf8.RuneCountInString(pw) < minPasswordRunes {
 		return fmt.Sprintf("パスワードは%d文字以上にしてください", minPasswordRunes)
