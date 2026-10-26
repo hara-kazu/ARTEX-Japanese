@@ -349,7 +349,7 @@ func (s *Server) saveLLMConfig(cfg agent.Config) error {
 	// (anthropic / openai / openai-responses), matching the DB CHECK constraint.
 	format := cfg.Provider()
 	var id int64
-	// この legacy エンドポイントの要求には順次切り替え/送受信/出力上限がないため、DB の既存値をそのまま返します。
+	// この legacy エンドポイントの要求には順次切り替え/送受信/出力上限がないため、DB の既存値をそのまま引き継いで保存します。
 	// そうしないと保存のたびに profile の priority、pool_exclude、streaming と出力上限
 	// （max_tokens / max_tokens_field）を通知なくゼロ値に戻してしまいます。
 	var priority int

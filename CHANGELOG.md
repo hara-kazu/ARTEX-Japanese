@@ -605,7 +605,7 @@
 #### 追加した機能
 
 - 各 LLM 設定でストリーミング/非ストリーミングを切り替え可能にしました（既定はストリーミング）。有効なら SSE、無効なら実際の非ストリーミング（`stream:false` で完全な JSON を一度に返す）を使い、空のフレームや思考フィールドの欠落など、一部の不完全な SSE 実装を回避できます。代わりに、実行中の進捗とリアルタイムの Token 件数は表示できなくなります。worker / planner / mainagent / chat / goals は有効な設定を毎回読みます。`llmpool` / `llmrec` / タスクの実行時の三層の Provider のラッパーはすべて非ストリーミングに対応します。`llm_profiles` に `streaming` 列を追加し、`ALTER` で旧データベースを補います（既定は `true` で、既存設定に影響しません）。
-- OpenAI Responses API 形式の LLM 設定に対応しました。各設定に第三の形式 `openai-responses`（`POST /v1/responses` を呼び出す）を追加し、Chat Completions / Anthropic と並べます。`BaseURL` を正規化し、既定のモデルは `gpt-5` です。`llm_profiles` の `format` 制約に `openai-responses` を追加して、旧データベースも冪等に移行します。フロントエンドの選択肢に「OpenAI (Responses API)」を追加しました。依存する norma は v0.3.1 に更新しました（`reasoning_content` の返却の修正を含む）。
+- OpenAI Responses API 形式の LLM 設定に対応しました。各設定に第三の形式 `openai-responses`（`POST /v1/responses` を呼び出す）を追加し、Chat Completions / Anthropic と並べます。`BaseURL` を正規化し、既定のモデルは `gpt-5` です。`llm_profiles` の `format` 制約に `openai-responses` を追加して、旧データベースも冪等に移行します。フロントエンドの選択肢に「OpenAI (Responses API)」を追加しました。依存する norma は v0.3.1 に更新しました（`reasoning_content` を送り返す処理の修正を含む）。
 - LLM の要求/応答の HTTP 原文を記録します。HTTP の transport 層で実際の wire body を取得し、正規化した表示では見られないツールの schema、`tool_use` ブロック、元の SSE フレームを保持します。norma 内部の再試行も、試行ごとに保持します。`llm_records` に `raw_request` / `raw_response` の二列を追加し、`ALTER` で旧データベースを補います。記録の詳細パネルに「原文」の切り替えと要求/応答のコピーを追加しました（安全でないコンテキストでは `execCommand` へ切り替えます）。
 
 ### チャット

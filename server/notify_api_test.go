@@ -302,7 +302,7 @@ func TestNotifyChannelAPIMasksSecretsAndPreservesOnUpdate(t *testing.T) {
 		t.Fatal("インターフェースはどのフィールドが認証情報かをフロントエンドへ通知すべきです")
 	}
 
-	// PATCH は名前変更 + マスク済み認証情報だけを返し、元の認証情報をそのまま保持すること。
+	// PATCH で名前だけを変更 + マスク済み認証情報を送り返す：実際の認証情報は必ずそのまま保持すること。
 	body, _ := json.Marshal(map[string]any{
 		"name":   "改名后",
 		"config": map[string]any{"webhook": fmt.Sprint(mine.Config["webhook"]), "secret": fmt.Sprint(mine.Config["secret"])},
