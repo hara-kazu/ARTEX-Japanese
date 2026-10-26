@@ -705,7 +705,7 @@ export const findings: Finding[] = [
     severity: "medium",
     status: "pending",
     summary: "shop が既知の RCE のある古いコンポーネントを使用",
-    evidence: "v2.3.1 を検出。CVE-2024-xxxx のデシリアライズ RCE に該当。",
+    evidence: "フィンガープリントでコンポーネント v2.3.1 を識別。CVE-2024-xxxx のデシリアライズ RCE に該当。",
     task_id: "t-shop-pay",
     task_description: "shop.acme.com の決済と注文の経路",
     ts: T("2026-07-23T15:00:00Z"),
@@ -1041,7 +1041,7 @@ export const explorationGraph: { nodes: TaskNode[]; edges: Edge[] } = {
     {
       id: "fa3",
       type: "fact",
-      payload: P({ summary: "shop は Fastjson 1.2.24（既知のデシリアライズ RCE あり）" }),
+      payload: P({ summary: "shop のフィンガープリントが Fastjson 1.2.24 に一致（既知のデシリアライズ RCE あり）" }),
       priority: 0,
       state: "open",
       origin: "work#6",
